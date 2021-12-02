@@ -1,0 +1,4 @@
+{
+  "address": "0.0.0.0:8080",
+  "postgres_url": "postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable"
+}

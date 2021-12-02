@@ -1,0 +1,34 @@
+[run]
+init_cmds = [
+  ["go", "build", "-o", "./bin/shipwright-server", "./cmd/server"],
+  ["./bin/shipwright-server", "-config", "./shipwright.json"]
+]
+
+# This setting doesn't really work?
+watch_all = true
+
+watch_dirs = [
+  "cmd",
+  "migrations",
+  "pipelines",
+  "receivers",
+  "rest",
+  "targets",
+]
+
+watch_exts = [".go"]
+env_files = []
+ignore = [".git", "frontend/node_modules"]
+ignore_files = []
+follow_symlinks = false
+build_delay = 1500
+interrupt_timout = 5
+graceful_kill = true
+cmds = [
+  ["go", "build", "-o", "./bin/shipwright-server", "./cmd/server"],
+  ["./bin/shipwright-server", "-config", "./shipwright.json"]
+]
+
+[sync]
+listen_addr = ":5050"
+remote_addr = ":5050"

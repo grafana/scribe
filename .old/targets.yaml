@@ -1,0 +1,5 @@
+# Use targets to define deployment destinations.
+targets:
+- name: deployment-target
+  kind: pipeline
+  config: {}

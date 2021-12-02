@@ -1,0 +1,11 @@
+# Use sources to define what will trigger deployment pipelines.
+sources:
+- name: gcs-message-tarball
+  kind: message/gcs
+  config:
+    type: OBJECT_FINALIZE
+    match: "/folder/**/*.tar.gz"
+- name: nats-message
+  kind: message/nats
+  config:
+    subject: some-nats-subject

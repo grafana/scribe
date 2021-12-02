@@ -1,0 +1,9 @@
+---
+# Deploys combine deployment sources / triggers and deployment targets.
+id: 1
+triggers:
+  sources:
+  - gcs-message-tarball
+  - nats-message
+  pipelines: []
+targets: []
