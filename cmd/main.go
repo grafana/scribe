@@ -60,6 +60,7 @@ func mustCLIArgs(args []string) *arguments {
 	var (
 		path string
 	)
+
 	// Here is where we define our global flags
 	f.StringVar(&path, "path", ".", "Path to 'main' package that contains the shipwright pipeline")
 	if err := f.Parse(args); err != nil {
