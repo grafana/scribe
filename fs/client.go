@@ -1,6 +1,6 @@
 package fs
 
-import "pkg.grafana.com/shipwright/v1/types"
+import "pkg.grafana.com/shipwright/v1/plumbing/types"
 
 type Client struct{}
 

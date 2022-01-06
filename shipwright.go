@@ -7,7 +7,7 @@ import (
 	"pkg.grafana.com/shipwright/v1/git"
 	"pkg.grafana.com/shipwright/v1/golang"
 	"pkg.grafana.com/shipwright/v1/make"
-	"pkg.grafana.com/shipwright/v1/types"
+	"pkg.grafana.com/shipwright/v1/plumbing/types"
 	"pkg.grafana.com/shipwright/v1/yarn"
 )
 
@@ -24,7 +24,7 @@ func NewArtifact(ref string, artifact types.Artifact) Artifact {
 }
 
 type Client interface {
-	// Run will run the listed steps sequentially. For example, the second step will not run until the first step has completed.
+	// Run allows users to define steps that are ran sequentially. For example, the second step will not run until the first step has completed.
 	// This function blocks the goroutine until all of the steps have completed.
 	Run(...types.Step)
 
@@ -33,8 +33,20 @@ type Client interface {
 	Parallel(...types.Step)
 
 	Cache(types.Step, types.Cacher) types.Step
+
 	Input(...Argument)
 	Output(...Output)
+
+	// Done must be ran at the end of the pipeline.
+	// This is typically what takes the defined pipeline steps, runs them in the order defined, and produces some kind of output.
+	Done()
+
+	// Parse parses the CLI flags provided to the pipeline
+	// Different clients may accept different CLI arguments
+	Parse(args []string) error
+
+	// Init initalizes the client with the common options
+	// Init(CommonOpts)
 }
 
 type Shipwright struct {
@@ -47,6 +59,7 @@ type Shipwright struct {
 }
 
 // New creates a new Shipwright client which is used to create pipeline steps.
+// This function will panic if the arguments in os.Args do not match what's expected.
 func New(events ...types.Event) Shipwright {
 	opts, err := ParseCLIOpts(os.Args)
 	if err != nil {
@@ -57,16 +70,5 @@ func New(events ...types.Event) Shipwright {
 }
 
 func NewFromOpts(opts *Opts, events ...types.Event) Shipwright {
-	var client Client
-	switch opts.Mode {
-	case RunModeServer:
-	case RunModeConfig:
-		client = &ConfigClient{}
-	default:
-		client = &CLIClient{}
-	}
-
-	return Shipwright{
-		Client: client,
-	}
+	return opts.Mode.Client
 }

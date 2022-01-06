@@ -1,33 +1,54 @@
 package main
 
 import (
+	"log"
+
 	"pkg.grafana.com/shipwright/v1"
 	"pkg.grafana.com/shipwright/v1/fs"
 	"pkg.grafana.com/shipwright/v1/git"
+	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
 
+func writeVersion(sw shipwright.Shipwright) types.Step {
+	return func() error {
+		log.Println("Writing version...")
+		// equivalent of `git describe --tags --dirty --always`
+		version := sw.Git.Describe(&git.DescribeOpts{
+			Tags:   true,
+			Dirty:  true,
+			Always: true,
+		})
+
+		// write the version string in the `.version` file.
+		return sw.FS.ReplaceString(".version", version)()
+	}
+}
+
+// "main" defines our program pipeline.
+// Every pipeline step should be instantiated using the shipwright client (sw).
+// This allows the various client modes to work properly in different scenarios, like in a CI environment or locally.
+// Logic and processing done outside of the `sw.*` family of functions may not be included in the resulting pipeline.
 func main() {
 	sw := shipwright.New(git.EventCommit{})
-	repo := sw.Git.Clone()
+	defer sw.Done()
 
-	sw.Parallel(
-		sw.Cache(sw.Yarn.Install(), fs.Cache("node_modules", fs.FileHasChanged("yarn.lock"))),
-		sw.Cache(sw.Golang.Modules.Download(), fs.Cache("$GOPATH/pkg", fs.FileHasChanged("go.sum"))),
-	)
+	// Clone the project. Given that the git commit event is what triggered this pipeline,
+	// the project details can be inferred.
+	sw.Run(sw.Git.Clone())
 
-	// equivalent of `git describe --tags --dirty --always`
-	version := repo.Describe(&git.DescribeOpts{
-		Tags:   true,
-		Dirty:  true,
-		Always: true,
-	})
+	// In parallel, install the yarn and go dependencies, and cache the node_modules and $GOPATH/pkg folders.
+	// The cache should invalidate if the yarn.lock or go.sum files have changed
+	// sw.Parallel(
+	// 	sw.Cache(sw.Yarn.Install(), fs.Cache("node_modules", fs.FileHasChanged("yarn.lock"))),
+	// 	sw.Cache(sw.Golang.Modules.Download(), fs.Cache("$GOPATH/pkg", fs.FileHasChanged("go.sum"))),
+	// )
 
 	sw.Run(
-		// write the version string in the `.version` file.
-		sw.FS.ReplaceString(".version", version),
+		writeVersion(sw),
 		sw.Make.Target("build"),
 		sw.Make.Target("package"),
 	)
+
 	sw.Output(shipwright.NewArtifact(
 		"example:tarball",
 		fs.Glob("bin/*.tar.gz"),

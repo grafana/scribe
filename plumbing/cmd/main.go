@@ -6,10 +6,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 
-	"pkg.grafana.com/shipwright/v1/cmd/commands"
+	"pkg.grafana.com/shipwright/v1/plumbing/cmd/commands"
 )
 
 type cmdFunc func(context.Context, []string)
@@ -41,9 +42,9 @@ var examples = `Examples:
 
 func usage(f *flag.FlagSet) func() {
 	return func() {
-		fmt.Fprintln(os.Stderr, "Usage of shipwright: shipwright [-arg=...] [run|config]")
+		fmt.Fprintln(f.Output(), "Usage of shipwright: shipwright [-arg=...] [run|config]")
 		f.PrintDefaults()
-		fmt.Fprintln(os.Stderr, examples)
+		fmt.Fprintln(f.Output(), examples)
 		if f.ErrorHandling() == flag.ExitOnError {
 			os.Exit(1)
 		}
@@ -54,7 +55,7 @@ func usage(f *flag.FlagSet) func() {
 }
 
 func mustCLIArgs(args []string) *arguments {
-	f := flag.NewFlagSet("shipwright", flag.ExitOnError)
+	f := flag.NewFlagSet("shipwright CLI", flag.ContinueOnError)
 	f.Usage = usage(f)
 
 	var (
@@ -63,9 +64,11 @@ func mustCLIArgs(args []string) *arguments {
 
 	// Here is where we define our global flags
 	f.StringVar(&path, "path", ".", "Path to 'main' package that contains the shipwright pipeline")
-	if err := f.Parse(args); err != nil {
-		panic(err)
-	}
+
+	// Ignore Parse errors and silence the output as we want to allow extra arguments to be passed to different parts of the program
+	f.SetOutput(io.Discard)
+
+	f.Parse(args)
 
 	var (
 		action = f.Arg(0)

@@ -1,6 +1,6 @@
 package fs
 
-import "pkg.grafana.com/shipwright/v1/types"
+import "pkg.grafana.com/shipwright/v1/plumbing/types"
 
 // FileHasChanged creates a checksum for the file "file" and stores it.
 // If the checksum does not exist in the shipwright key store, then it will return false.

@@ -36,26 +36,15 @@ The idea behind this application is that it is more of a library than an applica
 
 The main idea behind `shipwright` is that it defers what is typically considered server logic into the client / pipeline definitions and library.
 
-### The server
-
-The `shipwright-server` handles most common HTTP requests to create, read, update, and delete resources.
-
 ### Clients
 
-Shipwright clients are the pipelines themselves. There are two things required for a pipeline definition:
+Shipwright clients are used in the pipelines themselves. All pipelines are programs, and thus have a `func main()`.
 
-1. A `shipwright.yaml` file. This can be named any way you like; every unique file that ends in `shipwright.yaml` will be considered its own pipeline. You can include a `shipwright.yaml` file in any folder.
+There are currently three planned Clients, which are selected using the `-mode` CLI argument.
 
-   - Some examples are ".build.shipwright.yaml", ".release.shipwright.yaml".
-   - Alternatively, a single `shipwright.yaml` file that has an array of objects is a suitable alternative.
-   - See the YAML schema of the `shipwright` object and examples in the [demo](/demo) folder.
-   - Yes I know that this goes against the value proposition of shipwright, but there has to be some metadata available for the pipeline before the pipeline program is ran. In the future I'd like to have this strictly within the pipeline definition, but this may be more trouble than it's worth.
-   - Why YAML instead of something else? Because it seems like our target audience is used to YAML at this point, and while JSON would be nice, YAML at least has comments.
-
-2. Your pipeline program runs when the values in the corresponding shipwright.yaml are satisfied.
-   - Triggers define when your pipeline is ran. (see [Glossary](#glossary))
-   - Outputs define what your pipeline produces, like strings, numbers, files, or docker iamges.
-   - Arguments define what data your pipeline needs to run.
+1. `run` - Runs the pipeline locally, attempting to emulate what would normally be executed in a standard CI pipeline.
+2. `drone` - Generates a Drone configuration that matches the specified pipeline.
+3. `docker` - Similar to `run`, but instead runs the pipeline using the Docker CLI
 
 The importance of the `shipwright` package can not be understated.
 
@@ -76,7 +65,7 @@ In this example our pipeline has a few steps:
 4. Run `make build`, followed by `make package`, and store the resulting `example.tar.gz`
 
 ```go=
-
+{{ .demos.Basic }}
 ```
 
 Once committed, this script can be treated like any other pipeline script and can be automatically ran when a new commit is made.
@@ -84,10 +73,10 @@ Once committed, this script can be treated like any other pipeline script and ca
 More interestingly though, you can run this pipeline by running:
 
 ```bash
-shipwright pipeline.go
+shipwright -path=pipeline.go
 ```
 
-If your pipeline defines any inputs it will prompt you for them, or optionally you can provide them as arguments by using the `--arg-{argument}` flag.
+If your pipeline defines any inputs it will prompt you for them, or optionally you can provide them as arguments by using the `-arg-{argument}` flag.
 
 ## Caveats
 
@@ -99,8 +88,15 @@ If your pipeline defines any inputs it will prompt you for them, or optionally y
 
 There are a few main principles behind designing the client library / packages. These princples should encourage writing libraries that make it easy to write pipelines that are not excessively verbose.
 
-- aa
+- todo
 
 ## Examples
 
 To view examples of pipelines, visit the [demo](./demo) folder. These demos are used in our automated tests.
+
+---
+
+## Questions
+
+- Transitionary phases
+  - If I'm using [Starlark | Drone yaml] how can I transition step-by-step from that to Shipwright without fully committing?
