@@ -1,43 +1,35 @@
 package shipwright
 
 import (
-	"flag"
 	"io"
 
-	"pkg.grafana.com/shipwright/v1/plumbing/cmd/commands"
+	"pkg.grafana.com/shipwright/v1/plumbing"
+	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 )
 
-type Opts struct {
-	Mode    RunMode
-	RunArgs commands.RunArgs
+var ClientInitializers = map[plumbing.RunModeOption]func(*CommonOpts) Shipwright{
+	plumbing.RunModeCLI:    NewCLIClient,
+	plumbing.RunModeDrone:  NewDroneClient,
+	plumbing.RunModeConfig: NewCLIClient,
+	plumbing.RunModeServer: NewCLIClient,
+	plumbing.RunModeDocker: NewCLIClient,
 }
 
 // CommonOpts are provided in the Client's Init function, which includes options that are common to all clients, like
 // logging, output, and debug options
 type CommonOpts struct {
+	Name   string
 	Output io.Writer
+	Args   *plumbing.Arguments
 }
 
-// ParseCLIOpts parses the CLI opts when running a pipeline. These options are used to initialize the client.
-func ParseCLIOpts(args []string) (*Opts, error) {
-	// Remove the command name from the arguments
-	args = args[1:]
-
-	var (
-		flagSet = flag.NewFlagSet("shipwright", flag.ContinueOnError)
-		opts    = &Opts{}
-	)
-
-	flagSet.Var(&opts.Mode, "mode", "An internal flag that defines what mode the shipwright pipeline is running in.")
-
-	flagSet.SetOutput(io.Discard)
-	flagSet.Parse(args)
-
-	mode := opts.Mode
-
-	if err := mode.Client.Parse(args); err != nil {
-		return nil, err
+// NewClient creates a new Shipwright client based on the commonopts (mostly the mode).
+// It does not check for a non-nil "Args" field.
+func (c *CommonOpts) NewClient() Shipwright {
+	initializer, ok := ClientInitializers[c.Args.Mode]
+	if !ok {
+		plog.Fatalln("Could not initialize shipwright. Could not find initializer for mode", c.Args.Mode)
 	}
 
-	return opts, nil
+	return initializer(c)
 }

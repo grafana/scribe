@@ -1,46 +1,28 @@
 package types
 
-// A Step is a function literal that is ran during the pipeline process.
-// In CLI mode, the step is ran as soon as it is seen.
-type Step func() error
+type StepAction func() error
+
+// A Step stores a StepAction and a name for use in pipelines
+type Step struct {
+	Name   string
+	Action StepAction
+}
+
+// NewStep creates a new step with an automatically generated name
+func NewStep(action StepAction) Step {
+	return Step{
+		Action: action,
+	}
+}
+
+// NamedStep creates a new step with an automatically generated name
+func NamedStep(name string, action StepAction) Step {
+	return Step{
+		Name:   name,
+		Action: action,
+	}
+}
 
 // A StepList is a list of steps that are ran in parallel.
 // This type is only used for intermittent storage and should not be used in the Shipwright client library
 type StepList []Step
-
-// A StepQueue is a queue of steps stored before a pipeline is ran.
-type StepQueue struct {
-	Steps []StepList
-}
-
-// At returns the step at the index 'v'. If no step is found, then nil is returned.
-func (s *StepQueue) At(v int) StepList {
-	if v >= len(s.Steps) {
-		return nil
-	}
-
-	return s.Steps[v]
-}
-
-func (s *StepQueue) Append(steps ...Step) {
-	s.Steps = append(s.Steps, StepList(steps))
-}
-
-// Next returns the next step in the queue.
-// If there are no more steps, then nil is returned.
-// This function removes the StepList from the queue
-func (s *StepQueue) Next() StepList {
-	if len(s.Steps) == 0 {
-		return nil
-	}
-
-	step := s.Steps[0]
-
-	s.Steps = s.Steps[1:]
-
-	return step
-}
-
-func (s *StepQueue) Size() int {
-	return len(s.Steps)
-}

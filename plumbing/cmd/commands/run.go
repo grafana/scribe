@@ -2,30 +2,40 @@ package commands
 
 import (
 	"context"
-	"log"
+	"io"
 	"os"
 	"os/exec"
 	"strconv"
+
+	"pkg.grafana.com/shipwright/v1/plumbing"
+	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 )
 
 // Run handles the default shipwright command, "shipwright run".
 // The run command attempts to run the pipeline by using "go run ...".
 // This function will exit the program if it encounters an error.
-func Run(ctx context.Context, args []string) {
+func Run(ctx context.Context, stdout io.Writer, stderr io.Writer, args *plumbing.Arguments) error {
 	var (
-		runArgs = MustParseRunArgs(args)
-		cmdArgs = []string{"run", runArgs.Path, "-mode", "cli"}
+		cmdArgs = []string{"run", args.Path, "-mode", "cli"}
 	)
 
-	if runArgs.Step != nil {
-		cmdArgs = append(cmdArgs, "-step", strconv.Itoa(*runArgs.Step))
+	plog.Infoln("Running shipwright pipeline with args", cmdArgs)
+
+	if args.Step != nil {
+		cmdArgs = append(cmdArgs, "-step", strconv.Itoa(*args.Step))
 	}
 
 	cmd := exec.CommandContext(ctx, "go", cmdArgs...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		log.Fatalln("Failed to run pipeline. Error:", err)
+		return err
+	}
+
+	return nil
+}
+
+func MustRunStdout(ctx context.Context, args *plumbing.Arguments) {
+	if err := Run(ctx, os.Stdout, os.Stderr, args); err != nil {
+		plog.Fatalln("Error running pipeline:", err)
 	}
 }

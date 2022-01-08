@@ -1,4 +1,6 @@
-package shipwright
+package plumbing
+
+import "errors"
 
 // RunModeOption defines a secenario in which Shipwright can process a pipeline
 type RunModeOption int
@@ -15,40 +17,30 @@ const (
 
 	// RunModeDrone is set when a pipeline is ran in Drone mode, which is used to generate a Drone config from a Shipwright pipeline
 	RunModeDrone
+
+	// RunModeDocker runs the pipeline using the Docker CLI for each step
+	RunModeDocker
 )
 
-type RunMode struct {
-	Opt    RunModeOption
-	Client Shipwright
-}
+var runModeStr = []string{"cli", "server", "config", "drone"}
 
 // String outputs the string equivelant of what mode is selected.
-func (r *RunMode) String() string {
-	switch r.Opt {
-	case RunModeCLI:
-		return "cli"
-	case RunModeServer:
-		return "server"
-	case RunModeConfig:
-		return "config"
-	case RunModeDrone:
-		return "drone"
+func (r *RunModeOption) String() string {
+	if int(*r) >= len(runModeStr) {
+		return "unknown"
 	}
 
-	return "unknown"
+	return runModeStr[*r]
 }
 
 // Set sets the active run mode and the handler based on "v"
-func (r *RunMode) Set(v string) error {
-	switch v {
-	case "server":
-		r.Opt = RunModeServer
-	case "config":
-		r.Opt = RunModeConfig
-	default:
-		r.Opt = RunModeCLI
-		r.Client = NewCLIClient()
+func (r *RunModeOption) Set(val string) error {
+	for i, v := range runModeStr {
+		if v == val {
+			*r = RunModeOption(i)
+			return nil
+		}
 	}
 
-	return nil
+	return errors.New("unknown mode")
 }

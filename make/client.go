@@ -8,7 +8,7 @@ import (
 
 type Client struct{}
 
-func (c *Client) Target(name string) types.Step {
+func (c *Client) Target(name string) types.StepAction {
 	return func() error {
 		log.Println("make", name)
 		return nil

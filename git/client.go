@@ -18,7 +18,7 @@ func (c *Client) Describe(opts *DescribeOpts) string {
 	return ""
 }
 
-func (c *Client) Clone() types.Step {
+func (c *Client) Clone() types.StepAction {
 	return func() error {
 		log.Println("git clone ...")
 		return nil

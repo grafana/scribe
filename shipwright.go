@@ -7,6 +7,8 @@ import (
 	"pkg.grafana.com/shipwright/v1/git"
 	"pkg.grafana.com/shipwright/v1/golang"
 	"pkg.grafana.com/shipwright/v1/make"
+	"pkg.grafana.com/shipwright/v1/plumbing"
+	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
 	"pkg.grafana.com/shipwright/v1/yarn"
 )
@@ -32,7 +34,7 @@ type Client interface {
 	// This function blocks the goroutine until all of the steps have completed.
 	Parallel(...types.Step)
 
-	Cache(types.Step, types.Cacher) types.Step
+	Cache(types.StepAction, types.Cacher) types.StepAction
 
 	Input(...Argument)
 	Output(...Output)
@@ -41,12 +43,8 @@ type Client interface {
 	// This is typically what takes the defined pipeline steps, runs them in the order defined, and produces some kind of output.
 	Done()
 
-	// Parse parses the CLI flags provided to the pipeline
-	// Different clients may accept different CLI arguments
-	Parse(args []string) error
-
 	// Init initalizes the client with the common options
-	// Init(CommonOpts)
+	Init(*CommonOpts)
 }
 
 type Shipwright struct {
@@ -60,15 +58,23 @@ type Shipwright struct {
 
 // New creates a new Shipwright client which is used to create pipeline steps.
 // This function will panic if the arguments in os.Args do not match what's expected.
-func New(events ...types.Event) Shipwright {
-	opts, err := ParseCLIOpts(os.Args)
+func New(name string, events ...types.Event) Shipwright {
+	args, err := plumbing.ParseArguments(os.Args)
 	if err != nil {
-		panic(err)
+		plog.Fatalln("Error parsing arguments. Error:", err)
 	}
 
-	return NewFromOpts(opts, events)
+	if args == nil {
+		plog.Fatalln("Arguments list must not be nil")
+	}
+
+	return NewFromOpts(&CommonOpts{
+		Name:   name,
+		Output: os.Stdout,
+		Args:   args,
+	})
 }
 
-func NewFromOpts(opts *Opts, events ...types.Event) Shipwright {
-	return opts.Mode.Client
+func NewFromOpts(opts *CommonOpts, events ...types.Event) Shipwright {
+	return opts.NewClient()
 }

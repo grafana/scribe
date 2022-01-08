@@ -1,27 +1,30 @@
 package shipwright
 
 import (
-	"log"
 	"time"
 
 	"pkg.grafana.com/shipwright/v1/plumbing"
-	"pkg.grafana.com/shipwright/v1/plumbing/cmd/commands"
+	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
 
 // The CLIClient is used when interacting with a shipwright pipeline using the shipwright CLI.
 // In order to emulate what happens in a remote environment, the steps are put into a queue before being ran.
 type CLIClient struct {
-	Opts  *commands.RunArgs
+	Opts  *CommonOpts
 	Queue *types.StepQueue
 }
 
-func (c *CLIClient) Cache(step types.Step, _ types.Cacher) types.Step {
+func (c *CLIClient) Cache(step types.StepAction, _ types.Cacher) types.StepAction {
 	return step
 }
 
 func (c *CLIClient) Input(_ ...Argument) {}
 func (c *CLIClient) Output(_ ...Output)  {}
+
+func (c *CLIClient) Init(opts *CommonOpts) {
+	c.Opts = opts
+}
 
 // Parallel adds the list of steps into a queue to be executed concurrently
 func (c *CLIClient) Parallel(steps ...types.Step) {
@@ -36,12 +39,12 @@ func (c *CLIClient) Run(steps ...types.Step) {
 }
 
 func (c *CLIClient) Done() {
-	//
-	if c.Opts.Step != nil {
-		n := *c.Opts.Step
+	step := c.Opts.Args.Step
+	if step != nil {
+		n := *step
 
 		if err := c.runSteps(c.Queue.At(n)); err != nil {
-			log.Fatalln("Error in step:", err)
+			plog.Fatalln("Error in step:", err)
 		}
 
 		return
@@ -50,7 +53,7 @@ func (c *CLIClient) Done() {
 	size := c.Queue.Size()
 	i := 0
 	for {
-		log.Printf("Running step(s) %d / %d", i, size)
+		plog.Infof("Running step(s) %d / %d", i, size)
 
 		steps := c.Queue.Next()
 		if steps == nil {
@@ -58,39 +61,28 @@ func (c *CLIClient) Done() {
 		}
 
 		if err := c.runSteps(steps); err != nil {
-			log.Fatalln("Error in step:", err)
+			plog.Fatalln("Error in step:", err)
 		}
 
 		i++
 	}
 }
 
-// The CLIClient uses the same arguments as the "shipwright run" command, and so it calls that function rather than handling those values here.
-func (c *CLIClient) Parse(args []string) error {
-	opts, err := commands.ParseRunArgs(args)
-	if err != nil {
-		return err
-	}
-
-	c.Opts = opts
-
-	return nil
-}
-
-func NewCLIClient() Shipwright {
+func NewCLIClient(opts *CommonOpts) Shipwright {
 	return Shipwright{
 		Client: &CLIClient{
+			Opts:  opts,
 			Queue: &types.StepQueue{},
 		},
 	}
 }
 
 func (c *CLIClient) runSteps(steps types.StepList) error {
-	log.Println("Running steps in parallel:", len(steps))
+	plog.Debugln("Running steps in parallel:", len(steps))
 	wg := plumbing.NewWaitGroup(time.Minute)
 
 	for _, v := range steps {
-		wg.Add(v)
+		wg.Add(v.Action)
 	}
 
 	return wg.Wait()
