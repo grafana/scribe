@@ -1,6 +1,8 @@
 package plumbing
 
-import "errors"
+import (
+	"errors"
+)
 
 // RunModeOption defines a secenario in which Shipwright can process a pipeline
 type RunModeOption int

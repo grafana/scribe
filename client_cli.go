@@ -1,11 +1,16 @@
 package shipwright
 
 import (
+	"errors"
 	"time"
 
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
+)
+
+var (
+	ErrorCLIStepHasImage = errors.New("step has a docker image specified. This may cause unexpected results if ran in CLI mode. The `-mode=docker` flag is likely more suitable")
 )
 
 // The CLIClient is used when interacting with a shipwright pipeline using the shipwright CLI.
@@ -34,6 +39,9 @@ func (c *CLIClient) Parallel(steps ...types.Step) {
 // Run adds the list of steps into a queue to be executed sequentially
 func (c *CLIClient) Run(steps ...types.Step) {
 	for _, v := range steps {
+		if err := ValidateCLIStep(v); err != nil {
+			plog.Warnf("In step '%s': %s", v.Name, err.Error())
+		}
 		c.Queue.Append(v)
 	}
 }
@@ -43,8 +51,12 @@ func (c *CLIClient) Done() {
 	if step != nil {
 		n := *step
 
-		if err := c.runSteps(c.Queue.At(n)); err != nil {
-			plog.Fatalln("Error in step:", err)
+		for _, list := range c.Queue.Steps {
+			for _, step := range list {
+				if step.Serial == n {
+					c.runSteps([]types.Step{step})
+				}
+			}
 		}
 
 		return
@@ -86,4 +98,12 @@ func (c *CLIClient) runSteps(steps types.StepList) error {
 	}
 
 	return wg.Wait()
+}
+
+func ValidateCLIStep(step types.Step) error {
+	if step.Image != "" {
+		return ErrorCLIStepHasImage
+	}
+
+	return nil
 }

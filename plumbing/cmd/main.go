@@ -20,7 +20,7 @@ func main() {
 		ctx = context.Background()
 	)
 
-	args := commands.MustParseArgs(os.Args)
+	args := commands.MustParseArgs(os.Args[1:])
 
 	commands.MustRunStdout(ctx, args)
 }

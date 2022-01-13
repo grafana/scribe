@@ -21,7 +21,7 @@ func TestNew(t *testing.T) {
 		})
 
 		if reflect.TypeOf(sw.Client) != reflect.TypeOf(&shipwright.CLIClient{}) {
-			t.Fatalf("shipwright.Client is '%v',  not a CLIClient", reflect.TypeOf(sw.Client))
+			t.Fatalf("shipwright.Client is '%v', not a CLIClient", reflect.TypeOf(sw.Client))
 		}
 
 		// Because reflect feels iffy to me, also make sure that it does not equal the same type as a different client
@@ -30,7 +30,7 @@ func TestNew(t *testing.T) {
 		}
 	})
 
-	t.Run("New should return a DroneClient when provided the -mode=config flag", func(t *testing.T) {
+	t.Run("New should return a DroneClient when provided the -mode=drone flag", func(t *testing.T) {
 		cliArgs := []string{"-mode", "drone"}
 		args, err := plumbing.ParseArguments(cliArgs)
 		if err != nil {
@@ -42,7 +42,7 @@ func TestNew(t *testing.T) {
 		})
 
 		if reflect.TypeOf(sw.Client) != reflect.TypeOf(&shipwright.DroneClient{}) {
-			t.Fatalf("shipwright.Client is '%v',  not a DroneClient", reflect.TypeOf(sw.Client))
+			t.Fatalf("shipwright.Client is '%v', not a DroneClient", reflect.TypeOf(sw.Client))
 		}
 
 		// Because reflect feels iffy to me, also make sure that it does not equal the same type as a different client

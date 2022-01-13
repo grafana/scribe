@@ -16,7 +16,12 @@ import (
 // This function will exit the program if it encounters an error.
 func Run(ctx context.Context, stdout io.Writer, stderr io.Writer, args *plumbing.Arguments) error {
 	var (
-		cmdArgs = []string{"run", args.Path, "-mode", "cli"}
+		// This will run a weird looking command, like this:
+		//   go run ./demo/basic -mode drone -path ./demo/basic
+		// But it's important to note that a lot happens before it actually reaches the pipeline code and produces a command like this:
+		//   /tmp/random-string -mode drone -path ./demo/basic
+		// So the path to the pipeline is not preserved, which is why we have to provide the path as an argument
+		cmdArgs = []string{"run", args.Path, "-mode", args.Mode.String(), "-path", args.Path}
 	)
 
 	plog.Infoln("Running shipwright pipeline with args", cmdArgs)
@@ -26,6 +31,8 @@ func Run(ctx context.Context, stdout io.Writer, stderr io.Writer, args *plumbing
 	}
 
 	cmd := exec.CommandContext(ctx, "go", cmdArgs...)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	if err := cmd.Run(); err != nil {
 		return err

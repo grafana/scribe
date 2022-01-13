@@ -32,9 +32,14 @@ func main() {
 	sw := shipwright.New("basic pipeline", git.EventCommit{})
 	defer sw.Done()
 
-	// Clone the project. Given that the git commit event is what triggered this pipeline,
-	// the project details can be inferred.
-	sw.Run(types.NamedStep("clone", sw.Git.Clone()))
+	// Define our steps so that we can refer to them in multiple places, like as the steps themselves or dependencies of other steps
+	var (
+		// Clone the project. Given that the git commit event is what triggered this pipeline,
+		// the project details can be inferred.
+		clone = types.NamedStep("clone", sw.Git.Clone())
+	)
+
+	sw.Run(clone)
 
 	// In parallel, install the yarn and go dependencies, and cache the node_modules and $GOPATH/pkg folders.
 	// The cache should invalidate if the yarn.lock or go.sum files have changed

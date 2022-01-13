@@ -34,6 +34,9 @@ type Client interface {
 	// This function blocks the goroutine until all of the steps have completed.
 	Parallel(...types.Step)
 
+	// Go is the equivalent of `go func()`. This function will run a step asynchronously and continue on to the next.
+	// Go(...types.Step)
+
 	Cache(types.StepAction, types.Cacher) types.StepAction
 
 	Input(...Argument)
@@ -42,9 +45,6 @@ type Client interface {
 	// Done must be ran at the end of the pipeline.
 	// This is typically what takes the defined pipeline steps, runs them in the order defined, and produces some kind of output.
 	Done()
-
-	// Init initalizes the client with the common options
-	Init(*CommonOpts)
 }
 
 type Shipwright struct {
@@ -54,12 +54,33 @@ type Shipwright struct {
 	Golang golang.Client
 	Make   make.Client
 	Yarn   yarn.Client
+
+	// n tracks
+	n int
+}
+
+func (s *Shipwright) Run(steps ...types.Step) {
+	for i := range steps {
+		steps[i].Serial = s.n
+		s.n++
+	}
+
+	s.Client.Run(steps...)
+}
+
+func (s *Shipwright) Parallel(steps ...types.Step) {
+	for i := range steps {
+		steps[i].Serial = s.n
+		s.n++
+	}
+
+	s.Client.Parallel(steps...)
 }
 
 // New creates a new Shipwright client which is used to create pipeline steps.
 // This function will panic if the arguments in os.Args do not match what's expected.
 func New(name string, events ...types.Event) Shipwright {
-	args, err := plumbing.ParseArguments(os.Args)
+	args, err := plumbing.ParseArguments(os.Args[1:])
 	if err != nil {
 		plog.Fatalln("Error parsing arguments. Error:", err)
 	}

@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+
+	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 )
 
 // Arguments are provided to the `shipwright` command.
@@ -21,20 +23,27 @@ type Arguments struct {
 
 func ParseArguments(args []string) (*Arguments, error) {
 	var (
-		flagSet = flag.NewFlagSet("run", flag.ContinueOnError)
-		step    OptionalInt
-		mode    string
+		flagSet      = flag.NewFlagSet("run", flag.ContinueOnError)
+		step         OptionalInt
+		mode         RunModeOption = RunModeCLI
+		logLevel     plog.LogLevel
+		pathOverride string
 	)
 
 	flagSet.Usage = usage(flagSet)
 
-	flagSet.StringVar(&mode, "mode", "run", "run|docker|drone")
-	flagSet.Var(&step, "step", "Enable debug logging")
+	flagSet.Var(&mode, "mode", "cli|docker|drone. Default: cli")
+	flagSet.Var(&step, "step", "")
+	flagSet.Var(&logLevel, "log-level", "")
+	flagSet.StringVar(&pathOverride, "path", "", "Providing the path argument overrides the path provided in the CLI argument. This can be used when running the pipeline directly.")
+
 	if err := flagSet.Parse(args); err != nil {
 		return nil, err
 	}
 
-	arguments := &Arguments{}
+	arguments := &Arguments{
+		Mode: mode,
+	}
 
 	if step.Valid {
 		arguments.Step = &step.Value
@@ -44,6 +53,10 @@ func ParseArguments(args []string) (*Arguments, error) {
 
 	if path == "" {
 		path = "."
+	}
+
+	if pathOverride != "" {
+		path = pathOverride
 	}
 
 	arguments.Path = path

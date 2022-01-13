@@ -16,6 +16,7 @@ func (l *LogLevel) Set(val string) error {
 	for i, v := range LogLevelStrings {
 		if v == val {
 			*l = LogLevel(i)
+			return nil
 		}
 	}
 
