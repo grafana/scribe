@@ -1,6 +1,10 @@
 package types
 
-type StepAction func() error
+type (
+	StepAction func() error
+	Argument   interface{}
+	Output     interface{}
+)
 
 // A Step stores a StepAction and a name for use in pipelines
 type Step struct {
@@ -9,6 +13,7 @@ type Step struct {
 	Image  string
 
 	Dependencies []Step
+	Arguments    []StepArgument
 
 	// Serial is the unique number that represents this step.
 	// This value is used when calling `shipwright -step={serial} [pipeline]`
@@ -27,6 +32,24 @@ func (s Step) After(step Step) Step {
 
 func (s Step) WithImage(image string) Step {
 	s.Image = image
+	return s
+}
+
+func (s Step) WithOutput(artifact Artifact) Step {
+	return s
+}
+
+func (s Step) WithInput(artifact Artifact) Step {
+	return s
+}
+
+func (s Step) WithArguments(arg ...StepArgument) Step {
+	s.Arguments = arg
+	return s
+}
+
+func (s Step) WithName(name string) Step {
+	s.Name = name
 	return s
 }
 

@@ -19,30 +19,42 @@ type Arguments struct {
 	// Step defines a specific step to run. Typically this is used in a generated third-party config
 	// If Step is nil, then all steps are ran
 	Step *int
+
+	// CanStdinPrompt is true if the pipeline can prompt for absent arguments via stdin
+	CanStdinPrompt bool
+
+	// ArgMap is a map populated by arguments provided using the `-arg` flag.
+	// Example usage: `-arg={key}={value}
+	ArgMap ArgMap
 }
 
 func ParseArguments(args []string) (*Arguments, error) {
 	var (
-		flagSet      = flag.NewFlagSet("run", flag.ContinueOnError)
-		step         OptionalInt
-		mode         RunModeOption = RunModeCLI
-		logLevel     plog.LogLevel
-		pathOverride string
+		flagSet                     = flag.NewFlagSet("run", flag.ContinueOnError)
+		mode          RunModeOption = RunModeCLI
+		step          OptionalInt
+		logLevel      plog.LogLevel
+		pathOverride  string
+		noStdinPrompt bool
+		argMap        = ArgMap(map[string]string{})
 	)
 
 	flagSet.Usage = usage(flagSet)
 
 	flagSet.Var(&mode, "mode", "cli|docker|drone. Default: cli")
-	flagSet.Var(&step, "step", "")
+	flagSet.Var(&step, "step", "A number that defines what specific step to run")
 	flagSet.Var(&logLevel, "log-level", "")
-	flagSet.StringVar(&pathOverride, "path", "", "Providing the path argument overrides the path provided in the CLI argument. This can be used when running the pipeline directly.")
+	flagSet.Var(&argMap, "arg", "")
+	flagSet.BoolVar(&noStdinPrompt, "no-stdin", false, "If this flag is provided, then the CLI pipeline will not request absent arguments via stdin")
+	flagSet.StringVar(&pathOverride, "path", "", "Providing the path argument overrides the $PWD of the pipeline for generation")
 
 	if err := flagSet.Parse(args); err != nil {
 		return nil, err
 	}
 
 	arguments := &Arguments{
-		Mode: mode,
+		CanStdinPrompt: !noStdinPrompt,
+		Mode:           mode,
 	}
 
 	if step.Valid {
@@ -60,8 +72,8 @@ func ParseArguments(args []string) (*Arguments, error) {
 	}
 
 	arguments.Path = path
+	arguments.ArgMap = argMap
 	return arguments, nil
-
 }
 
 var examples = `Examples:

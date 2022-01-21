@@ -22,5 +22,5 @@ func main() {
 
 	args := commands.MustParseArgs(os.Args[1:])
 
-	commands.MustRunStdout(ctx, args)
+	commands.MustRunStdout(ctx, args.Path, args)
 }

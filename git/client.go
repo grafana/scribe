@@ -1,10 +1,26 @@
 package git
 
 import (
-	"log"
+	"net/url"
 
-	"pkg.grafana.com/shipwright/v1/plumbing/types"
+	"pkg.grafana.com/shipwright/v1/plumbing/config"
 )
+
+type CloneOpts struct {
+	URL    *url.URL
+	Folder string
+	Ref    string
+}
+
+type Client struct {
+	Configurer config.Configurer
+}
+
+func New(configurer config.Configurer) Client {
+	return Client{
+		Configurer: configurer,
+	}
+}
 
 type DescribeOpts struct {
 	Tags   bool
@@ -12,15 +28,6 @@ type DescribeOpts struct {
 	Always bool
 }
 
-type Client struct{}
-
 func (c *Client) Describe(opts *DescribeOpts) string {
 	return ""
-}
-
-func (c *Client) Clone() types.StepAction {
-	return func() error {
-		log.Println("git clone ...")
-		return nil
-	}
 }

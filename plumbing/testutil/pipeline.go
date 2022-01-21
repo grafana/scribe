@@ -11,10 +11,10 @@ import (
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
 
-func RunPipeline(ctx context.Context, t *testing.T, stdout io.Writer, stderr io.Writer, args *plumbing.Arguments) {
+func RunPipeline(ctx context.Context, t *testing.T, path string, stdout io.Writer, stderr io.Writer, args *plumbing.Arguments) {
 	buf := bytes.NewBuffer(nil)
 	t.Log("Running pipeline with args", args)
-	if err := commands.Run(ctx, stdout, io.MultiWriter(stderr, buf), args); err != nil {
+	if err := commands.Run(ctx, path, stdout, io.MultiWriter(stderr, buf), args); err != nil {
 		t.Fatalf("Error running pipeline. Error: '%s'\nStderr: '%s'\n", err, buf.String())
 	}
 }

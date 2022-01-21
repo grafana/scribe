@@ -1,11 +1,38 @@
 package plumbing
 
-type MapArg struct{}
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
 
-func (m *MapArg) String() string {
-	panic("not implemented") // TODO: Implement
+type ArgMap map[string]string
+
+func (a *ArgMap) String() string {
+	return fmt.Sprintf("%v", *a)
 }
 
-func (m *MapArg) Set(v string) error {
-	panic("not implemented") // TODO: Implement
+func (a *ArgMap) Set(val string) error {
+	p := strings.Split(val, "=")
+
+	if len(p) != 2 {
+		return errors.New("invalid value")
+	}
+
+	var (
+		k = p[0]
+		v = p[1]
+	)
+
+	(*a)[k] = v
+
+	return nil
+}
+
+func (a *ArgMap) Get(key string) (string, error) {
+	if v, ok := (*a)[key]; ok {
+		return v, nil
+	}
+
+	return "", errors.New("value not found")
 }

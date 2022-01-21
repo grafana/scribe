@@ -8,24 +8,15 @@ import (
 	"pkg.grafana.com/shipwright/v1/golang"
 	"pkg.grafana.com/shipwright/v1/make"
 	"pkg.grafana.com/shipwright/v1/plumbing"
+	"pkg.grafana.com/shipwright/v1/plumbing/config"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
 	"pkg.grafana.com/shipwright/v1/yarn"
 )
 
-type Argument interface{}
-type Output interface{}
-
-type Artifact struct {
-	Ref      string
-	Artifact types.Artifact
-}
-
-func NewArtifact(ref string, artifact types.Artifact) Artifact {
-	return Artifact{}
-}
-
 type Client interface {
+	config.Configurer
+
 	// Run allows users to define steps that are ran sequentially. For example, the second step will not run until the first step has completed.
 	// This function blocks the goroutine until all of the steps have completed.
 	Run(...types.Step)
@@ -39,8 +30,8 @@ type Client interface {
 
 	Cache(types.StepAction, types.Cacher) types.StepAction
 
-	Input(...Argument)
-	Output(...Output)
+	Input(...types.Argument)
+	Output(...types.Output)
 
 	// Done must be ran at the end of the pipeline.
 	// This is typically what takes the defined pipeline steps, runs them in the order defined, and produces some kind of output.
@@ -55,7 +46,8 @@ type Shipwright struct {
 	Make   make.Client
 	Yarn   yarn.Client
 
-	// n tracks
+	// n tracks the ID of a step so that the "shipwright -step=" argument will function independently of the client implementation
+	// It ensures that the 11th step in a Drone generated pipeline is also the 11th step in a CLI pipeline
 	n int
 }
 
@@ -89,13 +81,13 @@ func New(name string, events ...types.Event) Shipwright {
 		plog.Fatalln("Arguments list must not be nil")
 	}
 
-	return NewFromOpts(&CommonOpts{
+	return NewFromOpts(&types.CommonOpts{
 		Name:   name,
 		Output: os.Stdout,
 		Args:   args,
 	})
 }
 
-func NewFromOpts(opts *CommonOpts, events ...types.Event) Shipwright {
-	return opts.NewClient()
+func NewFromOpts(opts *types.CommonOpts, events ...types.Event) Shipwright {
+	return NewClient(opts)
 }

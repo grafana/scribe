@@ -1,4 +1,4 @@
-package shipwright_test
+package drone_test
 
 import (
 	"bytes"
@@ -12,6 +12,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	shipwright "pkg.grafana.com/shipwright/v1"
 	"pkg.grafana.com/shipwright/v1/plumbing"
+	"pkg.grafana.com/shipwright/v1/plumbing/clients/drone"
 	"pkg.grafana.com/shipwright/v1/plumbing/testutil"
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
@@ -20,18 +21,19 @@ func TestDroneClient(t *testing.T) {
 	t.Run("It should generate a simple Drone pipeline",
 		testutil.WithTimeout(time.Second*10, func(t *testing.T) {
 			var (
-				buf     = bytes.NewBuffer(nil)
-				errBuff = bytes.NewBuffer(nil)
-				ctx     = context.Background()
-				path    = "./demo/basic"
+				buf          = bytes.NewBuffer(nil)
+				errBuff      = bytes.NewBuffer(nil)
+				ctx          = context.Background()
+				pipelinePath = "../../../demo/basic"
+				path         = "./demo/basic"
 			)
 
-			testutil.RunPipeline(ctx, t, io.MultiWriter(buf, os.Stdout), errBuff, &plumbing.Arguments{
+			testutil.RunPipeline(ctx, t, pipelinePath, io.MultiWriter(buf, os.Stdout), errBuff, &plumbing.Arguments{
 				Mode: plumbing.RunModeDrone,
 				Path: path,
 			})
 
-			expected, err := os.Open(filepath.Join(path, "gen_drone.yml"))
+			expected, err := os.Open(filepath.Join(pipelinePath, "gen_drone.yml"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -47,7 +49,7 @@ func TestDroneRun(t *testing.T) {
 			t.SkipNow()
 
 			t.Log("Creating new drone client...")
-			sw := shipwright.NewDroneClient(&shipwright.CommonOpts{})
+			sw := shipwright.NewDroneClient(&types.CommonOpts{})
 
 			t.Log("Creating new test steps...")
 			var (
@@ -96,9 +98,9 @@ func TestDroneRun(t *testing.T) {
 
 func TestDroneTree(t *testing.T) {
 	t.Run("It should set the root node once", func(t *testing.T) {
-		sw := shipwright.NewDroneClient(&shipwright.CommonOpts{})
+		sw := shipwright.NewDroneClient(&types.CommonOpts{})
 		sw.Run(types.NoOpStep)
-		client := sw.Client.(*shipwright.DroneClient)
+		client := sw.Client.(*drone.Client)
 
 		if client.List == nil {
 			t.Fatal("step list is nil")

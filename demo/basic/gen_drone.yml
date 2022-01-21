@@ -7,7 +7,8 @@ steps:
 - name: clone
   image: grafana/shipwright:latest
   commands:
-  - shipwright -step=0 ./demo/basic
+  - shipwright -step=0 -arg=git-commit-ref=$DRONE_COMMIT_REF -arg=remote-url=$DRONE_GIT_SSH_URL
+    -arg=workdir=$DRONE_REPO_NAME ./demo/basic
 - name: install-frontend-dependencies
   image: grafana/shipwright:latest
   commands:

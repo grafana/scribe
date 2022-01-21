@@ -6,6 +6,9 @@ import (
 
 	shipwright "pkg.grafana.com/shipwright/v1"
 	"pkg.grafana.com/shipwright/v1/plumbing"
+	"pkg.grafana.com/shipwright/v1/plumbing/clients/cli"
+	"pkg.grafana.com/shipwright/v1/plumbing/clients/drone"
+	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
 
 func TestNew(t *testing.T) {
@@ -16,17 +19,17 @@ func TestNew(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		sw := shipwright.NewFromOpts(&shipwright.CommonOpts{
+		sw := shipwright.NewFromOpts(&types.CommonOpts{
 			Args: args,
 		})
 
-		if reflect.TypeOf(sw.Client) != reflect.TypeOf(&shipwright.CLIClient{}) {
+		if reflect.TypeOf(sw.Client) != reflect.TypeOf(&cli.Client{}) {
 			t.Fatalf("shipwright.Client is '%v', not a CLIClient", reflect.TypeOf(sw.Client))
 		}
 
 		// Because reflect feels iffy to me, also make sure that it does not equal the same type as a different client
-		if reflect.TypeOf(sw.Client) == reflect.TypeOf(&shipwright.DroneClient{}) {
-			t.Fatalf("shipwright.Client is '%v', not a CLIClient", reflect.TypeOf(&shipwright.DroneClient{}))
+		if reflect.TypeOf(sw.Client) == reflect.TypeOf(&drone.Client{}) {
+			t.Fatalf("shipwright.Client is '%v', not a CLIClient", reflect.TypeOf(&drone.Client{}))
 		}
 	})
 
@@ -37,17 +40,17 @@ func TestNew(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		sw := shipwright.NewFromOpts(&shipwright.CommonOpts{
+		sw := shipwright.NewFromOpts(&types.CommonOpts{
 			Args: args,
 		})
 
-		if reflect.TypeOf(sw.Client) != reflect.TypeOf(&shipwright.DroneClient{}) {
+		if reflect.TypeOf(sw.Client) != reflect.TypeOf(&drone.Client{}) {
 			t.Fatalf("shipwright.Client is '%v', not a DroneClient", reflect.TypeOf(sw.Client))
 		}
 
 		// Because reflect feels iffy to me, also make sure that it does not equal the same type as a different client
-		if reflect.TypeOf(sw.Client) == reflect.TypeOf(&shipwright.CLIClient{}) {
-			t.Fatalf("shipwright.Client is '%v', not a DroneClient", reflect.TypeOf(&shipwright.CLIClient{}))
+		if reflect.TypeOf(sw.Client) == reflect.TypeOf(&cli.Client{}) {
+			t.Fatalf("shipwright.Client is '%v', not a DroneClient", reflect.TypeOf(&cli.Client{}))
 		}
 	})
 }

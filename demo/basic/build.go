@@ -36,7 +36,7 @@ func main() {
 	var (
 		// Clone the project. Given that the git commit event is what triggered this pipeline,
 		// the project details can be inferred.
-		clone = types.NamedStep("clone", sw.Git.Clone())
+		clone = sw.Git.Clone(1).WithName("clone")
 	)
 
 	sw.Run(clone)
@@ -60,8 +60,5 @@ func main() {
 		types.NamedStep("compile frontend", sw.Make.Target("package")),
 	)
 
-	sw.Output(shipwright.NewArtifact(
-		"example:tarball",
-		fs.Glob("bin/*.tar.gz"),
-	))
+	// sw.Output()
 }

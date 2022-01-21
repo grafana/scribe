@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"pkg.grafana.com/shipwright/v1/plumbing/config"
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
 
@@ -17,7 +18,25 @@ func Slugify(s string) string {
 	return s
 }
 
-func NewStep(path string, step types.Step) Step {
+func Command(c config.Configurer, path string, step types.Step) (string, error) {
+	args := make([]string, len(step.Arguments))
+
+	for i, key := range step.Arguments {
+		value, err := c.Value(key)
+		if err != nil {
+			return "", err
+		}
+
+		args[i] = fmt.Sprintf("-arg=%s=%s", string(key), value)
+	}
+
+	cmd := append([]string{"shipwright", fmt.Sprintf("-step=%d", step.Serial)}, args...)
+	cmd = append(cmd, path)
+
+	return strings.Join(cmd, " "), nil
+}
+
+func NewStep(c config.Configurer, path string, step types.Step) (Step, error) {
 	name := Slugify(step.Name)
 	deps := make([]string, len(step.Dependencies))
 	image := "grafana/shipwright:latest"
@@ -30,12 +49,17 @@ func NewStep(path string, step types.Step) Step {
 		image = step.Image
 	}
 
+	cmd, err := Command(c, path, step)
+	if err != nil {
+		return Step{}, err
+	}
+
 	return Step{
 		Name:  name,
 		Image: image,
 		Commands: []string{
-			fmt.Sprintf("shipwright -step=%d %s", step.Serial, path),
+			cmd,
 		},
 		DependsOn: deps,
-	}
+	}, nil
 }
