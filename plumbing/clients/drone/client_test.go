@@ -28,7 +28,7 @@ func TestDroneClient(t *testing.T) {
 				path         = "./demo/basic"
 			)
 
-			testutil.RunPipeline(ctx, t, pipelinePath, io.MultiWriter(buf, os.Stdout), errBuff, &plumbing.Arguments{
+			testutil.RunPipeline(ctx, t, pipelinePath, io.MultiWriter(buf, os.Stdout), errBuff, &plumbing.PipelineArgs{
 				Mode: plumbing.RunModeDrone,
 				Path: path,
 			})

@@ -8,13 +8,14 @@ import (
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 )
 
-// Arguments are provided to the `shipwright` command.
-type Arguments struct {
+// PipelineArgs are provided to the `shipwright` command.
+type PipelineArgs struct {
 	Mode RunModeOption
 
 	// Path is provided in every execution to the shipwright run command,
 	// and contians the user-supplied location of the shipwright pipeline (or "." / "$PWD") by default.
-	Path string
+	Path    string
+	Version string
 
 	// Step defines a specific step to run. Typically this is used in a generated third-party config
 	// If Step is nil, then all steps are ran
@@ -28,13 +29,14 @@ type Arguments struct {
 	ArgMap ArgMap
 }
 
-func ParseArguments(args []string) (*Arguments, error) {
+func ParseArguments(args []string) (*PipelineArgs, error) {
 	var (
 		flagSet                     = flag.NewFlagSet("run", flag.ContinueOnError)
 		mode          RunModeOption = RunModeCLI
 		step          OptionalInt
 		logLevel      plog.LogLevel
 		pathOverride  string
+		version       string
 		noStdinPrompt bool
 		argMap        = ArgMap(map[string]string{})
 	)
@@ -47,14 +49,16 @@ func ParseArguments(args []string) (*Arguments, error) {
 	flagSet.Var(&argMap, "arg", "")
 	flagSet.BoolVar(&noStdinPrompt, "no-stdin", false, "If this flag is provided, then the CLI pipeline will not request absent arguments via stdin")
 	flagSet.StringVar(&pathOverride, "path", "", "Providing the path argument overrides the $PWD of the pipeline for generation")
+	flagSet.StringVar(&version, "version", "latest", "The version is provided by the 'shipwright' command, however if only using 'go run', it can be provided here")
 
 	if err := flagSet.Parse(args); err != nil {
 		return nil, err
 	}
 
-	arguments := &Arguments{
+	arguments := &PipelineArgs{
 		CanStdinPrompt: !noStdinPrompt,
 		Mode:           mode,
+		Version:        version,
 	}
 
 	if step.Valid {

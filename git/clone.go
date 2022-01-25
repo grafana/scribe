@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"pkg.grafana.com/shipwright/v1/exec"
+	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
@@ -84,5 +85,8 @@ func (c *Client) Clone(depth int) types.Step {
 			types.ArgumentCommitRef,
 			types.ArgumentRemoteURL,
 			types.ArgumentWorkingDir,
+		).
+		WithImage(
+			plumbing.SubImage("git", c.Opts.Version),
 		)
 }

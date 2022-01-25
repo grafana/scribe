@@ -28,7 +28,7 @@ func NewClient(c *types.CommonOpts) Shipwright {
 	s := initializer(c)
 
 	// Initialize the individual clients now
-	s.Git = git.New(s)
+	s.Git = git.New(s, c)
 
 	return s
 }

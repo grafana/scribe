@@ -8,10 +8,18 @@ type (
 
 // A Step stores a StepAction and a name for use in pipelines
 type Step struct {
-	Name   string
-	Action StepAction
-	Image  string
+	// Name is a string that represents or describes the step, essentially the identifier.
+	// Not all run modes will support using the name.
+	Name string
 
+	// Image is an optional value that can be assigned to a step.
+	// Typically, in docker environments (or drone with a Docker executor), it defines the docker image that is used to run the step.
+	Image string
+
+	// Action defines the action that this step takes in order to execute.
+	Action StepAction
+
+	// Dependencies define other steps that are required to run before this one.
 	Dependencies []Step
 	Arguments    []StepArgument
 

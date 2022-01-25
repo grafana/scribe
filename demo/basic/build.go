@@ -29,7 +29,7 @@ func writeVersion(sw shipwright.Shipwright) types.StepAction {
 // This allows the various client modes to work properly in different scenarios, like in a CI environment or locally.
 // Logic and processing done outside of the `sw.*` family of functions may not be included in the resulting pipeline.
 func main() {
-	sw := shipwright.New("basic pipeline", git.EventCommit{})
+	sw := shipwright.New("basic pipeline")
 	defer sw.Done()
 
 	// Define our steps so that we can refer to them in multiple places, like as the steps themselves or dependencies of other steps

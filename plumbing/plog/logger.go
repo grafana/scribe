@@ -42,6 +42,12 @@ func RequireLevel(current LogLevel, minimum LogLevel, f func()) {
 	f()
 }
 
+func WithPrefix(logger *log.Logger, prefix string, f func(*log.Logger)) {
+	logger.SetPrefix(prefix + " ")
+	f(logger)
+	logger.SetPrefix("")
+}
+
 type Logger struct {
 	*log.Logger
 	level LogLevel
@@ -55,109 +61,145 @@ func New(level LogLevel, w io.Writer) *Logger {
 }
 
 func (l *Logger) Debug(v ...interface{}) {
-	RequireLevel(l.level, LogLevelDebug, func() {
-		l.Logger.Print(v...)
+	WithPrefix(l.Logger, "[debug]", func(logger *log.Logger) {
+		RequireLevel(l.level, LogLevelDebug, func() {
+			logger.Print(v...)
+		})
 	})
 }
 
 func (l *Logger) Debugf(format string, v ...interface{}) {
-	RequireLevel(l.level, LogLevelDebug, func() {
-		l.Logger.Printf(format, v...)
+	WithPrefix(l.Logger, "[debug]", func(logger *log.Logger) {
+		RequireLevel(l.level, LogLevelDebug, func() {
+			logger.Printf(format, v...)
+		})
 	})
 }
 
 func (l *Logger) Debugln(v ...interface{}) {
-	RequireLevel(l.level, LogLevelDebug, func() {
-		l.Logger.Println(v...)
+	WithPrefix(l.Logger, "[debug]", func(logger *log.Logger) {
+		RequireLevel(l.level, LogLevelDebug, func() {
+			logger.Println(v...)
+		})
 	})
 }
 
 func (l *Logger) Info(v ...interface{}) {
-	RequireLevel(l.level, LogLevelInfo, func() {
-		l.Logger.Print(v...)
+	WithPrefix(l.Logger, "[info]", func(logger *log.Logger) {
+		RequireLevel(l.level, LogLevelInfo, func() {
+			logger.Print(v...)
+		})
 	})
 }
 
 func (l *Logger) Infof(format string, v ...interface{}) {
-	RequireLevel(l.level, LogLevelInfo, func() {
-		l.Logger.Printf(format, v...)
+	WithPrefix(l.Logger, "[info]", func(logger *log.Logger) {
+		RequireLevel(l.level, LogLevelInfo, func() {
+			logger.Printf(format, v...)
+		})
 	})
 }
 
 func (l *Logger) Infoln(v ...interface{}) {
-	RequireLevel(l.level, LogLevelInfo, func() {
-		l.Logger.Println(v...)
+	WithPrefix(l.Logger, "[info]", func(logger *log.Logger) {
+		RequireLevel(l.level, LogLevelInfo, func() {
+			logger.Println(v...)
+		})
 	})
 }
 
 func (l *Logger) Warn(v ...interface{}) {
-	RequireLevel(l.level, LogLevelWarn, func() {
-		l.Logger.Print(v...)
+	WithPrefix(l.Logger, "[warn]", func(logger *log.Logger) {
+		RequireLevel(l.level, LogLevelWarn, func() {
+			logger.Print(v...)
+		})
 	})
 }
 
 func (l *Logger) Warnf(format string, v ...interface{}) {
-	RequireLevel(l.level, LogLevelWarn, func() {
-		l.Logger.Printf(format, v...)
+	WithPrefix(l.Logger, "[warn]", func(logger *log.Logger) {
+		RequireLevel(l.level, LogLevelWarn, func() {
+			logger.Printf(format, v...)
+		})
 	})
 }
 
 func (l *Logger) Warnln(v ...interface{}) {
-	RequireLevel(l.level, LogLevelWarn, func() {
-		l.Logger.Println(v...)
+	WithPrefix(l.Logger, "[warn]", func(logger *log.Logger) {
+		RequireLevel(l.level, LogLevelWarn, func() {
+			logger.Println(v...)
+		})
 	})
 }
 
 func (l *Logger) Error(v ...interface{}) {
-	RequireLevel(l.level, LogLevelError, func() {
-		l.Logger.Print(v...)
+	WithPrefix(l.Logger, "[error]", func(logger *log.Logger) {
+		RequireLevel(l.level, LogLevelError, func() {
+			logger.Print(v...)
+		})
 	})
 }
 
 func (l *Logger) Errorf(format string, v ...interface{}) {
-	RequireLevel(l.level, LogLevelError, func() {
-		l.Logger.Printf(format, v...)
+	WithPrefix(l.Logger, "[error]", func(logger *log.Logger) {
+		RequireLevel(l.level, LogLevelError, func() {
+			logger.Printf(format, v...)
+		})
 	})
 }
 
 func (l *Logger) Errorln(v ...interface{}) {
-	RequireLevel(l.level, LogLevelError, func() {
-		l.Logger.Println(v...)
+	WithPrefix(l.Logger, "[error]", func(logger *log.Logger) {
+		RequireLevel(l.level, LogLevelError, func() {
+			logger.Println(v...)
+		})
 	})
 }
 
 func (l *Logger) Fatal(v ...interface{}) {
-	RequireLevel(l.level, LogLevelError, func() {
-		l.Logger.Fatal(v...)
+	WithPrefix(l.Logger, "[fatal]", func(logger *log.Logger) {
+		RequireLevel(l.level, LogLevelError, func() {
+			logger.Fatal(v...)
+		})
 	})
 }
 
 func (l *Logger) Fatalf(format string, v ...interface{}) {
-	RequireLevel(l.level, LogLevelError, func() {
-		l.Logger.Fatalf(format, v...)
+	WithPrefix(l.Logger, "[fatal]", func(logger *log.Logger) {
+		RequireLevel(l.level, LogLevelError, func() {
+			logger.Fatalf(format, v...)
+		})
 	})
 }
 
 func (l *Logger) Fatalln(v ...interface{}) {
-	RequireLevel(l.level, LogLevelError, func() {
-		l.Logger.Fatalln(v...)
+	WithPrefix(l.Logger, "[fatal]", func(logger *log.Logger) {
+		RequireLevel(l.level, LogLevelError, func() {
+			logger.Fatalln(v...)
+		})
 	})
 }
 
 func (l *Logger) Panic(v ...interface{}) {
-	RequireLevel(l.level, LogLevelError, func() {
-		l.Logger.Panic(v...)
+	WithPrefix(l.Logger, "[panic]", func(logger *log.Logger) {
+		RequireLevel(l.level, LogLevelError, func() {
+			logger.Panic(v...)
+		})
 	})
 }
 
 func (l *Logger) Panicf(format string, v ...interface{}) {
-	RequireLevel(l.level, LogLevelError, func() {
-		l.Logger.Panicf(format, v...)
+	WithPrefix(l.Logger, "[panic]", func(logger *log.Logger) {
+		RequireLevel(l.level, LogLevelError, func() {
+			logger.Panicf(format, v...)
+		})
 	})
 }
 
 func (l *Logger) Panicln(v ...interface{}) {
-	RequireLevel(l.level, LogLevelError, func() {
-		l.Logger.Panicln(v...)
+	WithPrefix(l.Logger, "[panic]", func(logger *log.Logger) {
+		RequireLevel(l.level, LogLevelError, func() {
+			logger.Panicln(v...)
+		})
 	})
 }

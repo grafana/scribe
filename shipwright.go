@@ -49,24 +49,37 @@ type Shipwright struct {
 	// n tracks the ID of a step so that the "shipwright -step=" argument will function independently of the client implementation
 	// It ensures that the 11th step in a Drone generated pipeline is also the 11th step in a CLI pipeline
 	n int
+
+	version string
+}
+
+func (s *Shipwright) initSteps(steps ...types.Step) []types.Step {
+	for i, step := range steps {
+		// Set a default image for steps that don't provide one.
+		// Most pre-made steps like `yarn`, `node`, `go` steps should provide a separate default image with those utilities installed.
+		if step.Image == "" {
+			image := plumbing.DefaultImage(s.version)
+			steps[i] = step.WithImage(image)
+		}
+
+		// Set a serial / unique identifier for this step so that we can reference it using the '-step' argument consistently.
+		steps[i].Serial = s.n
+		s.n++
+	}
+
+	return steps
 }
 
 func (s *Shipwright) Run(steps ...types.Step) {
-	for i := range steps {
-		steps[i].Serial = s.n
-		s.n++
-	}
+	initializedSteps := s.initSteps(steps...)
 
-	s.Client.Run(steps...)
+	s.Client.Run(initializedSteps...)
 }
 
 func (s *Shipwright) Parallel(steps ...types.Step) {
-	for i := range steps {
-		steps[i].Serial = s.n
-		s.n++
-	}
+	initializedSteps := s.initSteps(steps...)
 
-	s.Client.Parallel(steps...)
+	s.Client.Parallel(initializedSteps...)
 }
 
 // New creates a new Shipwright client which is used to create pipeline steps.
@@ -79,13 +92,20 @@ func New(name string, events ...types.Event) Shipwright {
 
 	if args == nil {
 		plog.Fatalln("Arguments list must not be nil")
+		return Shipwright{}
 	}
 
-	return NewFromOpts(&types.CommonOpts{
-		Name:   name,
-		Output: os.Stdout,
-		Args:   args,
+	sw := NewFromOpts(&types.CommonOpts{
+		Name:    name,
+		Version: args.Version,
+		Output:  os.Stdout,
+		Args:    args,
 	})
+
+	// Ensure that no matter the behavior of the initializer, we still set the version on the shipwright object.
+	sw.version = args.Version
+
+	return sw
 }
 
 func NewFromOpts(opts *types.CommonOpts, events ...types.Event) Shipwright {

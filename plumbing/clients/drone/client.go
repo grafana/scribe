@@ -57,4 +57,5 @@ func (c *Client) Done() {
 	if err := yaml.NewEncoder(c.Opts.Output).Encode(cfg); err != nil {
 		plog.Fatalln(err)
 	}
+
 }

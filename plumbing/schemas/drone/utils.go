@@ -4,8 +4,13 @@ import (
 	"fmt"
 	"strings"
 
+	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/config"
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
+)
+
+var (
+	ErrorNoImage = plumbing.NewPipelineError("no image provided", "An image is required for all steps in Drone")
 )
 
 // Slugify removes illegal characters for use in identifiers in a Drone pipeline
@@ -37,16 +42,18 @@ func Command(c config.Configurer, path string, step types.Step) (string, error) 
 }
 
 func NewStep(c config.Configurer, path string, step types.Step) (Step, error) {
-	name := Slugify(step.Name)
-	deps := make([]string, len(step.Dependencies))
-	image := "grafana/shipwright:latest"
+	if step.Image == "" {
+		return Step{}, ErrorNoImage
+	}
+
+	var (
+		name  = Slugify(step.Name)
+		deps  = make([]string, len(step.Dependencies))
+		image = step.Image
+	)
 
 	for i, v := range step.Dependencies {
 		deps[i] = Slugify(v.Name)
-	}
-
-	if step.Image != "" {
-		image = step.Image
 	}
 
 	cmd, err := Command(c, path, step)
