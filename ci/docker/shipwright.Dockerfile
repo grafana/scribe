@@ -4,4 +4,4 @@ COPY . .
 RUN make build
 
 FROM alpine:3
-COPY --from=builder /app/shipwright /bin/shipwright
+COPY --from=builder /app/bin/shipwright /bin/shipwright

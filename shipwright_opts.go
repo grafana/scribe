@@ -3,6 +3,7 @@ package shipwright
 import (
 	"pkg.grafana.com/shipwright/v1/docker"
 	"pkg.grafana.com/shipwright/v1/git"
+	"pkg.grafana.com/shipwright/v1/golang"
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
@@ -31,6 +32,6 @@ func NewClient(c *types.CommonOpts) Shipwright {
 	// Initialize the individual clients now
 	s.Git = git.New(s, c)
 	s.Docker = docker.New(c)
-
+	s.Golang = golang.New(c)
 	return s
 }

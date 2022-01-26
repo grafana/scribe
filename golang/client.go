@@ -1,18 +1,27 @@
 package golang
 
-import "pkg.grafana.com/shipwright/v1/plumbing/types"
+import (
+	"pkg.grafana.com/shipwright/v1/exec"
+	"pkg.grafana.com/shipwright/v1/plumbing"
+	"pkg.grafana.com/shipwright/v1/plumbing/types"
+)
 
 type Client struct {
 	Modules ModulesClient
+	Opts    *types.CommonOpts
 }
 
-func (c Client) Test() types.Step {
-	return types.NewStep(func() error {
-		return nil
-	})
+func New(o *types.CommonOpts) Client {
+	return Client{
+		Opts: o,
+	}
 }
 
-func (c Client) Build() types.Step {
+func (c Client) Test(pkg string) types.Step {
+	return types.NewStep(exec.Run("go", "test", pkg)).WithImage(plumbing.SubImage("go", c.Opts.Version))
+}
+
+func (c Client) Build(pkg, output string) types.Step {
 	return types.NewStep(func() error {
 		return nil
 	})
