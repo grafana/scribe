@@ -1,0 +1,41 @@
+kind: pipeline
+type: docker
+name: basic pipeline
+clone:
+  disable: true
+steps:
+- name: clone
+  image: ghcr.io/grafana/shipwright/git:828dcab-dirty
+  commands:
+  - shipwright -step=0 -arg=git-commit-ref=$DRONE_COMMIT_REF -arg=remote-url=$DRONE_GIT_SSH_URL
+    -arg=workdir=$DRONE_REPO_NAME ./ci
+- name: test
+  image: ghcr.io/grafana/shipwright:828dcab-dirty
+  commands:
+  - shipwright -step=1 ./ci
+  depends_on:
+  - clone
+- name: build-shipwright-docker-image
+  image: ghcr.io/grafana/shipwright:828dcab-dirty
+  commands:
+  - shipwright -step=2 ./ci
+  depends_on:
+  - test
+- name: build-shipwright/git-image
+  image: ghcr.io/grafana/shipwright:828dcab-dirty
+  commands:
+  - shipwright -step=3 ./ci
+  depends_on:
+  - build-shipwright-docker-image
+- name: build-shipwright/go-image
+  image: ghcr.io/grafana/shipwright:828dcab-dirty
+  commands:
+  - shipwright -step=4 ./ci
+  depends_on:
+  - build-shipwright-docker-image
+- name: build-shipwright/node-image
+  image: ghcr.io/grafana/shipwright:828dcab-dirty
+  commands:
+  - shipwright -step=5 ./ci
+  depends_on:
+  - build-shipwright-docker-image
