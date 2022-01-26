@@ -17,10 +17,14 @@ type WaitGroup struct {
 	funcs   []wgfunc
 }
 
+// Add adds a new StepAction to the waitgroup. The provided function will be run in parallel with all other added functions.
 func (wg *WaitGroup) Add(f func() error) {
 	wg.funcs = append(wg.funcs, f)
 }
 
+// Wait runs all provided functions (via Add(...)) and runs them in parallel and waits for them to finish.
+// If they are not all finished before the provided timeout (via NewWaitGroup), then an error is returned.
+// If any functions return an error, the first error encountered is returned.
 func (wg *WaitGroup) Wait() error {
 	var (
 		doneChan = make(chan bool)

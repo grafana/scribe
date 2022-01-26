@@ -2,8 +2,8 @@ package main
 
 import (
 	"pkg.grafana.com/shipwright/v1"
+	"pkg.grafana.com/shipwright/v1/ci/docker"
 	"pkg.grafana.com/shipwright/v1/git"
-	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
 
 // "main" defines our program pipeline.
@@ -16,6 +16,11 @@ func main() {
 
 	sw.Run(
 		sw.Git.Clone(1).WithName("clone"),
-		types.NamedStep("test", sw.Golang.Test()),
+		sw.Golang.Test().WithName("test"),
+		docker.ShipwrightImage.BuildStep(sw).WithName("build shipwright docker image"),
 	)
+
+	// Build all of the shipwright docker images in parallel
+	// With unbound parallelism this could cause some very poor performance
+	sw.Parallel(docker.Steps(sw, docker.Images)...)
 }

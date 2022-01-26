@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	ErrorNoImage = plumbing.NewPipelineError("no image provided", "An image is required for all steps in Drone")
+	ErrorNoImage = plumbing.NewPipelineError("no image provided", "An image is required for all steps in Drone. You can specify one with the '.WithImage(\"name\")' function.")
+	ErrorNoName  = plumbing.NewPipelineError("no name provided", "A name is required for all steps in Drone. You can specify one with the '.WithName(\"name\")' function.")
 )
 
 // Slugify removes illegal characters for use in identifiers in a Drone pipeline
@@ -44,6 +45,10 @@ func Command(c config.Configurer, path string, step types.Step) (string, error) 
 func NewStep(c config.Configurer, path string, step types.Step) (Step, error) {
 	if step.Image == "" {
 		return Step{}, ErrorNoImage
+	}
+
+	if step.Name == "" {
+		return Step{}, ErrorNoName
 	}
 
 	var (

@@ -3,6 +3,7 @@ package shipwright
 import (
 	"os"
 
+	"pkg.grafana.com/shipwright/v1/docker"
 	"pkg.grafana.com/shipwright/v1/fs"
 	"pkg.grafana.com/shipwright/v1/git"
 	"pkg.grafana.com/shipwright/v1/golang"
@@ -45,6 +46,7 @@ type Shipwright struct {
 	Golang golang.Client
 	Make   make.Client
 	Yarn   yarn.Client
+	Docker docker.Client
 
 	// n tracks the ID of a step so that the "shipwright -step=" argument will function independently of the client implementation
 	// It ensures that the 11th step in a Drone generated pipeline is also the 11th step in a CLI pipeline

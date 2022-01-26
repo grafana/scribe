@@ -17,7 +17,7 @@ func init() {
 	f.Var(&level, "log-level", "debug|info|warn|error")
 
 	f.SetOutput(io.Discard)
-	// f.Parse(os.Args)
+	f.Parse(os.Args)
 
 	DefaultLogger.level = level
 }

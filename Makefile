@@ -6,7 +6,7 @@ build:
 	go build \
 		-ldflags \
 		"-X main.Version=$(version)" \
-		-o shipwright ./plumbing/cmd
+		-o bin/shipwright ./plumbing/cmd
 
 test:
 	go test ./...

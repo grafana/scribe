@@ -1,8 +1,8 @@
 package git
 
 import (
-	"net/url"
 	"os"
+	osexec "os/exec"
 	"strconv"
 
 	"pkg.grafana.com/shipwright/v1/exec"
@@ -22,11 +22,6 @@ func (c *Client) CloneOpts() (*CloneOpts, error) {
 		return nil, err
 	}
 
-	remoteURL, err := url.Parse(u)
-	if err != nil {
-		return nil, err
-	}
-
 	workDir, err := c.Configurer.Value(types.ArgumentWorkingDir)
 	if err != nil {
 		return nil, err
@@ -34,7 +29,7 @@ func (c *Client) CloneOpts() (*CloneOpts, error) {
 
 	return &CloneOpts{
 		Folder: workDir,
-		URL:    remoteURL,
+		URL:    u,
 		Ref:    ref,
 	}, nil
 }
@@ -54,7 +49,7 @@ func (c *Client) clone(depth int) types.StepAction {
 
 		var (
 			cmd          = "git"
-			cloneArgs    = []string{"clone", opts.URL.String(), opts.Folder}
+			cloneArgs    = []string{"clone", opts.URL, opts.Folder}
 			checkoutArgs = []string{"checkout", opts.Ref}
 		)
 
@@ -64,6 +59,13 @@ func (c *Client) clone(depth int) types.StepAction {
 
 		// Don't run `git clone` or checkout if the working directory already exists
 		if _, err := os.Stat(opts.Folder); !os.IsNotExist(err) {
+			return nil
+		}
+
+		// Don't run `git clone` or checkout if we're already in a git repository
+		// An error will not be returned (and the word true will be printed) if we're in a git repository.
+		if _, err := osexec.Command("git", "rev-parse", "--is-inside-git-dir").CombinedOutput(); err == nil {
+			plog.Warnln("Skipping git clone because we're already in a git repository...")
 			return nil
 		}
 

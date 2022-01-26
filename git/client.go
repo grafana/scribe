@@ -1,14 +1,12 @@
 package git
 
 import (
-	"net/url"
-
 	"pkg.grafana.com/shipwright/v1/plumbing/config"
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
 
 type CloneOpts struct {
-	URL    *url.URL
+	URL    string
 	Folder string
 	Ref    string
 }
