@@ -1,7 +1,9 @@
 package docker
 
 import (
+	"bytes"
 	"errors"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -205,14 +207,16 @@ func (c *Client) runAction(step types.Step) types.StepAction {
 
 	plog.Infoln(cmd[0], strings.Join(cmd[1:], " "))
 
+	stdout := bytes.NewBuffer(nil)
+	stderr := bytes.NewBuffer(nil)
 	runOpts := RunOpts{
 		Image:   step.Image,
 		Command: cmd[0],
 		Volumes: []string{},
 		Args:    args,
 
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		Stdout: stdout,
+		Stderr: stderr,
 	}
 
 	runOpts, err = c.applyArguments(runOpts, step.Arguments)
@@ -222,7 +226,14 @@ func (c *Client) runAction(step types.Step) types.StepAction {
 	}
 
 	return func() error {
-		return Run(runOpts)
+		if err := Run(runOpts); err != nil {
+			io.Copy(stdout, os.Stdout)
+			io.Copy(stderr, os.Stderr)
+
+			return err
+		}
+
+		return nil
 	}
 }
 

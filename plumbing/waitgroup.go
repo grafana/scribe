@@ -33,7 +33,6 @@ func (wg *WaitGroup) Wait() error {
 
 	t := time.NewTimer(wg.timeout)
 
-	log.Println("got", len(wg.funcs))
 	wg.wg.Add(len(wg.funcs))
 
 	for _, v := range wg.funcs {
