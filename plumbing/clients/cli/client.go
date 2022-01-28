@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
+	"pkg.grafana.com/shipwright/v1/plumbing/syncutil"
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
 
@@ -29,7 +29,7 @@ func (c *Client) Output(_ ...types.Output)  {}
 
 func (c *Client) Validate(step types.Step) error {
 	if step.Image != "" {
-		plog.Warnln("step has a docker image specified. This may cause unexpected results if ran in CLI mode. The `-mode=docker` flag is likely more suitable")
+		plog.Debugln(ErrorCLIStepHasImage.Error())
 	}
 
 	return nil
@@ -81,13 +81,22 @@ func (c *Client) Done() {
 	}
 }
 
+func (c *Client) wrap(action types.StepAction) types.StepAction {
+	return func(opts types.ActionOpts) error {
+		return action(opts)
+	}
+}
+
 func (c *Client) runSteps(steps types.StepList) error {
 	plog.Debugln("Running steps in parallel:", len(steps))
-	wg := plumbing.NewWaitGroup(time.Minute)
+	var (
+		wg   = syncutil.NewWaitGroup(time.Minute)
+		opts = types.ActionOpts{}
+	)
 
 	for _, v := range steps {
-		wg.Add(v.Action)
+		wg.Add(c.wrap(v.Action))
 	}
 
-	return wg.Wait()
+	return wg.Wait(opts)
 }

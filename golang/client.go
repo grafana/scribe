@@ -24,7 +24,7 @@ func (c Client) Test(pkg string) types.Step {
 }
 
 func (c Client) Build(pkg, output string) types.Step {
-	return types.NewStep(func() error {
+	return types.NewStep(func(types.ActionOpts) error {
 		return nil
 	})
 }

@@ -1,7 +1,7 @@
 package exec
 
 import (
-	"os"
+	"io"
 	"os/exec"
 
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
@@ -10,11 +10,11 @@ import (
 
 // RunCommandAt runs a given command and set of arguments at the given location
 // The command's stdout and stderr are assigned the systems' stdout/stderr streams.
-func RunCommandAt(path string, name string, arg ...string) error {
+func RunCommandAt(stdout, stderr io.Writer, path string, name string, arg ...string) error {
 	plog.Infof("[%s] Running command: '%s %v'", path, name, arg)
 	c := exec.Command(name, arg...)
-	c.Stdout = os.Stdout
-	c.Stderr = os.Stderr
+	c.Stdout = stdout
+	c.Stderr = stderr
 
 	c.Dir = path
 
@@ -23,22 +23,22 @@ func RunCommandAt(path string, name string, arg ...string) error {
 
 // RunCommand runs a given command and set of arguments.
 // The command's stdout and stderr are assigned the systems' stdout/stderr streams.
-func RunCommand(name string, arg ...string) error {
-	return RunCommandAt(".", name, arg...)
+func RunCommand(stdout, stderr io.Writer, name string, arg ...string) error {
+	return RunCommandAt(stdout, stderr, ".", name, arg...)
 }
 
 // Run returns an action that runs a given command and set of arguments.
 // The command's stdout and stderr are assigned the systems' stdout/stderr streams.
 func Run(name string, arg ...string) types.StepAction {
-	return func() error {
-		return RunCommand(name, arg...)
+	return func(opts types.ActionOpts) error {
+		return RunCommand(opts.Stdout, opts.Stderr, name, arg...)
 	}
 }
 
 // Run returns an action that runs a given command and set of arguments.
 // The command's stdout and stderr are assigned the systems' stdout/stderr streams.
 func RunAt(path string, name string, arg ...string) types.StepAction {
-	return func() error {
-		return RunCommandAt(path, name, arg...)
+	return func(opts types.ActionOpts) error {
+		return RunCommandAt(opts.Stdout, opts.Stderr, path, name, arg...)
 	}
 }

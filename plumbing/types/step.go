@@ -1,7 +1,16 @@
 package types
 
+import "io"
+
+// The ActionOpts are provided to every step that is ran.
+// Each step can choose to use these options.
+type ActionOpts struct {
+	Stdout io.ReadWriter
+	Stderr io.ReadWriter
+}
+
 type (
-	StepAction func() error
+	StepAction func(ActionOpts) error
 	Argument   interface{}
 	Output     interface{}
 )
@@ -84,7 +93,7 @@ type StepList []Step
 // Most clients should completely ignore NoOpSteps.
 var NoOpStep = Step{
 	Name: "no op",
-	Action: func() error {
+	Action: func(ActionOpts) error {
 		return nil
 	},
 }

@@ -1,9 +1,7 @@
 package docker
 
 import (
-	"bytes"
 	"errors"
-	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -14,6 +12,7 @@ import (
 	"pkg.grafana.com/shipwright/v1/plumbing/clients/cli"
 	"pkg.grafana.com/shipwright/v1/plumbing/cmdutil"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
+	"pkg.grafana.com/shipwright/v1/plumbing/syncutil"
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
 
@@ -207,16 +206,11 @@ func (c *Client) runAction(step types.Step) types.StepAction {
 
 	plog.Infoln(cmd[0], strings.Join(cmd[1:], " "))
 
-	stdout := bytes.NewBuffer(nil)
-	stderr := bytes.NewBuffer(nil)
 	runOpts := RunOpts{
 		Image:   step.Image,
 		Command: cmd[0],
 		Volumes: []string{},
 		Args:    args,
-
-		Stdout: stdout,
-		Stderr: stderr,
 	}
 
 	runOpts, err = c.applyArguments(runOpts, step.Arguments)
@@ -225,11 +219,20 @@ func (c *Client) runAction(step types.Step) types.StepAction {
 		return nil
 	}
 
-	return func() error {
-		if err := Run(runOpts); err != nil {
-			io.Copy(stdout, os.Stdout)
-			io.Copy(stderr, os.Stderr)
+	return func(opts types.ActionOpts) error {
+		runOpts.Stdout = opts.Stdout
+		runOpts.Stderr = opts.Stderr
 
+		return Run(runOpts)
+	}
+}
+
+func (c *Client) wrap(action types.StepAction) types.StepAction {
+	return func(opts types.ActionOpts) error {
+		opts.Stdout = os.Stdout
+		opts.Stderr = os.Stderr
+
+		if err := action(opts); err != nil {
 			return err
 		}
 
@@ -238,12 +241,13 @@ func (c *Client) runAction(step types.Step) types.StepAction {
 }
 
 func (c *Client) runSteps(steps types.StepList) error {
-	plog.Debugln("Running steps in parallel:", len(steps))
-	wg := plumbing.NewWaitGroup(time.Minute)
+	plog.Infoln("Running steps in parallel:", len(steps))
+	wg := syncutil.NewWaitGroup(time.Minute)
 
+	opts := types.ActionOpts{}
 	for _, v := range steps {
-		wg.Add(c.runAction(v))
+		wg.Add(c.wrap(c.runAction(v)))
 	}
 
-	return wg.Wait()
+	return wg.Wait(opts)
 }

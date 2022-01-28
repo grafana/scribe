@@ -30,7 +30,7 @@ func version() (string, error) {
 }
 
 func (i Image) BuildStep(sw shipwright.Shipwright) types.Step {
-	action := func() error {
+	action := func(opts types.ActionOpts) error {
 		v, err := version()
 		if err != nil {
 			return err
@@ -45,7 +45,7 @@ func (i Image) BuildStep(sw shipwright.Shipwright) types.Step {
 			name = plumbing.SubImage(i.Name, v)
 		}
 
-		return sw.Docker.BuildWithArgs(name, i.Dockerfile, i.Context, fmt.Sprintf("VERSION=%s", v)).Action()
+		return sw.Docker.BuildWithArgs(name, i.Dockerfile, i.Context, fmt.Sprintf("VERSION=%s", v)).Action(opts)
 	}
 
 	return types.NewStep(action).

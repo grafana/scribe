@@ -10,7 +10,7 @@ import (
 )
 
 func writeVersion(sw shipwright.Shipwright) types.StepAction {
-	return func() error {
+	return func(opts types.ActionOpts) error {
 		log.Println("Writing version...")
 		// equivalent of `git describe --tags --dirty --always`
 		version := sw.Git.Describe(&git.DescribeOpts{
@@ -20,7 +20,7 @@ func writeVersion(sw shipwright.Shipwright) types.StepAction {
 		})
 
 		// write the version string in the `.version` file.
-		return sw.FS.ReplaceString(".version", version)()
+		return sw.FS.ReplaceString(".version", version)(opts)
 	}
 }
 

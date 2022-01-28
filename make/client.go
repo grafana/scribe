@@ -9,7 +9,7 @@ import (
 type Client struct{}
 
 func (c *Client) Target(name string) types.StepAction {
-	return func() error {
+	return func(types.ActionOpts) error {
 		log.Println("make", name)
 		return nil
 	}

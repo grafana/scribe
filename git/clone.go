@@ -35,7 +35,7 @@ func (c *Client) CloneOpts() (*CloneOpts, error) {
 }
 
 func (c *Client) clone(depth int) types.StepAction {
-	return func() error {
+	return func(aopts types.ActionOpts) error {
 		opts, err := c.CloneOpts()
 		if err != nil {
 			return err
@@ -69,11 +69,11 @@ func (c *Client) clone(depth int) types.StepAction {
 			return nil
 		}
 
-		if err := exec.RunCommand(cmd, cloneArgs...); err != nil {
+		if err := exec.RunCommand(aopts.Stdout, aopts.Stderr, cmd, cloneArgs...); err != nil {
 			return err
 		}
 
-		if err := exec.RunCommandAt(opts.Folder, cmd, checkoutArgs...); err != nil {
+		if err := exec.RunCommandAt(aopts.Stdout, aopts.Stderr, opts.Folder, cmd, checkoutArgs...); err != nil {
 			return err
 		}
 

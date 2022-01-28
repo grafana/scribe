@@ -28,7 +28,7 @@ func RunPipeline(ctx context.Context, t *testing.T, path string, stdout io.Write
 func NewTestStep(b chan bool) types.Step {
 	return types.Step{
 		Name: "test",
-		Action: func() error {
+		Action: func(types.ActionOpts) error {
 			b <- true
 			return nil
 		},
