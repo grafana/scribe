@@ -4,19 +4,9 @@ import (
 	"pkg.grafana.com/shipwright/v1/docker"
 	"pkg.grafana.com/shipwright/v1/git"
 	"pkg.grafana.com/shipwright/v1/golang"
-	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
-
-// The ClientInitializers define how different RunModes initialize the Shipwright client
-var ClientInitializers = map[plumbing.RunModeOption]func(*types.CommonOpts) Shipwright{
-	plumbing.RunModeCLI:    NewCLIClient,
-	plumbing.RunModeDrone:  NewDroneClient,
-	plumbing.RunModeConfig: NewCLIClient,
-	plumbing.RunModeServer: NewCLIClient,
-	plumbing.RunModeDocker: NewCLIClient,
-}
 
 // NewClient creates a new Shipwright client based on the commonopts (mostly the mode).
 // It does not check for a non-nil "Args" field.

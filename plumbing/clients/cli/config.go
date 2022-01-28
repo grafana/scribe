@@ -12,6 +12,7 @@ import (
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
 
+// This function effectively runs 'git remote get-url $(git remote)'
 func currentRemote() (string, error) {
 	remote, err := exec.Command("git", "remote").CombinedOutput()
 	if err != nil {
@@ -26,6 +27,7 @@ func currentRemote() (string, error) {
 	return string(v), nil
 }
 
+// This function effectively runs 'git rev-parse HEAD'
 func currentCommit() (string, error) {
 	v, err := exec.Command("git", "rev-parse", "HEAD").CombinedOutput()
 	if err != nil {
@@ -35,6 +37,7 @@ func currentCommit() (string, error) {
 	return string(v), nil
 }
 
+// This function effectively runs 'git rev-parse --abrev-ref HEAD'
 func currentBranch() (string, error) {
 	v, err := exec.Command("git", "rev-parse", "--abrev-ref", "HEAD").CombinedOutput()
 	if err != nil {
@@ -44,21 +47,16 @@ func currentBranch() (string, error) {
 	return string(v), nil
 }
 
+// KnownValues are URL values that we know how to retrieve using the command line.
 var KnownValues = map[types.StepArgument]func() (string, error){
-	types.ArgumentRemoteURL: currentRemote,
-	types.ArgumentCommitRef: currentCommit,
-	types.ArgumentBranch:    currentBranch,
+	types.ArgumentRemoteURL:  currentRemote,
+	types.ArgumentCommitRef:  currentCommit,
+	types.ArgumentBranch:     currentBranch,
+	types.ArgumentWorkingDir: os.Getwd,
 }
 
-// Retrieving a config value when using the CLI client will look for arguments to be provided in the `-arg={key}={value}`.
-// If they are not available there, then the pipeline will prompt for the value of the argument by requesting input via stdin.
-// If the argument "-no-stdin" is provided, then an error will returned instead.
-// Some arguments can be assumed by the current environment. When running in CLI mode, for example, the following is almost always true, like:
-// * You're _probably_ in the git repo and on the commit that you want to test already
-func (c *Client) Value(arg types.StepArgument) (string, error) {
-	args := c.Opts.Args.ArgMap
-
-	if val, ok := args[string(arg)]; ok {
+func GetArgValue(args *plumbing.PipelineArgs, arg types.StepArgument) (string, error) {
+	if val, ok := args.ArgMap[arg.Key]; ok {
 		return val, nil
 	}
 
@@ -68,15 +66,15 @@ func (c *Client) Value(arg types.StepArgument) (string, error) {
 			return val, nil
 		}
 
-		plog.Warnf("shipwright attempted to automatically populate the argument '%s', but encountered an error '%s'", arg, err)
+		plog.Warnf("shipwright attempted to automatically populate the argument '%s', but encountered an error '%s'", arg.Key, err)
 	}
 
-	errMissingArgument := fmt.Errorf("%w: Requested argument '%s'", plumbing.ErrorMissingArgument, string(arg))
-	if !c.Opts.Args.CanStdinPrompt {
+	errMissingArgument := fmt.Errorf("%w: Requested argument '%s'", plumbing.ErrorMissingArgument, arg.Key)
+	if !args.CanStdinPrompt {
 		return "", errMissingArgument
 	}
 
-	fmt.Fprintf(os.Stdout, "Argument '%[1]s' requested but not found. Please provide a value for '%[1]s': ", string(arg))
+	fmt.Fprintf(os.Stdout, "Argument '%[1]s' requested but not found. Please provide a value for '%[1]s': ", arg.Key)
 	// Prompt for the value via stdin since it was not found
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
@@ -86,6 +84,15 @@ func (c *Client) Value(arg types.StepArgument) (string, error) {
 	}
 
 	value := scanner.Text()
-	fmt.Fprintf(os.Stdout, "In the future, you can provide this value with the '-arg=%s=' argument\n", value)
+	fmt.Fprintf(os.Stdout, "In the future, you can provide this value with the '-arg=%s=%s' argument\n", arg.Key, value)
 	return value, nil
+}
+
+// Retrieving a config value when using the CLI client will look for arguments to be provided in the `-arg={key}={value}`.
+// If they are not available there, then the pipeline will prompt for the value of the argument by requesting input via stdin.
+// If the argument "-no-stdin" is provided, then an error will returned instead.
+// Some arguments can be assumed by the current environment. When running in CLI mode, for example, the following is almost always true, like:
+// * You're _probably_ in the git repo and on the commit that you want to test already
+func (c *Client) Value(arg types.StepArgument) (string, error) {
+	return GetArgValue(c.Opts.Args, arg)
 }

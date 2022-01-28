@@ -2,11 +2,13 @@ package plumbing
 
 import "fmt"
 
+const DefaultRepo = "ghcr.io/grafana/shipwright"
+
 func DefaultImage(version string) string {
 	// TODO don't hardcode this image but for now I don't care good luck
-	return fmt.Sprintf("ghcr.io/grafana/shipwright:%s", version)
+	return fmt.Sprintf("%s:%s", DefaultRepo, version)
 }
 
 func SubImage(image, version string) string {
-	return fmt.Sprintf("ghcr.io/grafana/shipwright/%s:%s", image, version)
+	return fmt.Sprintf("%s/%s:%s", DefaultRepo, image, version)
 }

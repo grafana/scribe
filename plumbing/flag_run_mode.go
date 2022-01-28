@@ -24,7 +24,7 @@ const (
 	RunModeDocker
 )
 
-var runModeStr = []string{"cli", "server", "config", "drone"}
+var runModeStr = []string{"cli", "server", "config", "drone", "docker"}
 
 // String outputs the string equivelant of what mode is selected.
 func (r *RunModeOption) String() string {

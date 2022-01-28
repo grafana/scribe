@@ -22,5 +22,5 @@ func (c Client) BuildWithArgs(name, path, context string, arg ...string) types.S
 }
 
 func (c Client) Build(name, path, context string) types.Step {
-	return c.BuildWithArgs(name, path, context)
+	return c.BuildWithArgs(name, path, context).WithArguments(types.ArgumentDockerSocketFS)
 }

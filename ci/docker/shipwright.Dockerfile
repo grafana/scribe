@@ -5,3 +5,6 @@ RUN make build
 
 FROM alpine:3
 COPY --from=builder /app/bin/shipwright /bin/shipwright
+RUN apk add --no-cache bash go
+
+WORKDIR /var/shipwright

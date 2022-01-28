@@ -2,9 +2,15 @@ package drone
 
 import (
 	"gopkg.in/yaml.v2"
+	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 	"pkg.grafana.com/shipwright/v1/plumbing/schemas/drone"
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
+)
+
+var (
+	ErrorNoImage = plumbing.NewPipelineError("no image provided", "An image is required for all steps in Drone. You can specify one with the '.WithImage(\"name\")' function.")
+	ErrorNoName  = plumbing.NewPipelineError("no name provided", "A name is required for all steps in Drone. You can specify one with the '.WithName(\"name\")' function.")
 )
 
 type Client struct {
@@ -24,9 +30,21 @@ func (c *Client) Parallel(steps ...types.Step) {
 	c.List.Append(steps...)
 }
 
-func (c *Client) Cache(_ types.StepAction, _ types.Cacher) types.StepAction { return nil }
-func (c *Client) Input(_ ...types.Argument)                                 {}
-func (c *Client) Output(_ ...types.Output)                                  {}
+func (c *Client) Validate(step types.Step) error {
+	if step.Image == "" {
+		return ErrorNoImage
+	}
+
+	if step.Name == "" {
+		return ErrorNoName
+	}
+
+	return nil
+}
+
+func (c *Client) Cache(action types.StepAction, _ types.Cacher) types.StepAction { return action }
+func (c *Client) Input(_ ...types.Argument)                                      {}
+func (c *Client) Output(_ ...types.Output)                                       {}
 
 // Done traverses through the tree and writes a .drone.yml file to the provided writer
 func (c *Client) Done() {

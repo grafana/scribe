@@ -18,7 +18,9 @@ func New(o *types.CommonOpts) Client {
 }
 
 func (c Client) Test(pkg string) types.Step {
-	return types.NewStep(exec.Run("go", "test", pkg)).WithImage(plumbing.SubImage("go", c.Opts.Version))
+	return types.NewStep(exec.Run("go", "test", pkg)).
+		WithImage(plumbing.SubImage("go", c.Opts.Version)).
+		WithArguments(types.ArgumentSourceFS)
 }
 
 func (c Client) Build(pkg, output string) types.Step {

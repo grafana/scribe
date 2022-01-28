@@ -19,5 +19,5 @@ func (c *Client) Value(arg types.StepArgument) (string, error) {
 		return val, nil
 	}
 
-	return "", fmt.Errorf("could not find equivalent of '%s': %w", string(arg), plumbing.ErrorMissingArgument)
+	return "", fmt.Errorf("could not find equivalent of '%s': %w", arg.Key, plumbing.ErrorMissingArgument)
 }

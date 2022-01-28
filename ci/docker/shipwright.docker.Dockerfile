@@ -1,5 +1,5 @@
 ARG VERSION=latest
 FROM shipwright:${VERSION}
 
-RUN apk add --no-cache git openssh
+RUN apk add docker
 WORKDIR /var/shipwright

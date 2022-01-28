@@ -5,6 +5,9 @@ import (
 	"fmt"
 )
 
+// ErrorSkipValidation can be returned in the Client's Validate interface to prevent the error from stopping the pipeline execution
+var ErrorSkipValidation = errors.New("skipping step validation")
+
 var (
 	ErrorMissingArgument = errors.New("argument requested but not provided")
 )

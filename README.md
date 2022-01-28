@@ -42,38 +42,39 @@ Shipwright clients are used in the pipelines themselves. All pipelines are progr
 
 There are currently three planned Clients, which are selected using the `-mode` CLI argument.
 
-1. `run` - Runs the pipeline locally, attempting to emulate what would normally be executed in a standard CI pipeline.
+1. `cli` - Runs the pipeline locally, attempting to emulate what would normally be executed in a standard CI pipeline.
 2. `drone` - Generates a Drone configuration that matches the specified pipeline.
 3. `docker` - Similar to `run`, but instead runs the pipeline using the Docker CLI
 
-The importance of the `shipwright` package can not be understated.
+#### Run mode `docker`
+
+The `docker` run mode will run each pipeline in a Docker image the same way that it would likely run in a CI platform. It's almost a combination of the `cli` and `drone` run modes.
+
+Each step defined must have an image. For steps without defined images, the shipwright will be used.
+
+Because of the nature of these pipelines and how they define arbitrary code to run rather than commands, the `shipwright` and `go` binaries must be available on them.
+
+- `shipwright` for logic that runs the pipeline. This requirement may be loosened in the future and we could just use `go run` on the pipeline in the container.
+- `go` to run the pipeline code itself.
 
 ### Writing a Pipeline
 
-Generally a pipeline is whatever you want it to be.
+Generally a pipeline is whatever you want it to be. There are some helpful tools in the to improve your visualization / pipeline tracing, accept arguments, define outputs.
 
-There are some helpful tools in the to improve your visualization / pipeline tracing, accept arguments, define outputs.
+Some guiding pricinples will help you write effective pipelines:
 
-In this example our pipeline has a few steps:
+1. Each step defined should be able to run individually, without the previous steps running first in the current shell or environment.
 
-1. Clone out project.
-   - Because not all pipelines are general CI, we need to explicitely clone our project. Other systems typically include this step automatically, and make it tedious or impossible to accomplish the reverse.
-2. Run two tasks simultaneously. Either of these steps could fail, however we want to be able to restart at one specific step, or we want to know whic failed if only one does.
-   - Install the nodejs
-   - Install go dependencies
-3. Cache the results of these scripts, and only re-download them if the yarn.lock/go.sum are updated.
-4. Run `make build`, followed by `make package`, and store the resulting `example.tar.gz`
+#### Example
 
-```go=
-{{ .demos.Basic }}
-```
+TODO: write example
 
 Once committed, this script can be treated like any other pipeline script and can be automatically ran when a new commit is made.
 
 More interestingly though, you can run this pipeline by running:
 
 ```bash
-shipwright -path=pipeline.go
+shipwright ./ci
 ```
 
 If your pipeline defines any inputs it will prompt you for them, or optionally you can provide them as arguments by using the `-arg-{argument}` flag.
@@ -86,9 +87,7 @@ If your pipeline defines any inputs it will prompt you for them, or optionally y
 
 ## Package Design Principles
 
-There are a few main principles behind designing the client library / packages. These princples should encourage writing libraries that make it easy to write pipelines that are not excessively verbose.
-
-- todo
+There are a few main principles behind designing the client library / packages. These princples should encourage writing libraries that make it easy to write pipelines that are not excessively verbose and work on all supported platforms.
 
 ## Examples
 

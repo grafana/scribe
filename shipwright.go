@@ -1,6 +1,8 @@
 package shipwright
 
 import (
+	"errors"
+	"fmt"
 	"os"
 
 	"pkg.grafana.com/shipwright/v1/docker"
@@ -18,6 +20,11 @@ import (
 type Client interface {
 	config.Configurer
 
+	// Validate is ran internally before calling Run or Parallel and allows the client to effectively configure per-step requirements
+	// For example, Drone steps MUST have an image so the Drone client returns an error in this function when the provided step does not have an image.
+	// If the error encountered is not critical but should still be logged, then return a plumbing.ErrorSkipValidation.
+	// The error is checked with `errors.Is` so the error can be wrapped with fmt.Errorf.
+	Validate(types.Step) error
 	// Run allows users to define steps that are ran sequentially. For example, the second step will not run until the first step has completed.
 	// This function blocks the goroutine until all of the steps have completed.
 	Run(...types.Step)
@@ -30,7 +37,6 @@ type Client interface {
 	// Go(...types.Step)
 
 	Cache(types.StepAction, types.Cacher) types.StepAction
-
 	Input(...types.Argument)
 	Output(...types.Output)
 
@@ -52,7 +58,7 @@ type Shipwright struct {
 	// It ensures that the 11th step in a Drone generated pipeline is also the 11th step in a CLI pipeline
 	n int
 
-	version string
+	Version string
 }
 
 func (s *Shipwright) initSteps(steps ...types.Step) []types.Step {
@@ -60,7 +66,7 @@ func (s *Shipwright) initSteps(steps ...types.Step) []types.Step {
 		// Set a default image for steps that don't provide one.
 		// Most pre-made steps like `yarn`, `node`, `go` steps should provide a separate default image with those utilities installed.
 		if step.Image == "" {
-			image := plumbing.DefaultImage(s.version)
+			image := plumbing.DefaultImage(s.Version)
 			steps[i] = step.WithImage(image)
 		}
 
@@ -72,14 +78,42 @@ func (s *Shipwright) initSteps(steps ...types.Step) []types.Step {
 	return steps
 }
 
+func formatError(step types.Step, err error) string {
+	name := step.Name
+	if name == "" {
+		name = fmt.Sprintf("unnamed-step-%d", step.Serial)
+	}
+
+	return fmt.Sprintf("[name: %s, id: %d] %s", name, step.Serial, err.Error())
+}
+
+func (s *Shipwright) validateSteps(steps ...types.Step) {
+	for _, v := range steps {
+		err := s.Validate(v)
+		if err == nil {
+			continue
+		}
+
+		if errors.Is(err, plumbing.ErrorSkipValidation) {
+			plog.Warnln(formatError(v, err))
+			continue
+		}
+
+		plog.Fatalln(formatError(v, err))
+		return
+	}
+}
+
 func (s *Shipwright) Run(steps ...types.Step) {
 	initializedSteps := s.initSteps(steps...)
+	s.validateSteps(steps...)
 
 	s.Client.Run(initializedSteps...)
 }
 
 func (s *Shipwright) Parallel(steps ...types.Step) {
 	initializedSteps := s.initSteps(steps...)
+	s.validateSteps(steps...)
 
 	s.Client.Parallel(initializedSteps...)
 }
@@ -105,7 +139,7 @@ func New(name string, events ...types.Event) Shipwright {
 	})
 
 	// Ensure that no matter the behavior of the initializer, we still set the version on the shipwright object.
-	sw.version = args.Version
+	sw.Version = args.Version
 
 	return sw
 }

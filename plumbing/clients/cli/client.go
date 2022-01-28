@@ -27,8 +27,12 @@ func (c *Client) Cache(step types.StepAction, _ types.Cacher) types.StepAction {
 func (c *Client) Input(_ ...types.Argument) {}
 func (c *Client) Output(_ ...types.Output)  {}
 
-func (c *Client) Init(opts *types.CommonOpts) {
-	c.Opts = opts
+func (c *Client) Validate(step types.Step) error {
+	if step.Image != "" {
+		plog.Warnln("step has a docker image specified. This may cause unexpected results if ran in CLI mode. The `-mode=docker` flag is likely more suitable")
+	}
+
+	return nil
 }
 
 // Parallel adds the list of steps into a queue to be executed concurrently
@@ -39,9 +43,6 @@ func (c *Client) Parallel(steps ...types.Step) {
 // Run adds the list of steps into a queue to be executed sequentially
 func (c *Client) Run(steps ...types.Step) {
 	for _, v := range steps {
-		if err := ValidateCLIStep(v); err != nil {
-			plog.Warnf("In step '%s': %s", v.Name, err.Error())
-		}
 		c.Queue.Append(v)
 	}
 }
@@ -89,12 +90,4 @@ func (c *Client) runSteps(steps types.StepList) error {
 	}
 
 	return wg.Wait()
-}
-
-func ValidateCLIStep(step types.Step) error {
-	if step.Image != "" {
-		return ErrorCLIStepHasImage
-	}
-
-	return nil
 }

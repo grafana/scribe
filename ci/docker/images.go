@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"pkg.grafana.com/shipwright/v1"
+	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
 
@@ -37,15 +38,23 @@ func (i Image) BuildStep(sw shipwright.Shipwright) types.Step {
 
 		v = strings.TrimSpace(v)
 
-		return sw.Docker.BuildWithArgs(fmt.Sprintf("%s:%s", i.Name, v), i.Dockerfile, i.Context, fmt.Sprintf("VERSION=%s", v)).Action()
+		// hack: if the image doesn't have a name then it must be the default one!
+		name := plumbing.DefaultImage(v)
+
+		if i.Name != "" {
+			name = plumbing.SubImage(i.Name, v)
+		}
+
+		return sw.Docker.BuildWithArgs(name, i.Dockerfile, i.Context, fmt.Sprintf("VERSION=%s", v)).Action()
 	}
 
-	return types.NewStep(action)
+	return types.NewStep(action).
+		WithArguments(types.ArgumentSourceFS, types.ArgumentDockerSocketFS).
+		WithImage(plumbing.SubImage("docker", sw.Version))
 }
 
 // ShipwrightImage has to be built before its derivitive images.
 var ShipwrightImage = Image{
-	Name:       "shipwright",
 	Dockerfile: "./ci/docker/shipwright.Dockerfile",
 	Context:    ".",
 }
@@ -53,18 +62,23 @@ var ShipwrightImage = Image{
 // Images is a list of images derived from the ShipwrightImage
 var Images = []Image{
 	{
-		Name:       "shipwright/git",
+		Name:       "git",
 		Dockerfile: "./ci/docker/shipwright.git.Dockerfile",
 		Context:    ".",
 	},
 	{
-		Name:       "shipwright/go",
+		Name:       "go",
 		Dockerfile: "./ci/docker/shipwright.go.Dockerfile",
 		Context:    ".",
 	},
 	{
-		Name:       "shipwright/node",
+		Name:       "node",
 		Dockerfile: "./ci/docker/shipwright.node.Dockerfile",
+		Context:    ".",
+	},
+	{
+		Name:       "docker",
+		Dockerfile: "./ci/docker/shipwright.docker.Dockerfile",
 		Context:    ".",
 	},
 }

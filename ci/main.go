@@ -15,7 +15,6 @@ func main() {
 	defer sw.Done()
 
 	sw.Run(
-		sw.Git.Clone(1).WithName("clone"),
 		sw.Golang.Test("./...").WithName("test"),
 		docker.ShipwrightImage.BuildStep(sw).WithName("build shipwright docker image"),
 	)
