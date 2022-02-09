@@ -10,13 +10,14 @@ Since the inception of Travis CI, configuration-based pipeline tooling has been 
 - Automated testing is non-existent
 - Development tools are limited to defining configuration schemas, which provide a shallow understanding of what each key and value will do.
 - Configuration languages have nuanced syntax which is typically a lot different than standard programming languages.
-- Dependencies / dependency management is often not supported as it's just not a typical configuration language construct.
+- Dependencies / dependency management is often not supported as it's just not a typical configuration language (yaml, json) construct.
 - Lack of debugging means large / extensive pipelines are flaky and make it difficult to diagnose issues.
   - Problems like these are demoralizing and often lead to neglect; no one wants to address issues like these because they're so difficult to debug.
+- Providers are incentivized to keep their YAML from being ran on other platforms. CircleCI would probably not like it if I could run a CircleCI pipeline inside Drone or Azure DevOps.
 
-A **shipwright** is a person who builds boats. Since everything in the Kubernetes world, from Helm to Harbor follows a boat theme, I thought it appropriate to thematically follow.
+These problems lead to the development of this tool, **shipwright**. A **shipwright** is a person who builds boats. Since everything in the Kubernetes world, from Helm to Harbor follows a boat theme, I thought it appropriate to thematically follow.
 
-The idea behind this application is that it is more of a library than an application. Users should, instead of defining this amalgamation of `yaml/json/toml/whatever` and `bash`, define their build, package, and release processes programmatically and deterministically. This opens up a whole world of possibilities, like:
+The idea behind `shipwright` is that it is not an application, but a library. There is no server. Users should, instead of defining this amalgamation of `yaml/json/toml/whatever` and `bash`, define their build, package, and release processes programmatically. This opens up a whole world of possibilities, like:
 
 - Writing unit and integration tests for your build pipeline.
 - Reusing and sharing build, package, and deployment definitions.
@@ -28,7 +29,7 @@ The idea behind this application is that it is more of a library than an applica
 - **Pipeline**: A pipeline is a generic sequence of steps. A pipeline can be a set of steps to build an application, or it can define how to take an artifact, package it, and push it to a package repository.
   - **Action**: A pipeline action is a single reusable component in a pipeline. Actions can have arguments and define outputs.
   - **Source**: A pipeline source defines what causes a pipeline to begin. For typical continuous integration builds, this source would be a commit or a tag. For a release pipeline, this could be a NATS message, a Google Cloud Pub/Sub message that says an artifact is available, or it could be another pipeline.
-- **Artifact**: The tangible, end-result of a pipeline. Not all pipelines produce artifacts.
+- **Artifact**: The tangible, end-result of a pipeline or step. Not all pipelines produce artifacts.
   - An example of an artifact would be a compiled binary or a docker image.
 - **Target**: A target is a software release destination. It is the final place that an artifact is sent before it is used to serve user requests.
 
