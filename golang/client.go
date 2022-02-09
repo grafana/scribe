@@ -5,28 +5,28 @@ import (
 
 	"pkg.grafana.com/shipwright/v1/exec"
 	"pkg.grafana.com/shipwright/v1/plumbing"
-	"pkg.grafana.com/shipwright/v1/plumbing/types"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 )
 
 type Client struct {
 	Modules ModulesClient
-	Opts    *types.CommonOpts
+	Opts    *pipeline.CommonOpts
 }
 
-func New(o *types.CommonOpts) Client {
+func New(o *pipeline.CommonOpts) Client {
 	return Client{
 		Opts: o,
 	}
 }
 
-func (c Client) Test(pkg string) types.Step {
-	return types.NewStep(exec.Run("go", "test", pkg)).
+func (c Client) Test(pkg string) pipeline.Step {
+	return pipeline.NewStep(exec.Run("go", "test", pkg)).
 		WithImage(plumbing.SubImage("go", c.Opts.Version)).
-		WithArguments(types.ArgumentSourceFS)
+		WithArguments(pipeline.ArgumentSourceFS)
 }
 
-func (c Client) BuildStep(pkg, output string) types.Step {
-	return types.NewStep(func(opts types.ActionOpts) error {
+func (c Client) BuildStep(pkg, output string) pipeline.Step {
+	return pipeline.NewStep(func(opts pipeline.ActionOpts) error {
 		return Build(BuildOpts{
 			Pkg:    pkg,
 			Output: output,

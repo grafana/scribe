@@ -1,11 +1,11 @@
 package golang
 
-import "pkg.grafana.com/shipwright/v1/plumbing/types"
+import "pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 
 type ModulesClient struct{}
 
-func (m *ModulesClient) Download() types.StepAction {
-	return func(types.ActionOpts) error {
+func (m *ModulesClient) Download() pipeline.StepAction {
+	return func(pipeline.ActionOpts) error {
 		return nil
 	}
 }

@@ -52,10 +52,7 @@ The `docker` run mode will run each pipeline in a Docker image the same way that
 
 Each step defined must have an image. For steps without defined images, the shipwright will be used.
 
-Because of the nature of these pipelines and how they define arbitrary code to run rather than commands, the `shipwright` and `go` binaries must be available on them.
-
-- `shipwright` for logic that runs the pipeline. This requirement may be loosened in the future and we could just use `go run` on the pipeline in the container.
-- `go` to run the pipeline code itself.
+When running in docker mode, the pipeline is compiled and then mounted as volume in the docker container. The compiled pipeline is used as the docker command for that step.
 
 ### Writing a Pipeline
 

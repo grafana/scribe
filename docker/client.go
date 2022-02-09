@@ -1,12 +1,12 @@
 package docker
 
-import "pkg.grafana.com/shipwright/v1/plumbing/types"
+import "pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 
 type Client struct {
-	CommonOpts *types.CommonOpts
+	CommonOpts *pipeline.CommonOpts
 }
 
-func New(c *types.CommonOpts) Client {
+func New(c *pipeline.CommonOpts) Client {
 	return Client{
 		CommonOpts: c,
 	}

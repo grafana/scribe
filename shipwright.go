@@ -14,8 +14,8 @@ import (
 	makefile "pkg.grafana.com/shipwright/v1/make"
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/config"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
-	"pkg.grafana.com/shipwright/v1/plumbing/types"
 	"pkg.grafana.com/shipwright/v1/yarn"
 )
 
@@ -26,21 +26,21 @@ type Client interface {
 	// For example, Drone steps MUST have an image so the Drone client returns an error in this function when the provided step does not have an image.
 	// If the error encountered is not critical but should still be logged, then return a plumbing.ErrorSkipValidation.
 	// The error is checked with `errors.Is` so the error can be wrapped with fmt.Errorf.
-	Validate(types.Step) error
+	Validate(pipeline.Step) error
 	// Run allows users to define steps that are ran sequentially. For example, the second step will not run until the first step has completed.
 	// This function blocks the goroutine until all of the steps have completed.
-	Run(...types.Step)
+	Run(...pipeline.Step)
 
 	// Parallel will run the listed steps at the same time.
 	// This function blocks the goroutine until all of the steps have completed.
-	Parallel(...types.Step)
+	Parallel(...pipeline.Step)
 
 	// Go is the equivalent of `go func()`. This function will run a step asynchronously and continue on to the next.
-	// Go(...types.Step)
+	// Go(...pipeline.Step)
 
-	Cache(types.StepAction, types.Cacher) types.StepAction
-	Input(...types.Argument)
-	Output(...types.Output)
+	Cache(pipeline.StepAction, pipeline.Cacher) pipeline.StepAction
+	Input(...pipeline.Argument)
+	Output(...pipeline.Output)
 
 	// Done must be ran at the end of the pipeline.
 	// This is typically what takes the defined pipeline steps, runs them in the order defined, and produces some kind of output.
@@ -63,7 +63,7 @@ type Shipwright struct {
 	Version string
 }
 
-func (s *Shipwright) initSteps(steps ...types.Step) []types.Step {
+func (s *Shipwright) initSteps(steps ...pipeline.Step) []pipeline.Step {
 	for i, step := range steps {
 		// Set a default image for steps that don't provide one.
 		// Most pre-made steps like `yarn`, `node`, `go` steps should provide a separate default image with those utilities installed.
@@ -80,7 +80,7 @@ func (s *Shipwright) initSteps(steps ...types.Step) []types.Step {
 	return steps
 }
 
-func formatError(step types.Step, err error) string {
+func formatError(step pipeline.Step, err error) string {
 	name := step.Name
 	if name == "" {
 		name = fmt.Sprintf("unnamed-step-%d", step.Serial)
@@ -89,7 +89,7 @@ func formatError(step types.Step, err error) string {
 	return fmt.Sprintf("[name: %s, id: %d] %s", name, step.Serial, err.Error())
 }
 
-func (s *Shipwright) validateSteps(steps ...types.Step) {
+func (s *Shipwright) validateSteps(steps ...pipeline.Step) {
 	for _, v := range steps {
 		err := s.Validate(v)
 		if err == nil {
@@ -106,14 +106,14 @@ func (s *Shipwright) validateSteps(steps ...types.Step) {
 	}
 }
 
-func (s *Shipwright) Run(steps ...types.Step) {
+func (s *Shipwright) Run(steps ...pipeline.Step) {
 	initializedSteps := s.initSteps(steps...)
 	s.validateSteps(steps...)
 
 	s.Client.Run(initializedSteps...)
 }
 
-func (s *Shipwright) Parallel(steps ...types.Step) {
+func (s *Shipwright) Parallel(steps ...pipeline.Step) {
 	initializedSteps := s.initSteps(steps...)
 	s.validateSteps(steps...)
 
@@ -124,7 +124,7 @@ func (s *Shipwright) Parallel(steps ...types.Step) {
 // This function will panic if the arguments in os.Args do not match what's expected.
 // This function, and the type it returns, are only ran inside of a Shipwright pipeline, and so it is okay to treat this like it is the entrypoint of a command.
 // Watching for signals, parsing command line arguments, and panics are all things that are OK in this function.
-func New(name string, events ...types.Event) Shipwright {
+func New(name string, events ...pipeline.Event) Shipwright {
 	args, err := plumbing.ParseArguments(os.Args[1:])
 	if err != nil {
 		plog.Fatalln("Error parsing arguments. Error:", err)
@@ -135,11 +135,12 @@ func New(name string, events ...types.Event) Shipwright {
 		return Shipwright{}
 	}
 
-	sw := NewFromOpts(&types.CommonOpts{
+	sw := NewFromOpts(&pipeline.CommonOpts{
 		Name:    name,
 		Version: args.Version,
 		Output:  os.Stdout,
 		Args:    args,
+		Log:     plog.New(args.LogLevel, os.Stderr),
 	})
 
 	// Ensure that no matter the behavior of the initializer, we still set the version on the shipwright object.
@@ -160,6 +161,6 @@ func New(name string, events ...types.Event) Shipwright {
 	return sw
 }
 
-func NewFromOpts(opts *types.CommonOpts, events ...types.Event) Shipwright {
+func NewFromOpts(opts *pipeline.CommonOpts, events ...pipeline.Event) Shipwright {
 	return NewClient(opts)
 }

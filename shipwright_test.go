@@ -8,7 +8,7 @@ import (
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/clients/cli"
 	"pkg.grafana.com/shipwright/v1/plumbing/clients/drone"
-	"pkg.grafana.com/shipwright/v1/plumbing/types"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 )
 
 func TestNew(t *testing.T) {
@@ -19,7 +19,7 @@ func TestNew(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		sw := shipwright.NewFromOpts(&types.CommonOpts{
+		sw := shipwright.NewFromOpts(&pipeline.CommonOpts{
 			Args: args,
 		})
 
@@ -40,7 +40,7 @@ func TestNew(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		sw := shipwright.NewFromOpts(&types.CommonOpts{
+		sw := shipwright.NewFromOpts(&pipeline.CommonOpts{
 			Args: args,
 		})
 

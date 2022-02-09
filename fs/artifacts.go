@@ -1,5 +1,5 @@
 package fs
 
-import "pkg.grafana.com/shipwright/v1/plumbing/types"
+import "pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 
-func Glob(string) types.Artifact { return nil }
+func Glob(string) pipeline.Artifact { return nil }

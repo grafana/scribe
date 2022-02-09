@@ -2,7 +2,7 @@ package git
 
 import (
 	"pkg.grafana.com/shipwright/v1/plumbing/config"
-	"pkg.grafana.com/shipwright/v1/plumbing/types"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 )
 
 type CloneOpts struct {
@@ -16,10 +16,10 @@ type Client struct {
 
 	// Opts are provided to the Shipwright client (like the Drone client)
 	// but most options could be valuable here, like "version"
-	Opts *types.CommonOpts
+	Opts *pipeline.CommonOpts
 }
 
-func New(configurer config.Configurer, opts *types.CommonOpts) Client {
+func New(configurer config.Configurer, opts *pipeline.CommonOpts) Client {
 	return Client{
 		Configurer: configurer,
 		Opts:       opts,

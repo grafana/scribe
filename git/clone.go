@@ -7,22 +7,22 @@ import (
 
 	"pkg.grafana.com/shipwright/v1/exec"
 	"pkg.grafana.com/shipwright/v1/plumbing"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
-	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
 
 func (c *Client) CloneOpts() (*CloneOpts, error) {
-	ref, err := c.Configurer.Value(types.ArgumentCommitRef)
+	ref, err := c.Configurer.Value(pipeline.ArgumentCommitRef)
 	if err != nil {
 		return nil, err
 	}
 
-	u, err := c.Configurer.Value(types.ArgumentRemoteURL)
+	u, err := c.Configurer.Value(pipeline.ArgumentRemoteURL)
 	if err != nil {
 		return nil, err
 	}
 
-	workDir, err := c.Configurer.Value(types.ArgumentWorkingDir)
+	workDir, err := c.Configurer.Value(pipeline.ArgumentWorkingDir)
 	if err != nil {
 		return nil, err
 	}
@@ -34,8 +34,8 @@ func (c *Client) CloneOpts() (*CloneOpts, error) {
 	}, nil
 }
 
-func (c *Client) clone(depth int) types.StepAction {
-	return func(aopts types.ActionOpts) error {
+func (c *Client) clone(depth int) pipeline.StepAction {
+	return func(aopts pipeline.ActionOpts) error {
 		opts, err := c.CloneOpts()
 		if err != nil {
 			return err
@@ -81,12 +81,12 @@ func (c *Client) clone(depth int) types.StepAction {
 	}
 }
 
-func (c *Client) Clone(depth int) types.Step {
-	return types.NewStep(c.clone(depth)).
+func (c *Client) Clone(depth int) pipeline.Step {
+	return pipeline.NewStep(c.clone(depth)).
 		WithArguments(
-			types.ArgumentCommitRef,
-			types.ArgumentRemoteURL,
-			types.ArgumentWorkingDir,
+			pipeline.ArgumentCommitRef,
+			pipeline.ArgumentRemoteURL,
+			pipeline.ArgumentWorkingDir,
 		).
 		WithImage(
 			plumbing.SubImage("git", c.Opts.Version),

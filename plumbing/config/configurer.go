@@ -1,8 +1,8 @@
 package config
 
-import "pkg.grafana.com/shipwright/v1/plumbing/types"
+import "pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 
 type Configurer interface {
 	// Value returns the implementation-specific pipeline config.
-	Value(types.StepArgument) (string, error)
+	Value(pipeline.StepArgument) (string, error)
 }

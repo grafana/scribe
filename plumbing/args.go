@@ -3,6 +3,7 @@ package plumbing
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
@@ -27,14 +28,19 @@ type PipelineArgs struct {
 	// ArgMap is a map populated by arguments provided using the `-arg` flag.
 	// Example usage: `-arg={key}={value}
 	ArgMap ArgMap
+
+	// LogLvel defines how detailed the output logs in the pipeline should be.
+	// Possible options are [debug, info, warn, error].
+	// The default value is warn.
+	LogLevel plog.LogLevel
 }
 
 func ParseArguments(args []string) (*PipelineArgs, error) {
 	var (
 		flagSet                     = flag.NewFlagSet("run", flag.ContinueOnError)
 		mode          RunModeOption = RunModeCLI
+		logLevel                    = plog.LogLevelWarn
 		step          OptionalInt
-		logLevel      plog.LogLevel
 		pathOverride  string
 		version       string
 		noStdinPrompt bool
@@ -45,12 +51,15 @@ func ParseArguments(args []string) (*PipelineArgs, error) {
 
 	flagSet.Var(&mode, "mode", "cli|docker|drone. Default: cli")
 	flagSet.Var(&step, "step", "A number that defines what specific step to run")
-	flagSet.Var(&logLevel, "log-level", "")
+	flagSet.Var(&logLevel, "log-level", "The level of detail in the pipeline's log output. Default: 'warn'. Options: [debug, info, warn, error]")
 	flagSet.Var(&argMap, "arg", "")
 	flagSet.BoolVar(&noStdinPrompt, "no-stdin", false, "If this flag is provided, then the CLI pipeline will not request absent arguments via stdin")
 	flagSet.StringVar(&pathOverride, "path", "", "Providing the path argument overrides the $PWD of the pipeline for generation")
 	flagSet.StringVar(&version, "version", "latest", "The version is provided by the 'shipwright' command, however if only using 'go run', it can be provided here")
 
+	log.Println("Got log level", logLevel)
+	log.Println("Got log level", logLevel)
+	log.Println("Got log level", logLevel)
 	if err := flagSet.Parse(args); err != nil {
 		return nil, err
 	}
@@ -59,6 +68,7 @@ func ParseArguments(args []string) (*PipelineArgs, error) {
 		CanStdinPrompt: !noStdinPrompt,
 		Mode:           mode,
 		Version:        version,
+		LogLevel:       logLevel,
 	}
 
 	if step.Valid {

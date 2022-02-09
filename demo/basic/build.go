@@ -6,11 +6,11 @@ import (
 	"pkg.grafana.com/shipwright/v1"
 	"pkg.grafana.com/shipwright/v1/fs"
 	"pkg.grafana.com/shipwright/v1/git"
-	"pkg.grafana.com/shipwright/v1/plumbing/types"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 )
 
-func writeVersion(sw shipwright.Shipwright) types.StepAction {
-	return func(opts types.ActionOpts) error {
+func writeVersion(sw shipwright.Shipwright) pipeline.StepAction {
+	return func(opts pipeline.ActionOpts) error {
 		log.Println("Writing version...")
 		// equivalent of `git describe --tags --dirty --always`
 		version := sw.Git.Describe(&git.DescribeOpts{
@@ -35,20 +35,20 @@ func main() {
 	// In parallel, install the yarn and go dependencies, and cache the node_modules and $GOPATH/pkg folders.
 	// The cache should invalidate if the yarn.lock or go.sum files have changed
 	sw.Run(
-		types.NamedStep("install frontend dependencies", sw.Cache(
+		pipeline.NamedStep("install frontend dependencies", sw.Cache(
 			sw.Yarn.Install(),
 			fs.Cache("node_modules", fs.FileHasChanged("yarn.lock")),
 		)),
-		types.NamedStep("install backend dependencies", sw.Cache(
+		pipeline.NamedStep("install backend dependencies", sw.Cache(
 			sw.Golang.Modules.Download(),
 			fs.Cache("$GOPATH/pkg", fs.FileHasChanged("go.sum")),
 		)),
 	)
 
 	sw.Run(
-		types.NamedStep("write .version file", writeVersion(sw)),
-		types.NamedStep("compile backend", sw.Make.Target("build")),
-		types.NamedStep("compile frontend", sw.Make.Target("package")),
+		pipeline.NamedStep("write .version file", writeVersion(sw)),
+		pipeline.NamedStep("compile backend", sw.Make.Target("build")),
+		pipeline.NamedStep("compile frontend", sw.Make.Target("package")),
 	)
 
 	// sw.Output()

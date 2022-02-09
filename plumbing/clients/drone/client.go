@@ -3,9 +3,9 @@ package drone
 import (
 	"gopkg.in/yaml.v2"
 	"pkg.grafana.com/shipwright/v1/plumbing"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 	"pkg.grafana.com/shipwright/v1/plumbing/schemas/drone"
-	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
 
 var (
@@ -14,23 +14,24 @@ var (
 )
 
 type Client struct {
-	Opts *types.CommonOpts
-	List *types.List
+	Log  *plog.Logger
+	Opts *pipeline.CommonOpts
+	List *pipeline.List
 }
 
 // Run allows users to define steps that are ran sequentially. For example, the second step will not run until the first step has completed.
 // This function blocks the goroutine until all of the steps have completed.
-func (c *Client) Run(steps ...types.Step) {
+func (c *Client) Run(steps ...pipeline.Step) {
 	c.List.AppendLineage(steps...)
 }
 
 // Parallel will run the listed steps at the same time.
 // This function blocks the goroutine until all of the steps have completed.
-func (c *Client) Parallel(steps ...types.Step) {
+func (c *Client) Parallel(steps ...pipeline.Step) {
 	c.List.Append(steps...)
 }
 
-func (c *Client) Validate(step types.Step) error {
+func (c *Client) Validate(step pipeline.Step) error {
 	if step.Image == "" {
 		return ErrorNoImage
 	}
@@ -42,23 +43,22 @@ func (c *Client) Validate(step types.Step) error {
 	return nil
 }
 
-func (c *Client) Cache(action types.StepAction, _ types.Cacher) types.StepAction { return action }
-func (c *Client) Input(_ ...types.Argument)                                      {}
-func (c *Client) Output(_ ...types.Output)                                       {}
+func (c *Client) Cache(action pipeline.StepAction, _ pipeline.Cacher) pipeline.StepAction {
+	return action
+}
+func (c *Client) Input(_ ...pipeline.Argument) {}
+func (c *Client) Output(_ ...pipeline.Output)  {}
 
 // Done traverses through the tree and writes a .drone.yml file to the provided writer
 func (c *Client) Done() {
 	cfg := &drone.Pipeline{
-		Name: c.Opts.Name,
-		Kind: "pipeline",
-		Type: "docker",
-		Clone: drone.CloneSettings{
-			Disable: true,
-		},
+		Name:  c.Opts.Name,
+		Kind:  "pipeline",
+		Type:  "docker",
 		Steps: []drone.Step{},
 	}
 
-	err := c.List.Walk(func(s types.Step) error {
+	err := c.List.Walk(func(s pipeline.Step) error {
 		step, err := drone.NewStep(c, c.Opts.Args.Path, s)
 		if err != nil {
 			return err
@@ -69,11 +69,11 @@ func (c *Client) Done() {
 	})
 
 	if err != nil {
-		plog.Fatalln("Error building drone config", err)
+		c.Log.Fatalln("Error building drone config", err)
 	}
 
 	if err := yaml.NewEncoder(c.Opts.Output).Encode(cfg); err != nil {
-		plog.Fatalln(err)
+		c.Log.Fatalln(err)
 	}
 
 }

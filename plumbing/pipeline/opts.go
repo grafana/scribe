@@ -1,9 +1,10 @@
-package types
+package pipeline
 
 import (
 	"io"
 
 	"pkg.grafana.com/shipwright/v1/plumbing"
+	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 )
 
 // CommonOpts are provided in the Client's Init function, which includes options that are common to all clients, like
@@ -13,4 +14,5 @@ type CommonOpts struct {
 	Version string
 	Output  io.Writer
 	Args    *plumbing.PipelineArgs
+	Log     *plog.Logger
 }

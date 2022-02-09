@@ -1,3 +1,3 @@
-package types
+package pipeline
 
 type Artifact interface{}

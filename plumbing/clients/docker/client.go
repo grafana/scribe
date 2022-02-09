@@ -15,40 +15,41 @@ import (
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/clients/cli"
 	"pkg.grafana.com/shipwright/v1/plumbing/cmdutil"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 	"pkg.grafana.com/shipwright/v1/plumbing/syncutil"
-	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
 
 // The Client is used when interacting with a shipwright pipeline using the shipwright CLI.
 // In order to emulate what happens in a remote environment, the steps are put into a queue before being ran.
 // Each step is ran in its own docker container.
 type Client struct {
-	Opts  *types.CommonOpts
-	Queue *types.StepQueue
+	Log   *plog.Logger
+	Opts  *pipeline.CommonOpts
+	Queue *pipeline.StepQueue
 }
 
-func (c *Client) Cache(step types.StepAction, _ types.Cacher) types.StepAction {
+func (c *Client) Cache(step pipeline.StepAction, _ pipeline.Cacher) pipeline.StepAction {
 	return step
 }
 
-func (c *Client) Validate(step types.Step) error {
+func (c *Client) Validate(step pipeline.Step) error {
 	if step.Image == "" {
 		return errors.New("no image provided")
 	}
 	return nil
 }
 
-func (c *Client) Input(_ ...types.Argument) {}
-func (c *Client) Output(_ ...types.Output)  {}
+func (c *Client) Input(_ ...pipeline.Argument) {}
+func (c *Client) Output(_ ...pipeline.Output)  {}
 
 // Parallel adds the list of steps into a queue to be executed concurrently
-func (c *Client) Parallel(steps ...types.Step) {
+func (c *Client) Parallel(steps ...pipeline.Step) {
 	c.Queue.Append(steps...)
 }
 
 // Run adds the list of steps into a queue to be executed sequentially
-func (c *Client) Run(steps ...types.Step) {
+func (c *Client) Run(steps ...pipeline.Step) {
 	for _, v := range steps {
 		c.Queue.Append(v)
 	}
@@ -67,7 +68,7 @@ func (c *Client) buildPipeline() (string, error) {
 		stderr = bytes.NewBuffer(nil)
 	)
 
-	plog.Warnf("Building pipeline binary '%s' at '%s' for use in docker container...", c.Opts.Args.Path, path)
+	c.Log.Warnf("Building pipeline binary '%s' at '%s' for use in docker container...", c.Opts.Args.Path, path)
 	wd, err := os.Getwd()
 	if err != nil {
 		return "", err
@@ -93,7 +94,7 @@ func (c *Client) Done() {
 	// without requiring that every image has a copy of the shipwright binary
 	p, err := c.buildPipeline()
 	if err != nil {
-		plog.Fatalln("failed to compile the pipeline", err.Error())
+		c.Log.Fatalln("failed to compile the pipeline", err.Error())
 	}
 
 	step := c.Opts.Args.Step
@@ -103,7 +104,7 @@ func (c *Client) Done() {
 		for _, list := range c.Queue.Steps {
 			for _, step := range list {
 				if step.Serial == n {
-					c.runSteps(ctx, p, []types.Step{step})
+					c.runSteps(ctx, p, []pipeline.Step{step})
 				}
 			}
 		}
@@ -114,7 +115,7 @@ func (c *Client) Done() {
 	size := c.Queue.Size()
 	i := 0
 	for {
-		plog.Infof("Running step(s) %d / %d", i, size)
+		c.Log.Infof("Running step(s) %d / %d", i, size)
 
 		steps := c.Queue.Next()
 		if steps == nil {
@@ -122,7 +123,8 @@ func (c *Client) Done() {
 		}
 
 		if err := c.runSteps(ctx, p, steps); err != nil {
-			plog.Fatalln("Error in step:", err)
+			c.Log.Fatalln("Error in step:", err)
+			break
 		}
 
 		i++
@@ -132,18 +134,18 @@ func (c *Client) Done() {
 // KnownVolumes is a map of default argument to a function used to retrieve the volume the value represents.
 // For example, we know that every pipeline is ran alongisde source code.
 // The user can supply a "-arg=source={path-to-source}" argument, or we can just
-var KnownVolumes = map[types.StepArgument]func(*plumbing.PipelineArgs) (string, error){
-	types.ArgumentSourceFS: func(args *plumbing.PipelineArgs) (string, error) {
+var KnownVolumes = map[pipeline.StepArgument]func(*plumbing.PipelineArgs) (string, error){
+	pipeline.ArgumentSourceFS: func(args *plumbing.PipelineArgs) (string, error) {
 		return ".", nil
 	},
-	types.ArgumentDockerSocketFS: func(*plumbing.PipelineArgs) (string, error) {
+	pipeline.ArgumentDockerSocketFS: func(*plumbing.PipelineArgs) (string, error) {
 		return "/var/run/docker.sock", nil
 	},
 }
 
 // GetVolumeValue will attempt to find the appropriate volume to mount based on the argument provided.
 // Some arguments have known or knowable values, like "ArgumentSourceFS".
-func GetVolumeValue(args *plumbing.PipelineArgs, arg types.StepArgument) (string, error) {
+func GetVolumeValue(args *plumbing.PipelineArgs, arg pipeline.StepArgument) (string, error) {
 	// If an applicable argument is provided, then we should use that, even if it's a known value.
 	if val, err := args.ArgMap.Get(arg.Key); err == nil {
 		return val, nil
@@ -159,11 +161,11 @@ func GetVolumeValue(args *plumbing.PipelineArgs, arg types.StepArgument) (string
 }
 
 // Value retrieves the configuration item the same way the CLI does; by looking in the argmap or by asking via stdin.
-func (c *Client) Value(arg types.StepArgument) (string, error) {
+func (c *Client) Value(arg pipeline.StepArgument) (string, error) {
 	switch arg.Type {
-	case types.ArgumentTypeString:
+	case pipeline.ArgumentTypeString:
 		return cli.GetArgValue(c.Opts.Args, arg)
-	case types.ArgumentTypeFS:
+	case pipeline.ArgumentTypeFS:
 		return GetVolumeValue(c.Opts.Args, arg)
 	}
 
@@ -212,7 +214,7 @@ func volumeValue(dir string) (string, error) {
 // used to run the docker container for a step.
 // For example, if the step supplied requires the project (by default all of them do), then the argument type
 // ArgumentTypeFS is required and is added to the RunOpts volume.
-func (c *Client) applyArguments(opts RunOpts, args []types.StepArgument) (RunOpts, error) {
+func (c *Client) applyArguments(opts RunOpts, args []pipeline.StepArgument) (RunOpts, error) {
 	for _, arg := range args {
 		value, err := c.Value(arg)
 		if err != nil {
@@ -220,7 +222,7 @@ func (c *Client) applyArguments(opts RunOpts, args []types.StepArgument) (RunOpt
 		}
 
 		switch arg.Type {
-		case types.ArgumentTypeFS:
+		case pipeline.ArgumentTypeFS:
 			volume, err := volumeValue(value)
 			if err != nil {
 				return opts, err
@@ -228,7 +230,7 @@ func (c *Client) applyArguments(opts RunOpts, args []types.StepArgument) (RunOpt
 
 			// Prefering path.Join here over filepath.Join in case any silly Windows users try to use this thing
 			opts.Volumes = append(opts.Volumes, volume)
-		case types.ArgumentTypeString:
+		case pipeline.ArgumentTypeString:
 			// String arguments are already appended to the command and have already been placed in RunOpts; we don't need to re-implement that.
 			continue
 		}
@@ -237,10 +239,10 @@ func (c *Client) applyArguments(opts RunOpts, args []types.StepArgument) (RunOpt
 	return opts, nil
 }
 
-func (c *Client) runAction(pipeline string, step types.Step) types.StepAction {
+func (c *Client) runAction(pipelinePath string, step pipeline.Step) pipeline.StepAction {
 	cmd, err := cmdutil.StepCommand(c, "", step)
 	if err != nil {
-		plog.Fatalln(err)
+		c.Log.Fatalln(err)
 		return nil
 	}
 
@@ -249,10 +251,10 @@ func (c *Client) runAction(pipeline string, step types.Step) types.StepAction {
 		args = cmd[1:]
 	}
 
-	plog.Infoln(PipelineVolumePath, strings.Join(cmd[1:], " "))
+	c.Log.Infoln(PipelineVolumePath, strings.Join(cmd[1:], " "))
 
 	runOpts := RunOpts{
-		PipelinePath: pipeline,
+		PipelinePath: pipelinePath,
 		Image:        step.Image,
 		Command:      PipelineVolumePath,
 		Volumes:      []string{},
@@ -261,11 +263,11 @@ func (c *Client) runAction(pipeline string, step types.Step) types.StepAction {
 
 	runOpts, err = c.applyArguments(runOpts, step.Arguments)
 	if err != nil {
-		plog.Fatalln(err)
+		c.Log.Fatalln(err)
 		return nil
 	}
 
-	return func(opts types.ActionOpts) error {
+	return func(opts pipeline.ActionOpts) error {
 		runOpts.Stdout = opts.Stdout
 		runOpts.Stderr = opts.Stderr
 
@@ -273,12 +275,12 @@ func (c *Client) runAction(pipeline string, step types.Step) types.StepAction {
 	}
 }
 
-func (c *Client) wrap(pipeline string, step types.Step) types.Step {
-	step.Action = func(opts types.ActionOpts) error {
+func (c *Client) wrap(pipelinePath string, step pipeline.Step) pipeline.Step {
+	step.Action = func(opts pipeline.ActionOpts) error {
 		opts.Stdout = os.Stdout
 		opts.Stderr = os.Stderr
 
-		if err := c.runAction(pipeline, step)(opts); err != nil {
+		if err := c.runAction(pipelinePath, step)(opts); err != nil {
 			return err
 		}
 
@@ -288,13 +290,15 @@ func (c *Client) wrap(pipeline string, step types.Step) types.Step {
 	return step
 }
 
-func (c *Client) runSteps(ctx context.Context, pipeline string, steps types.StepList) error {
-	plog.Infoln("Running steps in parallel:", len(steps))
-	wg := syncutil.NewWaitGroup(time.Minute)
+func (c *Client) runSteps(ctx context.Context, pipelinePath string, steps pipeline.StepList) error {
+	c.Log.Infoln("Running steps in parallel:", len(steps))
+	ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+	defer cancel()
+	wg := syncutil.NewWaitGroup()
 
-	opts := types.ActionOpts{}
+	opts := pipeline.ActionOpts{}
 	for _, v := range steps {
-		wg.Add(c.wrap(pipeline, v))
+		wg.Add(c.wrap(pipelinePath, v))
 	}
 
 	return wg.Wait(ctx, opts)

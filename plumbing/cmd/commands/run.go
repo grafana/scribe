@@ -73,7 +73,7 @@ func Run(ctx context.Context, opts *RunOpts) error {
 	// But it's important to note that a lot happens before it actually reaches the pipeline code and produces a command like this:
 	//   /tmp/random-string -mode drone -path ./demo/basic
 	// So the path to the pipeline is not preserved, which is why we have to provide the path as an argument
-	cmdArgs := []string{"run", path, "-mode", args.Mode.String(), "-path", args.Path, "-version", version}
+	cmdArgs := []string{"run", path, "-mode", args.Mode.String(), "-log-level", args.LogLevel.String(), "-path", args.Path, "-version", version}
 
 	plog.Infoln("Running shipwright pipeline with args", cmdArgs)
 

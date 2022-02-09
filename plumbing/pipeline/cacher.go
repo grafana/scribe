@@ -1,4 +1,4 @@
-package types
+package pipeline
 
 // a CacheCondition should return true if the cacher should cache the step.
 // In other words, returning false means that the step must run.

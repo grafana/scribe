@@ -1,4 +1,4 @@
-package types
+package pipeline
 
 // A StepQueue is a queue of steps stored before a pipeline is ran.
 type StepQueue struct {

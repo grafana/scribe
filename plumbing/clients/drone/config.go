@@ -4,17 +4,17 @@ import (
 	"fmt"
 
 	"pkg.grafana.com/shipwright/v1/plumbing"
-	"pkg.grafana.com/shipwright/v1/plumbing/types"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 )
 
-var argEnvMap = map[types.StepArgument]string{
-	types.ArgumentCommitSHA:  "$DRONE_COMMIT",
-	types.ArgumentCommitRef:  "$DRONE_COMMIT_REF",
-	types.ArgumentRemoteURL:  "$DRONE_GIT_SSH_URL",
-	types.ArgumentWorkingDir: "$DRONE_REPO_NAME",
+var argEnvMap = map[pipeline.StepArgument]string{
+	pipeline.ArgumentCommitSHA:  "$DRONE_COMMIT",
+	pipeline.ArgumentCommitRef:  "$DRONE_COMMIT_REF",
+	pipeline.ArgumentRemoteURL:  "$DRONE_GIT_SSH_URL",
+	pipeline.ArgumentWorkingDir: "$DRONE_REPO_NAME",
 }
 
-func (c *Client) Value(arg types.StepArgument) (string, error) {
+func (c *Client) Value(arg pipeline.StepArgument) (string, error) {
 	if val, ok := argEnvMap[arg]; ok {
 		return val, nil
 	}

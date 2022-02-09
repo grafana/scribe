@@ -13,8 +13,8 @@ import (
 	shipwright "pkg.grafana.com/shipwright/v1"
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/clients/drone"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 	"pkg.grafana.com/shipwright/v1/plumbing/testutil"
-	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
 
 func TestDroneClient(t *testing.T) {
@@ -49,7 +49,7 @@ func TestDroneRun(t *testing.T) {
 			t.SkipNow()
 
 			t.Log("Creating new drone client...")
-			sw := shipwright.NewDroneClient(&types.CommonOpts{})
+			sw := shipwright.NewDroneClient(&pipeline.CommonOpts{})
 
 			t.Log("Creating new test steps...")
 			var (
@@ -98,8 +98,8 @@ func TestDroneRun(t *testing.T) {
 
 func TestDroneTree(t *testing.T) {
 	t.Run("It should set the root node once", func(t *testing.T) {
-		sw := shipwright.NewDroneClient(&types.CommonOpts{})
-		sw.Run(types.NoOpStep)
+		sw := shipwright.NewDroneClient(&pipeline.CommonOpts{})
+		sw.Run(pipeline.NoOpStep)
 		client := sw.Client.(*drone.Client)
 
 		if client.List == nil {
@@ -109,7 +109,7 @@ func TestDroneTree(t *testing.T) {
 
 	// t.Run("It should populate a new node", func(t *testing.T) {
 	// 	sw := shipwright.NewDroneClient(&shipwright.CommonOpts{})
-	// 	sw.Run(types.NoOpStep, types.NoOpStep)
+	// 	sw.Run(pipeline.NoOpStep, pipeline.NoOpStep)
 
 	// 	client := sw.Client.(*shipwright.DroneClient)
 

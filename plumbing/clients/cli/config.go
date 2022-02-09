@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"pkg.grafana.com/shipwright/v1/plumbing"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
-	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
 
 // This function effectively runs 'git remote get-url $(git remote)'
@@ -48,14 +48,14 @@ func currentBranch() (string, error) {
 }
 
 // KnownValues are URL values that we know how to retrieve using the command line.
-var KnownValues = map[types.StepArgument]func() (string, error){
-	types.ArgumentRemoteURL:  currentRemote,
-	types.ArgumentCommitRef:  currentCommit,
-	types.ArgumentBranch:     currentBranch,
-	types.ArgumentWorkingDir: os.Getwd,
+var KnownValues = map[pipeline.StepArgument]func() (string, error){
+	pipeline.ArgumentRemoteURL:  currentRemote,
+	pipeline.ArgumentCommitRef:  currentCommit,
+	pipeline.ArgumentBranch:     currentBranch,
+	pipeline.ArgumentWorkingDir: os.Getwd,
 }
 
-func GetArgValue(args *plumbing.PipelineArgs, arg types.StepArgument) (string, error) {
+func GetArgValue(args *plumbing.PipelineArgs, arg pipeline.StepArgument) (string, error) {
 	if val, ok := args.ArgMap[arg.Key]; ok {
 		return val, nil
 	}
@@ -93,6 +93,6 @@ func GetArgValue(args *plumbing.PipelineArgs, arg types.StepArgument) (string, e
 // If the argument "-no-stdin" is provided, then an error will returned instead.
 // Some arguments can be assumed by the current environment. When running in CLI mode, for example, the following is almost always true, like:
 // * You're _probably_ in the git repo and on the commit that you want to test already
-func (c *Client) Value(arg types.StepArgument) (string, error) {
+func (c *Client) Value(arg pipeline.StepArgument) (string, error) {
 	return GetArgValue(c.Opts.Args, arg)
 }

@@ -1,4 +1,4 @@
-package types
+package pipeline
 
 // List is a very primitive implementation of the Collection interface
 // Each element in a single row is considered a child of the row above it.

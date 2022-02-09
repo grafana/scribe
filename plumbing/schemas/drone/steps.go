@@ -5,7 +5,7 @@ import (
 
 	"pkg.grafana.com/shipwright/v1/plumbing/cmdutil"
 	"pkg.grafana.com/shipwright/v1/plumbing/config"
-	"pkg.grafana.com/shipwright/v1/plumbing/types"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 )
 
 // Slugify removes illegal characters for use in identifiers in a Drone pipeline
@@ -18,7 +18,7 @@ func Slugify(s string) string {
 	return s
 }
 
-func NewStep(c config.Configurer, path string, step types.Step) (Step, error) {
+func NewStep(c config.Configurer, path string, step pipeline.Step) (Step, error) {
 	var (
 		name  = Slugify(step.Name)
 		deps  = make([]string, len(step.Dependencies))

@@ -1,10 +1,10 @@
 package fs
 
-import "pkg.grafana.com/shipwright/v1/plumbing/types"
+import "pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 
 // FileHasChanged creates a checksum for the file "file" and stores it.
 // If the checksum does not exist in the shipwright key store, then it will return false.
-func FileHasChanged(file string) types.CacheCondition {
+func FileHasChanged(file string) pipeline.CacheCondition {
 	return func() bool {
 		return false
 	}
@@ -12,6 +12,6 @@ func FileHasChanged(file string) types.CacheCondition {
 
 // Cache will store the directory or file located at `path` if the conditions return true.
 // If all of the conditions return true, then the step is skipped and the directory is added to the local filesystem.
-func Cache(path string, conditions ...types.CacheCondition) types.Cacher {
-	return func(types.Step) {}
+func Cache(path string, conditions ...pipeline.CacheCondition) pipeline.Cacher {
+	return func(pipeline.Step) {}
 }

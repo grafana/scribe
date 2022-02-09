@@ -7,7 +7,7 @@ import (
 
 	"pkg.grafana.com/shipwright/v1"
 	"pkg.grafana.com/shipwright/v1/plumbing"
-	"pkg.grafana.com/shipwright/v1/plumbing/types"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 )
 
 type ImageData struct {
@@ -29,8 +29,8 @@ func version() (string, error) {
 	return string(version), nil
 }
 
-func (i Image) BuildStep(sw shipwright.Shipwright) types.Step {
-	action := func(opts types.ActionOpts) error {
+func (i Image) BuildStep(sw shipwright.Shipwright) pipeline.Step {
+	action := func(opts pipeline.ActionOpts) error {
 		v, err := version()
 		if err != nil {
 			return err
@@ -48,8 +48,8 @@ func (i Image) BuildStep(sw shipwright.Shipwright) types.Step {
 		return sw.Docker.BuildWithArgs(name, i.Dockerfile, i.Context, fmt.Sprintf("VERSION=%s", v)).Action(opts)
 	}
 
-	return types.NewStep(action).
-		WithArguments(types.ArgumentSourceFS, types.ArgumentDockerSocketFS).
+	return pipeline.NewStep(action).
+		WithArguments(pipeline.ArgumentSourceFS, pipeline.ArgumentDockerSocketFS).
 		WithImage(plumbing.SubImage("docker", sw.Version))
 }
 
@@ -83,8 +83,8 @@ var Images = []Image{
 	},
 }
 
-func Steps(sw shipwright.Shipwright, images []Image) []types.Step {
-	steps := make([]types.Step, len(images))
+func Steps(sw shipwright.Shipwright, images []Image) []pipeline.Step {
+	steps := make([]pipeline.Step, len(images))
 
 	for i, image := range images {
 		steps[i] = image.BuildStep(sw).WithName(fmt.Sprintf("build %s image", image.Name))

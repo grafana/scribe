@@ -2,41 +2,33 @@ kind: pipeline
 type: docker
 name: basic pipeline
 clone:
-  disable: true
+  disable: false
 steps:
-- name: clone
-  image: ghcr.io/grafana/shipwright/git:latest
-  commands:
-  - shipwright -step=0 -arg=git-commit-ref=$DRONE_COMMIT_REF -arg=remote-url=$DRONE_GIT_SSH_URL
-    -arg=workdir=$DRONE_REPO_NAME ./demo/basic
 - name: install-frontend-dependencies
+  image: ghcr.io/grafana/shipwright:latest
+  commands:
+  - shipwright -step=0 ./demo/basic
+- name: install-backend-dependencies
   image: ghcr.io/grafana/shipwright:latest
   commands:
   - shipwright -step=1 ./demo/basic
   depends_on:
-  - clone
-- name: install-backend-dependencies
+  - install-frontend-dependencies
+- name: write-version-file
   image: ghcr.io/grafana/shipwright:latest
   commands:
   - shipwright -step=2 ./demo/basic
   depends_on:
-  - clone
-- name: write-version-file
-  image: ghcr.io/grafana/shipwright:latest
-  commands:
-  - shipwright -step=3 ./demo/basic
-  depends_on:
-  - install-frontend-dependencies
   - install-backend-dependencies
 - name: compile-backend
   image: ghcr.io/grafana/shipwright:latest
   commands:
-  - shipwright -step=4 ./demo/basic
+  - shipwright -step=3 ./demo/basic
   depends_on:
   - write-version-file
 - name: compile-frontend
   image: ghcr.io/grafana/shipwright:latest
   commands:
-  - shipwright -step=5 ./demo/basic
+  - shipwright -step=4 ./demo/basic
   depends_on:
   - compile-backend

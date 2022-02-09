@@ -4,13 +4,13 @@ import (
 	"pkg.grafana.com/shipwright/v1/docker"
 	"pkg.grafana.com/shipwright/v1/git"
 	"pkg.grafana.com/shipwright/v1/golang"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
-	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
 
 // NewClient creates a new Shipwright client based on the commonopts (mostly the mode).
 // It does not check for a non-nil "Args" field.
-func NewClient(c *types.CommonOpts) Shipwright {
+func NewClient(c *pipeline.CommonOpts) Shipwright {
 	plog.Infof("Initializing Shipwright client with mode '%s'", c.Args.Mode.String())
 	initializer, ok := ClientInitializers[c.Args.Mode]
 	if !ok {

@@ -1,9 +1,9 @@
 package yarn
 
-import "pkg.grafana.com/shipwright/v1/plumbing/types"
+import "pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 
-func NewStep(args ...string) types.StepAction {
-	return func(types.ActionOpts) error {
+func NewStep(args ...string) pipeline.StepAction {
+	return func(pipeline.ActionOpts) error {
 		return nil
 	}
 }
