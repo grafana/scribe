@@ -4,6 +4,7 @@ type ArgumentType int
 
 const (
 	ArgumentTypeString ArgumentType = iota
+	ArgumentTypeSecret
 	ArgumentTypeFS
 )
 

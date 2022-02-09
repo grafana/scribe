@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -48,6 +49,8 @@ func (c *Client) Run(steps ...types.Step) {
 }
 
 func (c *Client) Done() {
+	ctx := context.Background()
+
 	step := c.Opts.Args.Step
 	if step != nil {
 		n := *step
@@ -55,7 +58,7 @@ func (c *Client) Done() {
 		for _, list := range c.Queue.Steps {
 			for _, step := range list {
 				if step.Serial == n {
-					c.runSteps([]types.Step{step})
+					c.runSteps(ctx, []types.Step{step})
 				}
 			}
 		}
@@ -73,7 +76,7 @@ func (c *Client) Done() {
 			break
 		}
 
-		if err := c.runSteps(steps); err != nil {
+		if err := c.runSteps(ctx, steps); err != nil {
 			plog.Fatalln("Error in step:", err)
 		}
 
@@ -81,13 +84,16 @@ func (c *Client) Done() {
 	}
 }
 
-func (c *Client) wrap(action types.StepAction) types.StepAction {
-	return func(opts types.ActionOpts) error {
+func (c *Client) wrap(step types.Step) types.Step {
+	action := step.Action
+	step.Action = func(opts types.ActionOpts) error {
 		return action(opts)
 	}
+
+	return step
 }
 
-func (c *Client) runSteps(steps types.StepList) error {
+func (c *Client) runSteps(ctx context.Context, steps types.StepList) error {
 	plog.Debugln("Running steps in parallel:", len(steps))
 	var (
 		wg   = syncutil.NewWaitGroup(time.Minute)
@@ -95,8 +101,8 @@ func (c *Client) runSteps(steps types.StepList) error {
 	)
 
 	for _, v := range steps {
-		wg.Add(c.wrap(v.Action))
+		wg.Add(c.wrap(v))
 	}
 
-	return wg.Wait(opts)
+	return wg.Wait(ctx, opts)
 }

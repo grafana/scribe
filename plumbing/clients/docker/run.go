@@ -1,24 +1,32 @@
 package docker
 
 import (
+	"fmt"
 	"io"
 	"os/exec"
 
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 )
 
+// PipelineVolumePath refers to the path where the compiled pipeline is mounted in the container
+const PipelineVolumePath = "/var/pipeline"
+
 type RunOpts struct {
-	Image   string
-	Command string
-	Volumes []string
-	Args    []string
+	PipelinePath string
+	Image        string
+	Command      string
+	Volumes      []string
+	Args         []string
 
 	Stdout io.Writer
 	Stderr io.Writer
 }
 
 func Run(opts RunOpts) error {
-	volumes := []string{}
+	volumes := []string{
+		"-v", fmt.Sprintf("%s:%s", opts.PipelinePath, "/var/pipeline"),
+	}
+
 	for _, v := range opts.Volumes {
 		volumes = append(volumes, "-v", v)
 	}

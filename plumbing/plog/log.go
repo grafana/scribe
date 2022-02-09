@@ -1,5 +1,7 @@
 package plog
 
+import "io"
+
 func Debug(v ...interface{}) {
 	DefaultLogger.Debug(v...)
 }
@@ -70,4 +72,8 @@ func Panicf(format string, v ...interface{}) {
 
 func Panicln(v ...interface{}) {
 	DefaultLogger.Panicln(v...)
+}
+
+func Writer() io.Writer {
+	return DefaultLogger.Writer()
 }

@@ -7,7 +7,8 @@ import (
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
 )
 
-// StepCommand returns the command string for running a single step
+// StepCommand returns the command string for running a single step.
+// The path argument can be omitted, which is particularly helpful if the current directory is a pipeline.
 func StepCommand(c config.Configurer, path string, step types.Step) ([]string, error) {
 	args := []string{}
 
@@ -25,7 +26,9 @@ func StepCommand(c config.Configurer, path string, step types.Step) ([]string, e
 	}
 
 	cmd := append([]string{"shipwright", fmt.Sprintf("-step=%d", step.Serial)}, args...)
-	cmd = append(cmd, path)
+	if path != "" {
+		cmd = append(cmd, path)
+	}
 
 	return cmd, nil
 }

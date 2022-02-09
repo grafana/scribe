@@ -3,7 +3,6 @@ package main
 import (
 	"pkg.grafana.com/shipwright/v1"
 	"pkg.grafana.com/shipwright/v1/ci/docker"
-	"pkg.grafana.com/shipwright/v1/git"
 )
 
 // "main" defines our program pipeline.
@@ -11,7 +10,7 @@ import (
 // This allows the various client modes to work properly in different scenarios, like in a CI environment or locally.
 // Logic and processing done outside of the `sw.*` family of functions may not be included in the resulting pipeline.
 func main() {
-	sw := shipwright.New("basic pipeline", git.EventCommit{})
+	sw := shipwright.New("basic pipeline")
 	defer sw.Done()
 
 	sw.Run(

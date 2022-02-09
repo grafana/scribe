@@ -1,13 +1,17 @@
 package docker
 
 import (
+	"bytes"
+	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"pkg.grafana.com/shipwright/v1/golang"
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/clients/cli"
 	"pkg.grafana.com/shipwright/v1/plumbing/cmdutil"
@@ -50,7 +54,48 @@ func (c *Client) Run(steps ...types.Step) {
 	}
 }
 
+// buildPipeline compiles the provided pipeline so that it can be mounted in a container without requiring that the pipeline has the shipwright command or go installed.
+func (c *Client) buildPipeline() (string, error) {
+	p, err := os.MkdirTemp(os.TempDir(), "shipwright-")
+	if err != nil {
+		return "", err
+	}
+
+	path := filepath.Join(p, "pipeline")
+	var (
+		stdout = bytes.NewBuffer(nil)
+		stderr = bytes.NewBuffer(nil)
+	)
+
+	plog.Warnf("Building pipeline binary '%s' at '%s' for use in docker container...", c.Opts.Args.Path, path)
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	if err := golang.Build(golang.BuildOpts{
+		Pkg:    c.Opts.Args.Path,
+		Module: wd,
+		Output: path,
+		Stdout: stdout,
+		Stderr: stderr,
+	}); err != nil {
+		return "", fmt.Errorf("error: %w\nstdout: %s\nstderr: %s", err, stdout.String(), stderr.String())
+	}
+
+	return path, nil
+}
+
 func (c *Client) Done() {
+	ctx := context.Background()
+
+	// Every step needs a compiled version of the pipeline in order to know what to do
+	// without requiring that every image has a copy of the shipwright binary
+	p, err := c.buildPipeline()
+	if err != nil {
+		plog.Fatalln("failed to compile the pipeline", err.Error())
+	}
+
 	step := c.Opts.Args.Step
 	if step != nil {
 		n := *step
@@ -58,7 +103,7 @@ func (c *Client) Done() {
 		for _, list := range c.Queue.Steps {
 			for _, step := range list {
 				if step.Serial == n {
-					c.runSteps([]types.Step{step})
+					c.runSteps(ctx, p, []types.Step{step})
 				}
 			}
 		}
@@ -76,7 +121,7 @@ func (c *Client) Done() {
 			break
 		}
 
-		if err := c.runSteps(steps); err != nil {
+		if err := c.runSteps(ctx, p, steps); err != nil {
 			plog.Fatalln("Error in step:", err)
 		}
 
@@ -192,8 +237,8 @@ func (c *Client) applyArguments(opts RunOpts, args []types.StepArgument) (RunOpt
 	return opts, nil
 }
 
-func (c *Client) runAction(step types.Step) types.StepAction {
-	cmd, err := cmdutil.StepCommand(c, c.Opts.Args.Path, step)
+func (c *Client) runAction(pipeline string, step types.Step) types.StepAction {
+	cmd, err := cmdutil.StepCommand(c, "", step)
 	if err != nil {
 		plog.Fatalln(err)
 		return nil
@@ -204,13 +249,14 @@ func (c *Client) runAction(step types.Step) types.StepAction {
 		args = cmd[1:]
 	}
 
-	plog.Infoln(cmd[0], strings.Join(cmd[1:], " "))
+	plog.Infoln(PipelineVolumePath, strings.Join(cmd[1:], " "))
 
 	runOpts := RunOpts{
-		Image:   step.Image,
-		Command: cmd[0],
-		Volumes: []string{},
-		Args:    args,
+		PipelinePath: pipeline,
+		Image:        step.Image,
+		Command:      PipelineVolumePath,
+		Volumes:      []string{},
+		Args:         args,
 	}
 
 	runOpts, err = c.applyArguments(runOpts, step.Arguments)
@@ -227,27 +273,29 @@ func (c *Client) runAction(step types.Step) types.StepAction {
 	}
 }
 
-func (c *Client) wrap(action types.StepAction) types.StepAction {
-	return func(opts types.ActionOpts) error {
+func (c *Client) wrap(pipeline string, step types.Step) types.Step {
+	step.Action = func(opts types.ActionOpts) error {
 		opts.Stdout = os.Stdout
 		opts.Stderr = os.Stderr
 
-		if err := action(opts); err != nil {
+		if err := c.runAction(pipeline, step)(opts); err != nil {
 			return err
 		}
 
 		return nil
 	}
+
+	return step
 }
 
-func (c *Client) runSteps(steps types.StepList) error {
+func (c *Client) runSteps(ctx context.Context, pipeline string, steps types.StepList) error {
 	plog.Infoln("Running steps in parallel:", len(steps))
 	wg := syncutil.NewWaitGroup(time.Minute)
 
 	opts := types.ActionOpts{}
 	for _, v := range steps {
-		wg.Add(c.wrap(c.runAction(v)))
+		wg.Add(c.wrap(pipeline, v))
 	}
 
-	return wg.Wait(opts)
+	return wg.Wait(ctx, opts)
 }

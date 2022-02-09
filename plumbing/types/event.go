@@ -1,3 +1,8 @@
 package types
 
-type Event interface{}
+type Event int
+
+const (
+	EventGitPush Event = iota
+	EventManual
+)

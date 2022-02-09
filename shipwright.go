@@ -4,12 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"pkg.grafana.com/shipwright/v1/docker"
 	"pkg.grafana.com/shipwright/v1/fs"
 	"pkg.grafana.com/shipwright/v1/git"
 	"pkg.grafana.com/shipwright/v1/golang"
-	"pkg.grafana.com/shipwright/v1/make"
+	makefile "pkg.grafana.com/shipwright/v1/make"
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/config"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
@@ -50,7 +52,7 @@ type Shipwright struct {
 	Git    git.Client
 	FS     fs.Client
 	Golang golang.Client
-	Make   make.Client
+	Make   makefile.Client
 	Yarn   yarn.Client
 	Docker docker.Client
 
@@ -120,6 +122,8 @@ func (s *Shipwright) Parallel(steps ...types.Step) {
 
 // New creates a new Shipwright client which is used to create pipeline steps.
 // This function will panic if the arguments in os.Args do not match what's expected.
+// This function, and the type it returns, are only ran inside of a Shipwright pipeline, and so it is okay to treat this like it is the entrypoint of a command.
+// Watching for signals, parsing command line arguments, and panics are all things that are OK in this function.
 func New(name string, events ...types.Event) Shipwright {
 	args, err := plumbing.ParseArguments(os.Args[1:])
 	if err != nil {
@@ -141,6 +145,18 @@ func New(name string, events ...types.Event) Shipwright {
 	// Ensure that no matter the behavior of the initializer, we still set the version on the shipwright object.
 	sw.Version = args.Version
 
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT,
+	)
+
+	go func() {
+		<-sigs
+		fmt.Print("\033[?25h")
+	}()
 	return sw
 }
 

@@ -1,6 +1,8 @@
 package golang
 
 import (
+	"io"
+
 	"pkg.grafana.com/shipwright/v1/exec"
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/types"
@@ -23,8 +25,26 @@ func (c Client) Test(pkg string) types.Step {
 		WithArguments(types.ArgumentSourceFS)
 }
 
-func (c Client) Build(pkg, output string) types.Step {
-	return types.NewStep(func(types.ActionOpts) error {
-		return nil
+func (c Client) BuildStep(pkg, output string) types.Step {
+	return types.NewStep(func(opts types.ActionOpts) error {
+		return Build(BuildOpts{
+			Pkg:    pkg,
+			Output: output,
+			Stdout: opts.Stdout,
+			Stderr: opts.Stderr,
+		})
 	})
+}
+
+type BuildOpts struct {
+	Pkg    string
+	Output string
+	Module string
+
+	Stdout io.ReadWriter
+	Stderr io.ReadWriter
+}
+
+func Build(opts BuildOpts) error {
+	return exec.RunCommandAt(opts.Stdout, opts.Stderr, opts.Module, "go", "build", "-o", opts.Output, opts.Pkg)
 }
