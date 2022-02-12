@@ -19,20 +19,20 @@
     └── {x}util
 ```
 
-| directory / format   | description                                                                                                                                                                     |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `./shipwright*.go`   | Defines the `Client` interface and wrapper types that Pipeline developers use to create pipelines.                                                                              |
-| `./ci`               | Shipwright pipeline that tests / builds this repository.                                                                                                                        |
-| `./demo`             | Demo pipelines. Each sub-directory should be a separate pipeline that introduces a new / separate concept.                                                                      |
-| `./{package}         | Represents a Go package that should contain only definitions for **Steps** or **Actions** for use in Shipwright pipelines.                                                      |
-| `./{package}/x       | The small, unit-testable functions that power the actions used in `{package}`.                                                                                                  |
-| `./plumbing          | The packages that power the pipeline logic including asyncronous / goroutine handling and client code.                                                                          |
-| `./plumbing/clients  | The Clients that satisfy the `Client` interface. These Clients can run the pipeline in an environment of some kind, or can generate configuration that represents the pipeline. |
-| `./plumbing/cmd      | The `main` package and commands that make up the `shipwright` binary.                                                                                                           |
-| `./plumbing/pipeline | The types that make up a Pipeline, regardless of client. Primarily `Step` and `StepAction`.                                                                                     |
-| `./plumbing/plog     | The Logger that is used in Shipwright Clients.                                                                                                                                  |
-| `./plumbing/schemas  | Strictly contains types that represent third-party configuration schemas that Clients will use for generation. (TODO: Maybe those schemas should live next to the clients?      |
-| `./plumbing/{x}util  | Specific utility packages that help with {x}. For example, {sync}util helps with using the {sync} package.                                                                      |
+| directory / format    | description                                                                                                                                                                     |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `./shipwright*.go`    | Defines the `Client` interface and wrapper types that Pipeline developers use to create pipelines.                                                                              |
+| `./ci`                | Shipwright pipeline that tests / builds this repository.                                                                                                                        |
+| `./demo`              | Demo pipelines. Each sub-directory should be a separate pipeline that introduces a new / separate concept.                                                                      |
+| `./{package}`         | Represents a Go package that should contain only definitions for **Steps** or **Actions** for use in Shipwright pipelines.                                                      |
+| `./{package}/x`       | The small, unit-testable functions that power the actions used in `{package}`.                                                                                                  |
+| `./plumbing`          | The packages that power the pipeline logic including asyncronous / goroutine handling and client code.                                                                          |
+| `./plumbing/clients`  | The Clients that satisfy the `Client` interface. These Clients can run the pipeline in an environment of some kind, or can generate configuration that represents the pipeline. |
+| `./plumbing/cmd`      | The `main` package and commands that make up the `shipwright` binary.                                                                                                           |
+| `./plumbing/pipeline` | The types that make up a Pipeline, regardless of client. Primarily `Step` and `StepAction`.                                                                                     |
+| `./plumbing/plog`     | The Logger that is used in Shipwright Clients.                                                                                                                                  |
+| `./plumbing/schemas`  | Strictly contains types that represent third-party configuration schemas that Clients will use for generation. (TODO: Maybe those schemas should live next to the clients?      |
+| `./plumbing/{x}util`  | Specific utility packages that help with {x}. For example, {sync}util helps with using the {sync} package.                                                                      |
 
 Important notes:
 
