@@ -1,6 +1,10 @@
 package pipeline
 
-import "io"
+import (
+	"fmt"
+	"io"
+	"strings"
+)
 
 // The ActionOpts are provided to every step that is ran.
 // Each step can choose to use these options.
@@ -11,7 +15,6 @@ type ActionOpts struct {
 
 type (
 	StepAction func(ActionOpts) error
-	Argument   interface{}
 	Output     interface{}
 )
 
@@ -30,7 +33,12 @@ type Step struct {
 
 	// Dependencies define other steps that are required to run before this one.
 	Dependencies []Step
-	Arguments    []StepArgument
+
+	// Arguments are arguments that are must exist in order for this step to run.
+	Arguments []Argument
+
+	// Provides are arguments that this step provides for other arguments to use in their "Arguments" list.
+	ProvidesArgs []Argument
 
 	// Serial is the unique number that represents this step.
 	// This value is used when calling `shipwright -step={serial} [pipeline]`
@@ -60,8 +68,13 @@ func (s Step) WithInput(artifact Artifact) Step {
 	return s
 }
 
-func (s Step) WithArguments(arg ...StepArgument) Step {
+func (s Step) WithArguments(arg ...Argument) Step {
 	s.Arguments = arg
+	return s
+}
+
+func (s Step) Provides(arg ...Argument) Step {
+	s.ProvidesArgs = arg
 	return s
 }
 
@@ -89,6 +102,20 @@ func NamedStep(name string, action StepAction) Step {
 // This type is only used for intermittent storage and should not be used in the Shipwright client library
 type StepList []Step
 
+func (s *StepList) Names() []string {
+	names := make([]string, len(*s))
+
+	for i, v := range *s {
+		names[i] = v.Name
+	}
+
+	return names
+}
+
+func (s *StepList) String() string {
+	return fmt.Sprintf("[%s]", strings.Join(s.Names(), " | "))
+}
+
 // NoOpStep is used to represent a step which only exists to form uncommon relationships or for testing.
 // Most clients should completely ignore NoOpSteps.
 var NoOpStep = Step{
@@ -96,4 +123,35 @@ var NoOpStep = Step{
 	Action: func(ActionOpts) error {
 		return nil
 	},
+}
+
+// Combine combines the list of steps into one step, combining all of their required and provided arguments, as well as their actions.
+// For string values that can not be combined, like Name and Image, the first step's values are chosen.
+// These can be overridden with further chaining.
+func Combine(step ...Step) Step {
+	s := Step{
+		Name:         step[0].Name,
+		Image:        step[0].Image,
+		Dependencies: []Step{},
+		Arguments:    []Argument{},
+		ProvidesArgs: []Argument{},
+	}
+
+	for _, v := range step {
+		s.Dependencies = append(s.Dependencies, v.Dependencies...)
+		s.Arguments = append(s.Arguments, v.Arguments...)
+		s.ProvidesArgs = append(s.ProvidesArgs, v.ProvidesArgs...)
+	}
+
+	s.Action = func(opts ActionOpts) error {
+		for _, v := range step {
+			if err := v.Action(opts); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
+	return s
 }

@@ -3,13 +3,12 @@ package cmdutil
 import (
 	"fmt"
 
-	"pkg.grafana.com/shipwright/v1/plumbing/config"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 )
 
 // StepCommand returns the command string for running a single step.
 // The path argument can be omitted, which is particularly helpful if the current directory is a pipeline.
-func StepCommand(c config.Configurer, path string, step pipeline.Step) ([]string, error) {
+func StepCommand(c pipeline.Configurer, path string, step pipeline.Step) ([]string, error) {
 	args := []string{}
 
 	for _, arg := range step.Arguments {

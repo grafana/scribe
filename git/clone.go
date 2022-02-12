@@ -5,24 +5,25 @@ import (
 	osexec "os/exec"
 	"strconv"
 
+	"pkg.grafana.com/shipwright/v1"
 	"pkg.grafana.com/shipwright/v1/exec"
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 )
 
-func (c *Client) CloneOpts() (*CloneOpts, error) {
-	ref, err := c.Configurer.Value(pipeline.ArgumentCommitRef)
+func GetCloneOpts(sw shipwright.Shipwright) (*CloneOpts, error) {
+	ref, err := sw.Value(pipeline.ArgumentCommitRef)
 	if err != nil {
 		return nil, err
 	}
 
-	u, err := c.Configurer.Value(pipeline.ArgumentRemoteURL)
+	u, err := sw.Value(pipeline.ArgumentRemoteURL)
 	if err != nil {
 		return nil, err
 	}
 
-	workDir, err := c.Configurer.Value(pipeline.ArgumentWorkingDir)
+	workDir, err := sw.Value(pipeline.ArgumentWorkingDir)
 	if err != nil {
 		return nil, err
 	}
@@ -34,14 +35,14 @@ func (c *Client) CloneOpts() (*CloneOpts, error) {
 	}, nil
 }
 
-func (c *Client) clone(depth int) pipeline.StepAction {
+func clone(sw shipwright.Shipwright, depth int) pipeline.StepAction {
 	return func(aopts pipeline.ActionOpts) error {
-		opts, err := c.CloneOpts()
+		opts, err := GetCloneOpts(sw)
 		if err != nil {
 			return err
 		}
 
-		plog.Infoln("Got git opts:", opts)
+		sw.Log.Infoln("Got git opts:", opts)
 		// Instead of using a re-implementation of `git` in Go (like go-git)
 		// we will just delegate git steps into sub-shells.
 		// This can introduce some possibly variable effects on different machines depending on which version of git is installed, or if one is installed at all.
@@ -81,14 +82,14 @@ func (c *Client) clone(depth int) pipeline.StepAction {
 	}
 }
 
-func (c *Client) Clone(depth int) pipeline.Step {
-	return pipeline.NewStep(c.clone(depth)).
+func Clone(sw shipwright.Shipwright, depth int) pipeline.Step {
+	return pipeline.NewStep(clone(sw, depth)).
 		WithArguments(
 			pipeline.ArgumentCommitRef,
 			pipeline.ArgumentRemoteURL,
 			pipeline.ArgumentWorkingDir,
 		).
 		WithImage(
-			plumbing.SubImage("git", c.Opts.Version),
+			plumbing.SubImage("git", sw.Opts.Version),
 		)
 }

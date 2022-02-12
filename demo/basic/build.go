@@ -1,27 +1,29 @@
 package main
 
 import (
-	"log"
-
 	"pkg.grafana.com/shipwright/v1"
 	"pkg.grafana.com/shipwright/v1/fs"
-	"pkg.grafana.com/shipwright/v1/git"
+	gitx "pkg.grafana.com/shipwright/v1/git/x"
+	"pkg.grafana.com/shipwright/v1/golang"
+	"pkg.grafana.com/shipwright/v1/makefile"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+	"pkg.grafana.com/shipwright/v1/yarn"
 )
 
-func writeVersion(sw shipwright.Shipwright) pipeline.StepAction {
-	return func(opts pipeline.ActionOpts) error {
-		log.Println("Writing version...")
+func writeVersion(sw shipwright.Shipwright) pipeline.Step {
+	action := func(opts pipeline.ActionOpts) error {
+
 		// equivalent of `git describe --tags --dirty --always`
-		version := sw.Git.Describe(&git.DescribeOpts{
-			Tags:   true,
-			Dirty:  true,
-			Always: true,
-		})
+		version, err := gitx.Describe(".", true, true, true)
+		if err != nil {
+			return err
+		}
 
 		// write the version string in the `.version` file.
-		return sw.FS.ReplaceString(".version", version)(opts)
+		return fs.ReplaceString(".version", version)(opts)
 	}
+
+	return pipeline.NewStep(action)
 }
 
 // "main" defines our program pipeline.
@@ -36,20 +38,18 @@ func main() {
 	// The cache should invalidate if the yarn.lock or go.sum files have changed
 	sw.Run(
 		pipeline.NamedStep("install frontend dependencies", sw.Cache(
-			sw.Yarn.Install(),
+			yarn.Install(),
 			fs.Cache("node_modules", fs.FileHasChanged("yarn.lock")),
 		)),
 		pipeline.NamedStep("install backend dependencies", sw.Cache(
-			sw.Golang.Modules.Download(),
+			golang.ModDownload(),
 			fs.Cache("$GOPATH/pkg", fs.FileHasChanged("go.sum")),
 		)),
+		writeVersion(sw).WithName("write-version-file"),
 	)
 
 	sw.Run(
-		pipeline.NamedStep("write .version file", writeVersion(sw)),
-		pipeline.NamedStep("compile backend", sw.Make.Target("build")),
-		pipeline.NamedStep("compile frontend", sw.Make.Target("package")),
+		pipeline.NamedStep("compile backend", makefile.Target("build")),
+		pipeline.NamedStep("compile frontend", makefile.Target("package")),
 	)
-
-	// sw.Output()
 }

@@ -1,6 +1,4 @@
-package config
-
-import "pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+package pipeline
 
 // Configuerer defines how clients can retrieve configuration values for use in pipelines.
 // For example, a `clone` step might require a remote URL and branch, but how that data is retrieved can change depending on the environment.
@@ -8,5 +6,5 @@ import "pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 // * In Docker and CLI modes, the remote URL might be provided as a CLI argument or requested via stdin, or even already available with the `git remote` command.
 type Configurer interface {
 	// Value returns the implementation-specific pipeline config.
-	Value(pipeline.StepArgument) (string, error)
+	Value(Argument) (string, error)
 }

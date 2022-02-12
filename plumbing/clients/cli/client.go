@@ -1,8 +1,10 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
@@ -17,8 +19,9 @@ var (
 // The Client is used when interacting with a shipwright pipeline using the shipwright CLI.
 // In order to emulate what happens in a remote environment, the steps are put into a queue before being ran.
 type Client struct {
+	Opts pipeline.CommonOpts
+
 	Log   *plog.Logger
-	Opts  *pipeline.CommonOpts
 	Queue *pipeline.StepQueue
 }
 
@@ -70,12 +73,12 @@ func (c *Client) Done() {
 	size := c.Queue.Size()
 	i := 0
 	for {
-		c.Log.Infof("Running step(s) %d / %d", i, size)
-
 		steps := c.Queue.Next()
 		if steps == nil {
 			break
 		}
+
+		c.Log.Infof("Running step(s) %d / %d %s", i, size, steps.String())
 
 		if err := c.runSteps(ctx, steps); err != nil {
 			c.Log.Fatalln("Error in step:", err)
@@ -88,7 +91,17 @@ func (c *Client) Done() {
 func (c *Client) wrap(step pipeline.Step) pipeline.Step {
 	action := step.Action
 	step.Action = func(opts pipeline.ActionOpts) error {
-		return action(opts)
+		var (
+			stdout = bytes.NewBuffer(nil)
+			stderr = bytes.NewBuffer(nil)
+		)
+		opts.Stdout = stdout
+		opts.Stderr = stderr
+		if err := action(opts); err != nil {
+			return fmt.Errorf("error: %w\nstdout:%s\nstderr:%s", err, stdout.String(), stderr.String())
+		}
+
+		return nil
 	}
 
 	return step

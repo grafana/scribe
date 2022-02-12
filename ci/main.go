@@ -3,6 +3,7 @@ package main
 import (
 	"pkg.grafana.com/shipwright/v1"
 	"pkg.grafana.com/shipwright/v1/ci/docker"
+	"pkg.grafana.com/shipwright/v1/golang"
 )
 
 // "main" defines our program pipeline.
@@ -14,7 +15,7 @@ func main() {
 	defer sw.Done()
 
 	sw.Run(
-		sw.Golang.Test("./...").WithName("test"),
+		golang.Test(sw, "./...").WithName("test"),
 		docker.ShipwrightImage.BuildStep(sw).WithName("build shipwright docker image"),
 	)
 

@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
-
-	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 )
 
 // PipelineVolumePath refers to the path where the compiled pipeline is mounted in the container
@@ -37,7 +35,6 @@ func Run(opts RunOpts) error {
 	args = append(args, opts.Command)
 	args = append(args, opts.Args...)
 
-	plog.Infoln("Running command", "docker", args)
 	cmd := exec.Command("docker", args...)
 	cmd.Stdout = opts.Stdout
 	cmd.Stderr = opts.Stderr

@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"pkg.grafana.com/shipwright/v1/plumbing/cmdutil"
-	"pkg.grafana.com/shipwright/v1/plumbing/config"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 )
 
@@ -18,7 +17,7 @@ func Slugify(s string) string {
 	return s
 }
 
-func NewStep(c config.Configurer, path string, step pipeline.Step) (Step, error) {
+func NewStep(c pipeline.Configurer, path string, step pipeline.Step) (Step, error) {
 	var (
 		name  = Slugify(step.Name)
 		deps  = make([]string, len(step.Dependencies))

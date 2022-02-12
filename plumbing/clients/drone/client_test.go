@@ -49,7 +49,7 @@ func TestDroneRun(t *testing.T) {
 			t.SkipNow()
 
 			t.Log("Creating new drone client...")
-			sw := shipwright.NewDroneClient(&pipeline.CommonOpts{})
+			sw := shipwright.NewDroneClient(pipeline.CommonOpts{})
 
 			t.Log("Creating new test steps...")
 			var (
@@ -98,7 +98,7 @@ func TestDroneRun(t *testing.T) {
 
 func TestDroneTree(t *testing.T) {
 	t.Run("It should set the root node once", func(t *testing.T) {
-		sw := shipwright.NewDroneClient(&pipeline.CommonOpts{})
+		sw := shipwright.NewDroneClient(pipeline.CommonOpts{})
 		sw.Run(pipeline.NoOpStep)
 		client := sw.Client.(*drone.Client)
 

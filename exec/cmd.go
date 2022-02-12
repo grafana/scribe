@@ -5,13 +5,11 @@ import (
 	"os/exec"
 
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
-	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 )
 
 // RunCommandAt runs a given command and set of arguments at the given location
 // The command's stdout and stderr are assigned the systems' stdout/stderr streams.
 func RunCommandAt(stdout, stderr io.Writer, path string, name string, arg ...string) error {
-	plog.Infof("[%s] Running command: '%s %v'", path, name, arg)
 	c := exec.Command(name, arg...)
 	c.Stdout = stdout
 	c.Stderr = stderr

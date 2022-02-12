@@ -14,8 +14,9 @@ var (
 )
 
 type Client struct {
+	Opts pipeline.CommonOpts
+
 	Log  *plog.Logger
-	Opts *pipeline.CommonOpts
 	List *pipeline.List
 }
 

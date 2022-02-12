@@ -58,126 +58,126 @@ func New(level LogLevel, w io.Writer) *Logger {
 }
 
 func (l *Logger) Debug(v ...interface{}) {
-	v = append([]interface{}{"[debug]"}, v...)
+	v = append([]interface{}{"[debug] "}, v...)
 	RequireLevel(l.level, LogLevelDebug, func() {
 		l.Logger.Print(v...)
 	})
 }
 
 func (l *Logger) Debugf(format string, v ...interface{}) {
-	format = "[debug]" + format
+	format = "[debug] " + format
 	RequireLevel(l.level, LogLevelDebug, func() {
 		l.Logger.Printf(format, v...)
 	})
 }
 
 func (l *Logger) Debugln(v ...interface{}) {
-	v = append([]interface{}{"[debug]"}, v...)
+	v = append([]interface{}{"[debug] "}, v...)
 	RequireLevel(l.level, LogLevelDebug, func() {
 		l.Logger.Println(v...)
 	})
 }
 
 func (l *Logger) Info(v ...interface{}) {
-	v = append([]interface{}{"[info]"}, v...)
+	v = append([]interface{}{"[info] "}, v...)
 	RequireLevel(l.level, LogLevelInfo, func() {
 		l.Logger.Print(v...)
 	})
 }
 
 func (l *Logger) Infof(format string, v ...interface{}) {
-	format = "[info]" + format
+	format = "[info] " + format
 	RequireLevel(l.level, LogLevelInfo, func() {
 		l.Logger.Printf(format, v...)
 	})
 }
 
 func (l *Logger) Infoln(v ...interface{}) {
-	v = append([]interface{}{"[info]"}, v...)
+	v = append([]interface{}{"[info] "}, v...)
 	RequireLevel(l.level, LogLevelInfo, func() {
 		l.Logger.Println(v...)
 	})
 }
 
 func (l *Logger) Warn(v ...interface{}) {
-	v = append([]interface{}{"[warn]"}, v...)
+	v = append([]interface{}{"[warn] "}, v...)
 	RequireLevel(l.level, LogLevelWarn, func() {
 		l.Logger.Print(v...)
 	})
 }
 
 func (l *Logger) Warnf(format string, v ...interface{}) {
-	format = "[warn]" + format
+	format = "[warn] " + format
 	RequireLevel(l.level, LogLevelWarn, func() {
 		l.Logger.Printf(format, v...)
 	})
 }
 
 func (l *Logger) Warnln(v ...interface{}) {
-	v = append([]interface{}{"[warn]"}, v...)
+	v = append([]interface{}{"[warn] "}, v...)
 	RequireLevel(l.level, LogLevelWarn, func() {
 		l.Logger.Println(v...)
 	})
 }
 
 func (l *Logger) Error(v ...interface{}) {
-	v = append([]interface{}{"[error]"}, v...)
+	v = append([]interface{}{"[error] "}, v...)
 	RequireLevel(l.level, LogLevelError, func() {
 		l.Logger.Print(v...)
 	})
 }
 
 func (l *Logger) Errorf(format string, v ...interface{}) {
-	format = "[error]" + format
+	format = "[error] " + format
 	RequireLevel(l.level, LogLevelError, func() {
 		l.Logger.Printf(format, v...)
 	})
 }
 
 func (l *Logger) Errorln(v ...interface{}) {
-	v = append([]interface{}{"[error]"}, v...)
+	v = append([]interface{}{"[error] "}, v...)
 	RequireLevel(l.level, LogLevelError, func() {
 		l.Logger.Println(v...)
 	})
 }
 
 func (l *Logger) Fatal(v ...interface{}) {
-	v = append([]interface{}{"[fatal]"}, v...)
+	v = append([]interface{}{"[fatal] "}, v...)
 	RequireLevel(l.level, LogLevelError, func() {
 		l.Logger.Fatal(v...)
 	})
 }
 
 func (l *Logger) Fatalf(format string, v ...interface{}) {
-	format = "[fatal]" + format
+	format = "[fatal] " + format
 	RequireLevel(l.level, LogLevelError, func() {
 		l.Logger.Fatalf(format, v...)
 	})
 }
 
 func (l *Logger) Fatalln(v ...interface{}) {
-	v = append([]interface{}{"[fatal]"}, v...)
+	v = append([]interface{}{"[fatal] "}, v...)
 	RequireLevel(l.level, LogLevelError, func() {
 		l.Logger.Fatalln(v...)
 	})
 }
 
 func (l *Logger) Panic(v ...interface{}) {
-	v = append([]interface{}{"[panic]"}, v...)
+	v = append([]interface{}{"[panic] "}, v...)
 	RequireLevel(l.level, LogLevelError, func() {
 		l.Logger.Panic(v...)
 	})
 }
 
 func (l *Logger) Panicf(format string, v ...interface{}) {
-	format = "[panic]" + format
+	format = "[panic] " + format
 	RequireLevel(l.level, LogLevelError, func() {
 		l.Logger.Panicf(format, v...)
 	})
 }
 
 func (l *Logger) Panicln(v ...interface{}) {
-	v = append([]interface{}{"[panicln]"}, v...)
+	v = append([]interface{}{"[panicln] "}, v...)
 	RequireLevel(l.level, LogLevelError, func() {
 		l.Logger.Panicln(v...)
 	})

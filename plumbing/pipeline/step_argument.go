@@ -8,7 +8,7 @@ const (
 	ArgumentTypeFS
 )
 
-// A StepArgument is a pre-defined argument that is used in a typical CI pipeline.
+// An Argument is a pre-defined argument that is used in a typical CI pipeline.
 // This allows the shipwright library to define different methods of retrieving the same information
 // in different run modes.
 // For example, when running in CLI or Docker mode, getting the git ref might be as simple as running `git rev-parse HEAD`.
@@ -16,20 +16,20 @@ const (
 // Other arguments may require the user to be prompted if they have not been provided.
 // These arguments can be provided to the CLI by using the flag `-arg`, for example `-arg=workdir=./example` will set the "workdir" argument to "example" in the CLI run-mode
 // By default, all steps expect a WorkingDir and Repository.
-type StepArgument struct {
+type Argument struct {
 	Type ArgumentType
 	Key  string
 }
 
-func NewStringArgument(key string) StepArgument {
-	return StepArgument{
+func NewStringArgument(key string) Argument {
+	return Argument{
 		Type: ArgumentTypeString,
 		Key:  key,
 	}
 }
 
-func NewFSArgument(key string) StepArgument {
-	return StepArgument{
+func NewFSArgument(key string) Argument {
+	return Argument{
 		Type: ArgumentTypeFS,
 		Key:  key,
 	}

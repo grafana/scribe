@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"pkg.grafana.com/shipwright/v1"
+	"pkg.grafana.com/shipwright/v1/docker"
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 )
@@ -45,7 +46,7 @@ func (i Image) BuildStep(sw shipwright.Shipwright) pipeline.Step {
 			name = plumbing.SubImage(i.Name, v)
 		}
 
-		return sw.Docker.BuildWithArgs(name, i.Dockerfile, i.Context, fmt.Sprintf("VERSION=%s", v)).Action(opts)
+		return docker.BuildWithArgs(name, i.Dockerfile, i.Context, fmt.Sprintf("VERSION=%s", v)).Action(opts)
 	}
 
 	return pipeline.NewStep(action).

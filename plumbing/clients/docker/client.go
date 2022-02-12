@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"pkg.grafana.com/shipwright/v1/golang"
+	golangx "pkg.grafana.com/shipwright/v1/golang/x"
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/clients/cli"
 	"pkg.grafana.com/shipwright/v1/plumbing/cmdutil"
@@ -24,8 +24,9 @@ import (
 // In order to emulate what happens in a remote environment, the steps are put into a queue before being ran.
 // Each step is ran in its own docker container.
 type Client struct {
+	Opts pipeline.CommonOpts
+
 	Log   *plog.Logger
-	Opts  *pipeline.CommonOpts
 	Queue *pipeline.StepQueue
 }
 
@@ -74,7 +75,7 @@ func (c *Client) buildPipeline() (string, error) {
 		return "", err
 	}
 
-	if err := golang.Build(golang.BuildOpts{
+	if err := golangx.Build(golangx.BuildOpts{
 		Pkg:    c.Opts.Args.Path,
 		Module: wd,
 		Output: path,
@@ -115,12 +116,12 @@ func (c *Client) Done() {
 	size := c.Queue.Size()
 	i := 0
 	for {
-		c.Log.Infof("Running step(s) %d / %d", i, size)
-
 		steps := c.Queue.Next()
 		if steps == nil {
 			break
 		}
+
+		c.Log.Infof("Running step(s) %d / %d %s", i, size, steps.String())
 
 		if err := c.runSteps(ctx, p, steps); err != nil {
 			c.Log.Fatalln("Error in step:", err)
@@ -134,7 +135,7 @@ func (c *Client) Done() {
 // KnownVolumes is a map of default argument to a function used to retrieve the volume the value represents.
 // For example, we know that every pipeline is ran alongisde source code.
 // The user can supply a "-arg=source={path-to-source}" argument, or we can just
-var KnownVolumes = map[pipeline.StepArgument]func(*plumbing.PipelineArgs) (string, error){
+var KnownVolumes = map[pipeline.Argument]func(*plumbing.PipelineArgs) (string, error){
 	pipeline.ArgumentSourceFS: func(args *plumbing.PipelineArgs) (string, error) {
 		return ".", nil
 	},
@@ -145,7 +146,7 @@ var KnownVolumes = map[pipeline.StepArgument]func(*plumbing.PipelineArgs) (strin
 
 // GetVolumeValue will attempt to find the appropriate volume to mount based on the argument provided.
 // Some arguments have known or knowable values, like "ArgumentSourceFS".
-func GetVolumeValue(args *plumbing.PipelineArgs, arg pipeline.StepArgument) (string, error) {
+func GetVolumeValue(args *plumbing.PipelineArgs, arg pipeline.Argument) (string, error) {
 	// If an applicable argument is provided, then we should use that, even if it's a known value.
 	if val, err := args.ArgMap.Get(arg.Key); err == nil {
 		return val, nil
@@ -161,7 +162,7 @@ func GetVolumeValue(args *plumbing.PipelineArgs, arg pipeline.StepArgument) (str
 }
 
 // Value retrieves the configuration item the same way the CLI does; by looking in the argmap or by asking via stdin.
-func (c *Client) Value(arg pipeline.StepArgument) (string, error) {
+func (c *Client) Value(arg pipeline.Argument) (string, error) {
 	switch arg.Type {
 	case pipeline.ArgumentTypeString:
 		return cli.GetArgValue(c.Opts.Args, arg)
@@ -214,7 +215,7 @@ func volumeValue(dir string) (string, error) {
 // used to run the docker container for a step.
 // For example, if the step supplied requires the project (by default all of them do), then the argument type
 // ArgumentTypeFS is required and is added to the RunOpts volume.
-func (c *Client) applyArguments(opts RunOpts, args []pipeline.StepArgument) (RunOpts, error) {
+func (c *Client) applyArguments(opts RunOpts, args []pipeline.Argument) (RunOpts, error) {
 	for _, arg := range args {
 		value, err := c.Value(arg)
 		if err != nil {
@@ -250,8 +251,6 @@ func (c *Client) runAction(pipelinePath string, step pipeline.Step) pipeline.Ste
 	if len(cmd) > 1 {
 		args = cmd[1:]
 	}
-
-	c.Log.Infoln(PipelineVolumePath, strings.Join(cmd[1:], " "))
 
 	runOpts := RunOpts{
 		PipelinePath: pipelinePath,
@@ -291,7 +290,7 @@ func (c *Client) wrap(pipelinePath string, step pipeline.Step) pipeline.Step {
 }
 
 func (c *Client) runSteps(ctx context.Context, pipelinePath string, steps pipeline.StepList) error {
-	c.Log.Infoln("Running steps in parallel:", len(steps))
+	c.Log.Debugln("Running steps in parallel:", len(steps))
 	ctx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
 	wg := syncutil.NewWaitGroup()

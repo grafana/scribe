@@ -9,7 +9,7 @@ import (
 )
 
 // The ClientInitializers define how different RunModes initialize the Shipwright client
-var ClientInitializers = map[plumbing.RunModeOption]func(*pipeline.CommonOpts) Shipwright{
+var ClientInitializers = map[plumbing.RunModeOption]func(pipeline.CommonOpts) Shipwright{
 	plumbing.RunModeCLI:    NewCLIClient,
 	plumbing.RunModeDrone:  NewDroneClient,
 	plumbing.RunModeConfig: NewCLIClient,
@@ -17,7 +17,7 @@ var ClientInitializers = map[plumbing.RunModeOption]func(*pipeline.CommonOpts) S
 	plumbing.RunModeDocker: NewDockerClient,
 }
 
-func NewDroneClient(opts *pipeline.CommonOpts) Shipwright {
+func NewDroneClient(opts pipeline.CommonOpts) Shipwright {
 	return Shipwright{
 		Client: &drone.Client{
 			Log:  opts.Log,
@@ -27,7 +27,7 @@ func NewDroneClient(opts *pipeline.CommonOpts) Shipwright {
 	}
 }
 
-func NewCLIClient(opts *pipeline.CommonOpts) Shipwright {
+func NewCLIClient(opts pipeline.CommonOpts) Shipwright {
 	return Shipwright{
 		Client: &cli.Client{
 			Log:   opts.Log,
@@ -37,7 +37,7 @@ func NewCLIClient(opts *pipeline.CommonOpts) Shipwright {
 	}
 }
 
-func NewDockerClient(opts *pipeline.CommonOpts) Shipwright {
+func NewDockerClient(opts pipeline.CommonOpts) Shipwright {
 	return Shipwright{
 		Client: &docker.Client{
 			Log:   opts.Log,

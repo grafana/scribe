@@ -5,20 +5,13 @@ import (
 	"fmt"
 	"os"
 
-	"pkg.grafana.com/shipwright/v1/docker"
-	"pkg.grafana.com/shipwright/v1/fs"
-	"pkg.grafana.com/shipwright/v1/git"
-	"pkg.grafana.com/shipwright/v1/golang"
-	makefile "pkg.grafana.com/shipwright/v1/make"
 	"pkg.grafana.com/shipwright/v1/plumbing"
-	"pkg.grafana.com/shipwright/v1/plumbing/config"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
-	"pkg.grafana.com/shipwright/v1/yarn"
 )
 
 type Client interface {
-	config.Configurer
+	pipeline.Configurer
 
 	// Validate is ran internally before calling Run or Parallel and allows the client to effectively configure per-step requirements
 	// For example, Drone steps MUST have an image so the Drone client returns an error in this function when the provided step does not have an image.
@@ -45,19 +38,17 @@ type Client interface {
 	Done()
 }
 
+// Shipwright is the client that is used in every pipeline to declare the steps that make up a pipeline.
 type Shipwright struct {
 	Client
-	Git    git.Client
-	FS     fs.Client
-	Golang golang.Client
-	Make   makefile.Client
-	Yarn   yarn.Client
-	Docker docker.Client
+
+	// Opts are the options that are provided to the pipeline from outside sources. This includes mostly command-line arguments and environment variables
+	Opts pipeline.CommonOpts
+	Log  *plog.Logger
 
 	// n tracks the ID of a step so that the "shipwright -step=" argument will function independently of the client implementation
 	// It ensures that the 11th step in a Drone generated pipeline is also the 11th step in a CLI pipeline
-	n int
-
+	n       int
 	Version string
 }
 
@@ -133,7 +124,7 @@ func New(name string, events ...pipeline.Event) Shipwright {
 		return Shipwright{}
 	}
 
-	sw := NewFromOpts(&pipeline.CommonOpts{
+	sw := NewFromOpts(pipeline.CommonOpts{
 		Name:    name,
 		Version: args.Version,
 		Output:  os.Stdout,
@@ -147,6 +138,6 @@ func New(name string, events ...pipeline.Event) Shipwright {
 	return sw
 }
 
-func NewFromOpts(opts *pipeline.CommonOpts, events ...pipeline.Event) Shipwright {
+func NewFromOpts(opts pipeline.CommonOpts, events ...pipeline.Event) Shipwright {
 	return NewClient(opts)
 }
