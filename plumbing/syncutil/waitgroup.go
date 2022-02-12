@@ -8,24 +8,10 @@ import (
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 )
 
-// WaitGroup is a wrapper around a sync.WaitGroup that handles errors
+// WaitGroup is a wrapper around a sync.WaitGroup that runs the actions of a list of steps, handles errors, and watches for context cancellation.
 type WaitGroup struct {
 	wg    sync.WaitGroup
 	steps []pipeline.Step
-}
-
-func (w *WaitGroup) StepNames() []string {
-	if w.steps == nil {
-		return []string{}
-	}
-
-	names := make([]string, len(w.steps))
-
-	for i, v := range w.steps {
-		names[i] = v.Name
-	}
-
-	return names
 }
 
 // Add adds a new StepAction to the waitgroup. The provided function will be run in parallel with all other added functions.

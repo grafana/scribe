@@ -1,29 +1,39 @@
 package plog
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"log"
 )
 
-type LogLevel string
+var ErrorBadLevel = errors.New("unrecognized log level")
+
+type LogLevel int
 
 func (l *LogLevel) String() string {
-	return string(*l)
+	return LogLevelStrings[int(*l)]
 }
 
 func (l *LogLevel) Set(val string) error {
-	v := LogLevel(val)
+	for i, v := range LogLevelStrings {
+		if v == val {
+			*l = LogLevel(i)
+			return nil
+		}
+	}
 
-	*l = v
-	return nil
+	return fmt.Errorf("%w. Options: %v", ErrorBadLevel, LogLevelStrings)
 }
 
 const (
-	LogLevelDebug LogLevel = "debug"
-	LogLevelInfo  LogLevel = "info"
-	LogLevelWarn  LogLevel = "warn"
-	LogLevelError LogLevel = "error"
+	LogLevelDebug LogLevel = iota
+	LogLevelInfo
+	LogLevelWarn
+	LogLevelError
 )
+
+var LogLevelStrings = []string{"debug", "info", "warn", "error"}
 
 func RequireLevel(current LogLevel, minimum LogLevel, f func()) {
 	// For example, if current level is Info(1), and the minimum level is Debug (0), then it should not be printed.

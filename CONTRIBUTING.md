@@ -3,7 +3,7 @@
 ## Requirements
 
 - Prefer using standard library packages over third party ones.
-  - `log`, `flag`, `os/exec`
+  - `flag`, `os/exec`
 
 ## Command-line arguments
 

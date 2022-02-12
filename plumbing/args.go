@@ -3,7 +3,6 @@ package plumbing
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
@@ -57,9 +56,6 @@ func ParseArguments(args []string) (*PipelineArgs, error) {
 	flagSet.StringVar(&pathOverride, "path", "", "Providing the path argument overrides the $PWD of the pipeline for generation")
 	flagSet.StringVar(&version, "version", "latest", "The version is provided by the 'shipwright' command, however if only using 'go run', it can be provided here")
 
-	log.Println("Got log level", logLevel)
-	log.Println("Got log level", logLevel)
-	log.Println("Got log level", logLevel)
 	if err := flagSet.Parse(args); err != nil {
 		return nil, err
 	}

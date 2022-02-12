@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"pkg.grafana.com/shipwright/v1/docker"
 	"pkg.grafana.com/shipwright/v1/fs"
@@ -146,18 +144,6 @@ func New(name string, events ...pipeline.Event) Shipwright {
 	// Ensure that no matter the behavior of the initializer, we still set the version on the shipwright object.
 	sw.Version = args.Version
 
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs,
-		syscall.SIGHUP,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT,
-	)
-
-	go func() {
-		<-sigs
-		fmt.Print("\033[?25h")
-	}()
 	return sw
 }
 
