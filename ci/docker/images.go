@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -27,17 +28,15 @@ func version() (string, error) {
 		return "", fmt.Errorf("running command 'git describe --tags --dirty --always' resulted in the error '%w'. Output: '%s'", err, string(version))
 	}
 
-	return string(version), nil
+	return strings.TrimSpace(string(version)), nil
 }
 
 func (i Image) BuildStep(sw shipwright.Shipwright) pipeline.Step {
-	action := func(opts pipeline.ActionOpts) error {
+	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		v, err := version()
 		if err != nil {
 			return err
 		}
-
-		v = strings.TrimSpace(v)
 
 		// hack: if the image doesn't have a name then it must be the default one!
 		name := plumbing.DefaultImage(v)
@@ -46,7 +45,7 @@ func (i Image) BuildStep(sw shipwright.Shipwright) pipeline.Step {
 			name = plumbing.SubImage(i.Name, v)
 		}
 
-		return docker.BuildWithArgs(name, i.Dockerfile, i.Context, fmt.Sprintf("VERSION=%s", v)).Action(opts)
+		return docker.BuildWithArgs(name, i.Dockerfile, i.Context, fmt.Sprintf("VERSION=%s", v)).Action(ctx, opts)
 	}
 
 	return pipeline.NewStep(action).

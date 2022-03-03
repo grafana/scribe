@@ -32,7 +32,7 @@ func (wg *WaitGroup) Wait(ctx context.Context, opts pipeline.ActionOpts) error {
 
 	for _, v := range wg.steps {
 		go func(v pipeline.Step) {
-			if err := v.Action(opts); err != nil {
+			if err := v.Action(ctx, opts); err != nil {
 				errChan <- err
 			}
 

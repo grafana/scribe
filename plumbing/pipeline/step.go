@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
@@ -14,7 +15,7 @@ type ActionOpts struct {
 }
 
 type (
-	StepAction func(ActionOpts) error
+	StepAction func(context.Context, ActionOpts) error
 	Output     interface{}
 )
 
@@ -120,7 +121,7 @@ func (s *StepList) String() string {
 // Most clients should completely ignore NoOpSteps.
 var NoOpStep = Step{
 	Name: "no op",
-	Action: func(ActionOpts) error {
+	Action: func(context.Context, ActionOpts) error {
 		return nil
 	},
 }
@@ -143,9 +144,9 @@ func Combine(step ...Step) Step {
 		s.ProvidesArgs = append(s.ProvidesArgs, v.ProvidesArgs...)
 	}
 
-	s.Action = func(opts ActionOpts) error {
+	s.Action = func(ctx context.Context, opts ActionOpts) error {
 		for _, v := range step {
-			if err := v.Action(opts); err != nil {
+			if err := v.Action(ctx, opts); err != nil {
 				return err
 			}
 		}

@@ -1,6 +1,7 @@
 package x
 
 import (
+	"context"
 	"io"
 
 	"pkg.grafana.com/shipwright/v1/exec"
@@ -15,6 +16,6 @@ type BuildOpts struct {
 	Stderr io.ReadWriter
 }
 
-func Build(opts BuildOpts) error {
-	return exec.RunCommandAt(opts.Stdout, opts.Stderr, opts.Module, "go", "build", "-o", opts.Output, opts.Pkg)
+func Build(ctx context.Context, opts BuildOpts) error {
+	return exec.RunCommandAt(ctx, opts.Stdout, opts.Stderr, opts.Module, "go", "build", "-o", opts.Output, opts.Pkg)
 }

@@ -2,11 +2,15 @@ package shipwright
 
 import (
 	"pkg.grafana.com/shipwright/v1/plumbing"
-	"pkg.grafana.com/shipwright/v1/plumbing/clients/cli"
-	"pkg.grafana.com/shipwright/v1/plumbing/clients/docker"
-	"pkg.grafana.com/shipwright/v1/plumbing/clients/drone"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline/clients/cli"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline/clients/docker"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline/clients/drone"
 )
+
+func NewDefaultCollection() pipeline.Collection {
+	return pipeline.NewQueue()
+}
 
 // The ClientInitializers define how different RunModes initialize the Shipwright client
 var ClientInitializers = map[plumbing.RunModeOption]func(pipeline.CommonOpts) Shipwright{
@@ -19,30 +23,30 @@ var ClientInitializers = map[plumbing.RunModeOption]func(pipeline.CommonOpts) Sh
 
 func NewDroneClient(opts pipeline.CommonOpts) Shipwright {
 	return Shipwright{
+		Collection: NewDefaultCollection(),
 		Client: &drone.Client{
-			Log:  opts.Log,
-			List: pipeline.NewList(),
 			Opts: opts,
+			Log:  opts.Log,
 		},
 	}
 }
 
 func NewCLIClient(opts pipeline.CommonOpts) Shipwright {
 	return Shipwright{
+		Collection: NewDefaultCollection(),
 		Client: &cli.Client{
-			Log:   opts.Log,
-			Opts:  opts,
-			Queue: &pipeline.StepQueue{},
+			Opts: opts,
+			Log:  opts.Log,
 		},
 	}
 }
 
 func NewDockerClient(opts pipeline.CommonOpts) Shipwright {
 	return Shipwright{
+		Collection: NewDefaultCollection(),
 		Client: &docker.Client{
-			Log:   opts.Log,
-			Opts:  opts,
-			Queue: &pipeline.StepQueue{},
+			Opts: opts,
+			Log:  opts.Log,
 		},
 	}
 }

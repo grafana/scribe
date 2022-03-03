@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"context"
 	"io"
 	"os/exec"
 
@@ -9,8 +10,8 @@ import (
 
 // RunCommandAt runs a given command and set of arguments at the given location
 // The command's stdout and stderr are assigned the systems' stdout/stderr streams.
-func RunCommandAt(stdout, stderr io.Writer, path string, name string, arg ...string) error {
-	c := exec.Command(name, arg...)
+func RunCommandAt(ctx context.Context, stdout, stderr io.Writer, path string, name string, arg ...string) error {
+	c := exec.CommandContext(ctx, name, arg...)
 	c.Stdout = stdout
 	c.Stderr = stderr
 
@@ -21,22 +22,22 @@ func RunCommandAt(stdout, stderr io.Writer, path string, name string, arg ...str
 
 // RunCommand runs a given command and set of arguments.
 // The command's stdout and stderr are assigned the systems' stdout/stderr streams.
-func RunCommand(stdout, stderr io.Writer, name string, arg ...string) error {
-	return RunCommandAt(stdout, stderr, ".", name, arg...)
+func RunCommand(ctx context.Context, stdout, stderr io.Writer, name string, arg ...string) error {
+	return RunCommandAt(ctx, stdout, stderr, ".", name, arg...)
 }
 
 // Run returns an action that runs a given command and set of arguments.
 // The command's stdout and stderr are assigned the systems' stdout/stderr streams.
 func Run(name string, arg ...string) pipeline.StepAction {
-	return func(opts pipeline.ActionOpts) error {
-		return RunCommand(opts.Stdout, opts.Stderr, name, arg...)
+	return func(ctx context.Context, opts pipeline.ActionOpts) error {
+		return RunCommand(ctx, opts.Stdout, opts.Stderr, name, arg...)
 	}
 }
 
 // Run returns an action that runs a given command and set of arguments.
 // The command's stdout and stderr are assigned the systems' stdout/stderr streams.
 func RunAt(path string, name string, arg ...string) pipeline.StepAction {
-	return func(opts pipeline.ActionOpts) error {
-		return RunCommandAt(opts.Stdout, opts.Stderr, path, name, arg...)
+	return func(ctx context.Context, opts pipeline.ActionOpts) error {
+		return RunCommandAt(ctx, opts.Stdout, opts.Stderr, path, name, arg...)
 	}
 }

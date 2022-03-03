@@ -17,12 +17,15 @@ Since the inception of Travis CI, configuration-based pipeline tooling has been 
 
 These problems lead to the development of this tool, **shipwright**. A **shipwright** is a person who builds boats. Since everything in the Kubernetes world, from Helm to Harbor follows a boat theme, I thought it appropriate to thematically follow.
 
+Though, the name is not particularly original, I think there are several build-adjacent tools out there that call themselves `shipwright`.
+
 The idea behind `shipwright` is that it is not an application, but a library. There is no server. Users should, instead of defining this amalgamation of `yaml/json/toml/whatever` and `bash`, define their build, package, and release processes programmatically. This opens up a whole world of possibilities, like:
 
 - Writing unit and integration tests for your build pipeline.
 - Reusing and sharing build, package, and deployment definitions.
 - Leveraging existing tooling to make it easier to develop and debug pipelines.
 - Improved visualization by allowing pipelines to define metrics and traces.
+- Improved validation by having steps define what they expect in order to run, and what they provide to other steps.
 
 ## Glossary
 
@@ -65,7 +68,9 @@ Some guiding pricinples will help you write effective pipelines:
 
 #### Example
 
+```
 TODO: write example
+```
 
 Once committed, this script can be treated like any other pipeline script and can be automatically ran when a new commit is made.
 
@@ -76,6 +81,15 @@ shipwright ./ci
 ```
 
 If your pipeline defines any inputs it will prompt you for them, or optionally you can provide them as arguments by using the `-arg-{argument}` flag.
+
+## Design
+
+This project is designed with two main elements in mind:
+
+- The library that pipeline developers interact with. Some people refer to this as the "porcelain"
+- The internal packages that do all of the real work. This is often refered to as the "plumbing"
+
+It is important that the "porcelain" stays as readable and minimal as possible and doesn't contain excessive implementation details.
 
 ## Caveats
 

@@ -1,6 +1,7 @@
 package shipwright
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -10,37 +11,12 @@ import (
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 )
 
-type Client interface {
-	pipeline.Configurer
-
-	// Validate is ran internally before calling Run or Parallel and allows the client to effectively configure per-step requirements
-	// For example, Drone steps MUST have an image so the Drone client returns an error in this function when the provided step does not have an image.
-	// If the error encountered is not critical but should still be logged, then return a plumbing.ErrorSkipValidation.
-	// The error is checked with `errors.Is` so the error can be wrapped with fmt.Errorf.
-	Validate(pipeline.Step) error
-	// Run allows users to define steps that are ran sequentially. For example, the second step will not run until the first step has completed.
-	// This function blocks the goroutine until all of the steps have completed.
-	Run(...pipeline.Step)
-
-	// Parallel will run the listed steps at the same time.
-	// This function blocks the goroutine until all of the steps have completed.
-	Parallel(...pipeline.Step)
-
-	// Go is the equivalent of `go func()`. This function will run a step asynchronously and continue on to the next.
-	// Go(...pipeline.Step)
-
-	Cache(pipeline.StepAction, pipeline.Cacher) pipeline.StepAction
-	Input(...pipeline.Argument)
-	Output(...pipeline.Output)
-
-	// Done must be ran at the end of the pipeline.
-	// This is typically what takes the defined pipeline steps, runs them in the order defined, and produces some kind of output.
-	Done()
-}
-
 // Shipwright is the client that is used in every pipeline to declare the steps that make up a pipeline.
 type Shipwright struct {
-	Client
+	Client     pipeline.Client
+	Collection pipeline.Collection
+
+	pipeline.Configurer
 
 	// Opts are the options that are provided to the pipeline from outside sources. This includes mostly command-line arguments and environment variables
 	Opts pipeline.CommonOpts
@@ -52,7 +28,47 @@ type Shipwright struct {
 	Version string
 }
 
-func (s *Shipwright) initSteps(steps ...pipeline.Step) []pipeline.Step {
+// Run allows users to define steps that are ran sequentially. For example, the second step will not run until the first step has completed.
+// This function blocks the goroutine until all of the steps have completed.
+func (s *Shipwright) Run(step ...pipeline.Step) {
+	steps := s.Setup(step...)
+
+	if err := s.validateSteps(steps...); err != nil {
+		plog.Fatalln(err)
+	}
+
+	for i := range steps {
+		if err := s.Collection.Append(steps[i]); err != nil {
+			plog.Fatalln(err)
+		}
+	}
+}
+
+// Parallel will run the listed steps at the same time.
+// This function blocks the goroutine until all of the steps have completed.
+func (s *Shipwright) Parallel(step ...pipeline.Step) {
+	steps := s.Setup(step...)
+
+	if err := s.validateSteps(steps...); err != nil {
+		plog.Fatalln(err)
+	}
+
+	if err := s.Collection.Append(steps...); err != nil {
+		plog.Fatalln(err)
+	}
+}
+
+// These functions are just ideas at the moment.
+// // Go is the equivalent of `go func()`. This function will run a step asynchronously and continue on to the next.
+// // Go(...pipeline.Step)
+// // func (s *Shipwright) Input(...pipeline.Argument) {}
+// // func (s *Shipwright) Output(...pipeline.Output) {}
+
+func (s *Shipwright) Cache(action pipeline.StepAction, c pipeline.Cacher) pipeline.StepAction {
+	return action
+}
+
+func (s *Shipwright) Setup(steps ...pipeline.Step) []pipeline.Step {
 	for i, step := range steps {
 		// Set a default image for steps that don't provide one.
 		// Most pre-made steps like `yarn`, `node`, `go` steps should provide a separate default image with those utilities installed.
@@ -69,44 +85,54 @@ func (s *Shipwright) initSteps(steps ...pipeline.Step) []pipeline.Step {
 	return steps
 }
 
-func formatError(step pipeline.Step, err error) string {
+func formatError(step pipeline.Step, err error) error {
 	name := step.Name
 	if name == "" {
 		name = fmt.Sprintf("unnamed-step-%d", step.Serial)
 	}
 
-	return fmt.Sprintf("[name: %s, id: %d] %s", name, step.Serial, err.Error())
+	return fmt.Errorf("[name: %s, id: %d] %w", name, step.Serial, err)
 }
 
-func (s *Shipwright) validateSteps(steps ...pipeline.Step) {
+func (s *Shipwright) validateSteps(steps ...pipeline.Step) error {
 	for _, v := range steps {
-		err := s.Validate(v)
+		err := s.Client.Validate(v)
 		if err == nil {
 			continue
 		}
 
 		if errors.Is(err, plumbing.ErrorSkipValidation) {
-			plog.Warnln(formatError(v, err))
+			plog.Warnln(formatError(v, err).Error())
 			continue
 		}
 
-		plog.Fatalln(formatError(v, err))
-		return
+		return formatError(v, err)
 	}
+
+	return nil
 }
 
-func (s *Shipwright) Run(steps ...pipeline.Step) {
-	initializedSteps := s.initSteps(steps...)
-	s.validateSteps(steps...)
+func (s *Shipwright) Done() {
+	var (
+		ctx        = context.Background()
+		collection = s.Collection
+	)
 
-	s.Client.Run(initializedSteps...)
-}
+	// If the user has specified a specific step, then cut the "Collection" to only include that step
+	if s.Opts.Args.Step != nil {
+		step, err := collection.BySerial(*s.Opts.Args.Step)
+		if err != nil {
+			plog.Panicln("could not find step", err)
+		}
 
-func (s *Shipwright) Parallel(steps ...pipeline.Step) {
-	initializedSteps := s.initSteps(steps...)
-	s.validateSteps(steps...)
+		s.Log.Infoln("Found step at", *s.Opts.Args.Step, "named", step.Name)
 
-	s.Client.Parallel(initializedSteps...)
+		collection = collection.Sub(step)
+	}
+
+	if err := s.Client.Done(ctx, collection); err != nil {
+		plog.Panicln(err)
+	}
 }
 
 // New creates a new Shipwright client which is used to create pipeline steps.

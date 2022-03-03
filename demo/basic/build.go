@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	"pkg.grafana.com/shipwright/v1"
 	"pkg.grafana.com/shipwright/v1/fs"
 	gitx "pkg.grafana.com/shipwright/v1/git/x"
@@ -11,16 +13,16 @@ import (
 )
 
 func writeVersion(sw shipwright.Shipwright) pipeline.Step {
-	action := func(opts pipeline.ActionOpts) error {
+	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 
 		// equivalent of `git describe --tags --dirty --always`
-		version, err := gitx.Describe(".", true, true, true)
+		version, err := gitx.Describe(ctx, ".", true, true, true)
 		if err != nil {
 			return err
 		}
 
 		// write the version string in the `.version` file.
-		return fs.ReplaceString(".version", version)(opts)
+		return fs.ReplaceString(".version", version)(ctx, opts)
 	}
 
 	return pipeline.NewStep(action)

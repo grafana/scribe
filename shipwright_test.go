@@ -6,9 +6,9 @@ import (
 
 	shipwright "pkg.grafana.com/shipwright/v1"
 	"pkg.grafana.com/shipwright/v1/plumbing"
-	"pkg.grafana.com/shipwright/v1/plumbing/clients/cli"
-	"pkg.grafana.com/shipwright/v1/plumbing/clients/drone"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline/clients/cli"
+	"pkg.grafana.com/shipwright/v1/plumbing/pipeline/clients/drone"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 )
 

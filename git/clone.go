@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"os"
 	osexec "os/exec"
 	"strconv"
@@ -36,7 +37,7 @@ func GetCloneOpts(sw shipwright.Shipwright) (*CloneOpts, error) {
 }
 
 func clone(sw shipwright.Shipwright, depth int) pipeline.StepAction {
-	return func(aopts pipeline.ActionOpts) error {
+	return func(ctx context.Context, aopts pipeline.ActionOpts) error {
 		opts, err := GetCloneOpts(sw)
 		if err != nil {
 			return err
@@ -70,11 +71,11 @@ func clone(sw shipwright.Shipwright, depth int) pipeline.StepAction {
 			return nil
 		}
 
-		if err := exec.RunCommand(aopts.Stdout, aopts.Stderr, cmd, cloneArgs...); err != nil {
+		if err := exec.RunCommand(ctx, aopts.Stdout, aopts.Stderr, cmd, cloneArgs...); err != nil {
 			return err
 		}
 
-		if err := exec.RunCommandAt(aopts.Stdout, aopts.Stderr, opts.Folder, cmd, checkoutArgs...); err != nil {
+		if err := exec.RunCommandAt(ctx, aopts.Stdout, aopts.Stderr, opts.Folder, cmd, checkoutArgs...); err != nil {
 			return err
 		}
 

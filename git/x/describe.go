@@ -2,13 +2,14 @@ package x
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 
 	"pkg.grafana.com/shipwright/v1/exec"
 )
 
-func Describe(dir string, tags bool, dirty bool, always bool) (string, error) {
+func Describe(ctx context.Context, dir string, tags bool, dirty bool, always bool) (string, error) {
 	var (
 		stdout = bytes.NewBuffer(nil)
 		stderr = bytes.NewBuffer(nil)
@@ -25,7 +26,7 @@ func Describe(dir string, tags bool, dirty bool, always bool) (string, error) {
 		args = append(args, "--always")
 	}
 
-	if err := exec.RunCommandAt(stdout, stderr, dir, "git", args...); err != nil {
+	if err := exec.RunCommandAt(ctx, stdout, stderr, dir, "git", args...); err != nil {
 		return "", fmt.Errorf("%w\n%s", err, stderr.String())
 	}
 
