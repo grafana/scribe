@@ -12,8 +12,8 @@ type BuildOpts struct {
 	Output string
 	Module string
 
-	Stdout io.ReadWriter
-	Stderr io.ReadWriter
+	Stdout io.Writer
+	Stderr io.Writer
 }
 
 func Build(ctx context.Context, opts BuildOpts) error {

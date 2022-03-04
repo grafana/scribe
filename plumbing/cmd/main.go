@@ -4,10 +4,10 @@ package main
 
 import (
 	"context"
+	"log"
 	"os"
 
 	"pkg.grafana.com/shipwright/v1/plumbing/cmd/commands"
-	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 )
 
 // Arguments provided at compile-time
@@ -16,7 +16,7 @@ var (
 )
 
 func main() {
-	plog.Infoln("Running version", Version)
+	log.Println("Running version", Version)
 	var (
 		ctx = context.Background()
 	)

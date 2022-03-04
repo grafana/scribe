@@ -1,12 +1,12 @@
 package cli
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 	"pkg.grafana.com/shipwright/v1/plumbing/syncutil"
@@ -30,7 +30,7 @@ func (c *Client) WalkFunc(ctx context.Context, step ...pipeline.Step) error {
 // In order to emulate what happens in a remote environment, the steps are put into a queue before being ran.
 type Client struct {
 	Opts pipeline.CommonOpts
-	Log  *plog.Logger
+	Log  *logrus.Logger
 }
 
 func (c *Client) Validate(step pipeline.Step) error {
@@ -52,16 +52,17 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 func (c *Client) wrap(step pipeline.Step) pipeline.Step {
 	action := step.Action
 	step.Action = func(ctx context.Context, opts pipeline.ActionOpts) error {
-		var (
-			stdout = bytes.NewBuffer(nil)
-			stderr = bytes.NewBuffer(nil)
-		)
+		stdoutFields := plog.StepFields(step)
+		stdoutFields["stream"] = "stdout"
 
-		opts.Stdout = stdout
-		opts.Stderr = stderr
+		stderrFields := plog.StepFields(step)
+		stderrFields["stream"] = "stderr"
+
+		opts.Stdout = c.Log.WithFields(stdoutFields).Writer()
+		opts.Stderr = c.Log.WithFields(stderrFields).Writer()
 
 		if err := action(ctx, opts); err != nil {
-			return fmt.Errorf("error: %w\nstdout:%s\nstderr:%s", err, stdout.String(), stderr.String())
+			return err
 		}
 
 		return nil

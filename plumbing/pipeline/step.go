@@ -10,8 +10,8 @@ import (
 // The ActionOpts are provided to every step that is ran.
 // Each step can choose to use these options.
 type ActionOpts struct {
-	Stdout io.ReadWriter
-	Stderr io.ReadWriter
+	Stdout io.Writer
+	Stderr io.Writer
 }
 
 type (

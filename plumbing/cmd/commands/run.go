@@ -68,6 +68,8 @@ func Run(ctx context.Context, opts *RunOpts) error {
 		version = "latest"
 	}
 
+	logger := plog.New(opts.Args.LogLevel)
+
 	// This will run a weird looking command, like this:
 	//   go run ./demo/basic -mode drone -path ./demo/basic
 	// But it's important to note that a lot happens before it actually reaches the pipeline code and produces a command like this:
@@ -75,7 +77,7 @@ func Run(ctx context.Context, opts *RunOpts) error {
 	// So the path to the pipeline is not preserved, which is why we have to provide the path as an argument
 	cmdArgs := []string{"run", path, "-mode", args.Mode.String(), "-log-level", args.LogLevel.String(), "-path", args.Path, "-version", version}
 
-	plog.Infoln("Running shipwright pipeline with args", cmdArgs)
+	logger.Infoln("Running shipwright pipeline with args", cmdArgs)
 
 	if args.Step != nil {
 		cmdArgs = append(cmdArgs, "-step", strconv.Itoa(*args.Step))
@@ -95,6 +97,6 @@ func Run(ctx context.Context, opts *RunOpts) error {
 
 func MustRun(ctx context.Context, opts *RunOpts) {
 	if err := Run(ctx, opts); err != nil {
-		plog.Fatalln("Error running pipeline:", err)
+		panic(err)
 	}
 }

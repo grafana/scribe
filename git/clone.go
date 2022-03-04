@@ -10,7 +10,6 @@ import (
 	"pkg.grafana.com/shipwright/v1/exec"
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
-	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 )
 
 func GetCloneOpts(sw shipwright.Shipwright) (*CloneOpts, error) {
@@ -67,7 +66,6 @@ func clone(sw shipwright.Shipwright, depth int) pipeline.StepAction {
 		// Don't run `git clone` or checkout if we're already in a git repository
 		// An error will not be returned (and the word true will be printed) if we're in a git repository.
 		if _, err := osexec.Command("git", "rev-parse", "--is-inside-git-dir").CombinedOutput(); err == nil {
-			plog.Warnln("Skipping git clone because we're already in a git repository...")
 			return nil
 		}
 
