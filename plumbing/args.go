@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"pkg.grafana.com/shipwright/v1/plumbing/plog"
+	"github.com/sirupsen/logrus"
 )
 
 // PipelineArgs are provided to the `shipwright` command.
@@ -31,14 +31,14 @@ type PipelineArgs struct {
 	// LogLvel defines how detailed the output logs in the pipeline should be.
 	// Possible options are [debug, info, warn, error].
 	// The default value is warn.
-	LogLevel plog.LogLevel
+	LogLevel logrus.Level
 }
 
 func ParseArguments(args []string) (*PipelineArgs, error) {
 	var (
 		flagSet                     = flag.NewFlagSet("run", flag.ContinueOnError)
 		mode          RunModeOption = RunModeCLI
-		logLevel                    = plog.LogLevelWarn
+		logLevel      string
 		step          OptionalInt
 		pathOverride  string
 		version       string
@@ -50,7 +50,7 @@ func ParseArguments(args []string) (*PipelineArgs, error) {
 
 	flagSet.Var(&mode, "mode", "cli|docker|drone. Default: cli")
 	flagSet.Var(&step, "step", "A number that defines what specific step to run")
-	flagSet.Var(&logLevel, "log-level", "The level of detail in the pipeline's log output. Default: 'warn'. Options: [debug, info, warn, error]")
+	flagSet.StringVar(&logLevel, "log-level", "info", "The level of detail in the pipeline's log output. Default: 'warn'. Options: [trace, debug, info, warn, error]")
 	flagSet.Var(&argMap, "arg", "")
 	flagSet.BoolVar(&noStdinPrompt, "no-stdin", false, "If this flag is provided, then the CLI pipeline will not request absent arguments via stdin")
 	flagSet.StringVar(&pathOverride, "path", "", "Providing the path argument overrides the $PWD of the pipeline for generation")
@@ -60,11 +60,16 @@ func ParseArguments(args []string) (*PipelineArgs, error) {
 		return nil, err
 	}
 
+	level, err := logrus.ParseLevel(logLevel)
+	if err != nil {
+		return nil, err
+	}
+
 	arguments := &PipelineArgs{
 		CanStdinPrompt: !noStdinPrompt,
 		Mode:           mode,
 		Version:        version,
-		LogLevel:       logLevel,
+		LogLevel:       level,
 	}
 
 	if step.Valid {

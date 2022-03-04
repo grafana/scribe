@@ -3,10 +3,10 @@ package drone
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
-	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 	"pkg.grafana.com/shipwright/v1/plumbing/schemas/drone"
 )
 
@@ -18,7 +18,7 @@ var (
 type Client struct {
 	Opts pipeline.CommonOpts
 
-	Log *plog.Logger
+	Log *logrus.Logger
 }
 
 func (c *Client) Validate(step pipeline.Step) error {

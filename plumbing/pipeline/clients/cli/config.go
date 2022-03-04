@@ -9,7 +9,6 @@ import (
 
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
-	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 )
 
 // This function effectively runs 'git remote get-url $(git remote)'
@@ -65,8 +64,6 @@ func GetArgValue(args *plumbing.PipelineArgs, arg pipeline.Argument) (string, er
 		if err == nil {
 			return val, nil
 		}
-
-		plog.Warnf("shipwright attempted to automatically populate the argument '%s', but encountered an error '%s'", arg.Key, err)
 	}
 
 	errMissingArgument := fmt.Errorf("%w: Requested argument '%s'", plumbing.ErrorMissingArgument, arg.Key)

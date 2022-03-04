@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	shipwright "pkg.grafana.com/shipwright/v1"
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
@@ -21,7 +22,7 @@ func TestNew(t *testing.T) {
 		}
 
 		sw := shipwright.NewFromOpts(pipeline.CommonOpts{
-			Log:  plog.DefaultLogger,
+			Log:  plog.New(logrus.DebugLevel),
 			Args: args,
 		})
 
@@ -43,7 +44,7 @@ func TestNew(t *testing.T) {
 		}
 
 		sw := shipwright.NewFromOpts(pipeline.CommonOpts{
-			Log:  plog.DefaultLogger,
+			Log:  plog.New(logrus.DebugLevel),
 			Args: args,
 		})
 

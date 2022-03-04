@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	golangx "pkg.grafana.com/shipwright/v1/golang/x"
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/cmdutil"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline/clients/cli"
-	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 	"pkg.grafana.com/shipwright/v1/plumbing/syncutil"
 )
 
@@ -26,7 +26,7 @@ import (
 type Client struct {
 	Opts pipeline.CommonOpts
 
-	Log *plog.Logger
+	Log *logrus.Logger
 }
 
 func (c *Client) Validate(step pipeline.Step) error {
@@ -82,7 +82,7 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 			s[i] = v.Name
 		}
 
-		c.Log.Infof("Running [%d] step(s) %s", len(steps), len(steps), strings.Join(s, " | "))
+		c.Log.Infof("Running [%d] step(s) %s", len(steps), strings.Join(s, " | "))
 
 		if err := c.runSteps(ctx, p, steps); err != nil {
 			return err

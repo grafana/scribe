@@ -1,3 +1,2 @@
-// Package plog (or plumbig log) provides a logging wrapper for the standard log library.
-// This thing is probably not very good and should maybe be replaced by something better.
+// Package plog (or plumbig log) provides a logging initializer and utility functions for working with a logging library.
 package plog

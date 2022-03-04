@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 
+	"github.com/sirupsen/logrus"
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 	"pkg.grafana.com/shipwright/v1/plumbing/plog"
@@ -20,7 +22,7 @@ type Shipwright struct {
 
 	// Opts are the options that are provided to the pipeline from outside sources. This includes mostly command-line arguments and environment variables
 	Opts pipeline.CommonOpts
-	Log  *plog.Logger
+	Log  *logrus.Logger
 
 	// n tracks the ID of a step so that the "shipwright -step=" argument will function independently of the client implementation
 	// It ensures that the 11th step in a Drone generated pipeline is also the 11th step in a CLI pipeline
@@ -34,12 +36,12 @@ func (s *Shipwright) Run(step ...pipeline.Step) {
 	steps := s.Setup(step...)
 
 	if err := s.validateSteps(steps...); err != nil {
-		plog.Fatalln(err)
+		s.Log.Fatalln(err)
 	}
 
 	for i := range steps {
 		if err := s.Collection.Append(steps[i]); err != nil {
-			plog.Fatalln(err)
+			s.Log.Fatalln(err)
 		}
 	}
 }
@@ -50,11 +52,11 @@ func (s *Shipwright) Parallel(step ...pipeline.Step) {
 	steps := s.Setup(step...)
 
 	if err := s.validateSteps(steps...); err != nil {
-		plog.Fatalln(err)
+		s.Log.Fatalln(err)
 	}
 
 	if err := s.Collection.Append(steps...); err != nil {
-		plog.Fatalln(err)
+		s.Log.Fatalln(err)
 	}
 }
 
@@ -102,7 +104,7 @@ func (s *Shipwright) validateSteps(steps ...pipeline.Step) error {
 		}
 
 		if errors.Is(err, plumbing.ErrorSkipValidation) {
-			plog.Warnln(formatError(v, err).Error())
+			s.Log.Warnln(formatError(v, err).Error())
 			continue
 		}
 
@@ -122,7 +124,7 @@ func (s *Shipwright) Done() {
 	if s.Opts.Args.Step != nil {
 		step, err := collection.BySerial(*s.Opts.Args.Step)
 		if err != nil {
-			plog.Panicln("could not find step", err)
+			s.Log.Panicln("could not find step", err)
 		}
 
 		s.Log.Infoln("Found step at", *s.Opts.Args.Step, "named", step.Name)
@@ -131,7 +133,7 @@ func (s *Shipwright) Done() {
 	}
 
 	if err := s.Client.Done(ctx, collection); err != nil {
-		plog.Panicln(err)
+		s.Log.Panicln(err)
 	}
 }
 
@@ -142,11 +144,11 @@ func (s *Shipwright) Done() {
 func New(name string, events ...pipeline.Event) Shipwright {
 	args, err := plumbing.ParseArguments(os.Args[1:])
 	if err != nil {
-		plog.Fatalln("Error parsing arguments. Error:", err)
+		log.Fatalln("Error parsing arguments. Error:", err)
 	}
 
 	if args == nil {
-		plog.Fatalln("Arguments list must not be nil")
+		log.Fatalln("Arguments list must not be nil")
 		return Shipwright{}
 	}
 
@@ -155,7 +157,7 @@ func New(name string, events ...pipeline.Event) Shipwright {
 		Version: args.Version,
 		Output:  os.Stdout,
 		Args:    args,
-		Log:     plog.New(args.LogLevel, os.Stderr),
+		Log:     plog.New(args.LogLevel),
 	})
 
 	// Ensure that no matter the behavior of the initializer, we still set the version on the shipwright object.
