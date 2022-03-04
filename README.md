@@ -36,6 +36,12 @@ The idea behind `shipwright` is that it is not an application, but a library. Th
   - An example of an artifact would be a compiled binary or a docker image.
 - **Target**: A target is a software release destination. It is the final place that an artifact is sent before it is used to serve user requests.
 
+## Running Locally / testing
+
+- Compile it: `mage build`
+- Run the local pipeline: `./bin/shipwright -log-level=debug -mode=cli ./ci`
+- Generate the drone: `./bin/shipwright -mode=drone ./ci`
+
 ## How does it work?
 
 The main idea behind `shipwright` is that it defers what is typically considered server logic into the client / pipeline definitions and library.
