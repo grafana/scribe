@@ -7,28 +7,28 @@ steps:
 - name: install-frontend-dependencies
   image: ghcr.io/grafana/shipwright:latest
   commands:
-  - shipwright -step=0 ./demo/basic
+  - shipwright -step=0 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
 - name: install-backend-dependencies
   image: ghcr.io/grafana/shipwright:latest
   commands:
-  - shipwright -step=1 ./demo/basic
+  - shipwright -step=1 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
   depends_on:
   - install-frontend-dependencies
 - name: write-version-file
   image: ghcr.io/grafana/shipwright:latest
   commands:
-  - shipwright -step=2 ./demo/basic
+  - shipwright -step=2 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
   depends_on:
   - install-backend-dependencies
 - name: compile-backend
   image: ghcr.io/grafana/shipwright:latest
   commands:
-  - shipwright -step=3 ./demo/basic
+  - shipwright -step=3 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
   depends_on:
   - write-version-file
 - name: compile-frontend
   image: ghcr.io/grafana/shipwright:latest
   commands:
-  - shipwright -step=4 ./demo/basic
+  - shipwright -step=4 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
   depends_on:
   - compile-backend

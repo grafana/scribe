@@ -17,6 +17,7 @@ import (
 	"pkg.grafana.com/shipwright/v1/plumbing/cmdutil"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline/clients/cli"
+	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 	"pkg.grafana.com/shipwright/v1/plumbing/syncutil"
 )
 
@@ -69,11 +70,13 @@ func (c *Client) buildPipeline(ctx context.Context) (string, error) {
 }
 
 func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
+	logger := c.Log.WithFields(plog.PipelineFields(c.Opts))
+
 	// Every step needs a compiled version of the pipeline in order to know what to do
 	// without requiring that every image has a copy of the shipwright binary
 	p, err := c.buildPipeline(ctx)
 	if err != nil {
-		c.Log.Fatalln("failed to compile the pipeline", err.Error())
+		logger.Fatalln("failed to compile the pipeline", err.Error())
 	}
 
 	return w.Walk(ctx, func(ctx context.Context, steps ...pipeline.Step) error {
@@ -81,8 +84,7 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 		for i, v := range steps {
 			s[i] = v.Name
 		}
-
-		c.Log.Infof("Running [%d] step(s) %s", len(steps), strings.Join(s, " | "))
+		logger.Infof("Running [%d] step(s) %s", len(steps), strings.Join(s, " | "))
 
 		if err := c.runSteps(ctx, p, steps); err != nil {
 			return err
@@ -201,7 +203,10 @@ func (c *Client) applyArguments(opts RunOpts, args []pipeline.Argument) (RunOpts
 }
 
 func (c *Client) runAction(ctx context.Context, pipelinePath string, step pipeline.Step) pipeline.StepAction {
-	cmd, err := cmdutil.StepCommand(c, "", step)
+	cmd, err := cmdutil.StepCommand(c, cmdutil.CommandOpts{
+		Step:    step,
+		BuildID: c.Opts.Args.BuildID,
+	})
 	if err != nil {
 		c.Log.Fatalln(err)
 		return nil

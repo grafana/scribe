@@ -28,7 +28,12 @@ func NewStep(c pipeline.Configurer, path string, step pipeline.Step) (Step, erro
 		deps[i] = Slugify(v.Name)
 	}
 
-	cmd, err := cmdutil.StepCommand(c, path, step)
+	cmd, err := cmdutil.StepCommand(c, cmdutil.CommandOpts{
+		Path:    path,
+		Step:    step,
+		BuildID: "$DRONE_BUILD_NUMBER",
+	})
+
 	if err != nil {
 		return Step{}, err
 	}

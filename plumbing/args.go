@@ -3,10 +3,16 @@ package plumbing
 import (
 	"flag"
 	"fmt"
+	"math/rand"
 	"os"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 // PipelineArgs are provided to the `shipwright` command.
 type PipelineArgs struct {
@@ -21,6 +27,10 @@ type PipelineArgs struct {
 	// If Step is nil, then all steps are ran
 	Step *int
 
+	// BuildID is a unique identifier typically assigned by a CI system.
+	// In Docker / CLI mode, this will likely be populated by a random UUID if not provided.
+	BuildID string
+
 	// CanStdinPrompt is true if the pipeline can prompt for absent arguments via stdin
 	CanStdinPrompt bool
 
@@ -34,14 +44,25 @@ type PipelineArgs struct {
 	LogLevel logrus.Level
 }
 
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func randomString(length int) string {
+	b := make([]rune, length)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
+
 func ParseArguments(args []string) (*PipelineArgs, error) {
 	var (
 		flagSet                     = flag.NewFlagSet("run", flag.ContinueOnError)
 		mode          RunModeOption = RunModeCLI
-		logLevel      string
 		step          OptionalInt
+		logLevel      string
 		pathOverride  string
 		version       string
+		buildID       string
 		noStdinPrompt bool
 		argMap        = ArgMap(map[string]string{})
 	)
@@ -51,10 +72,11 @@ func ParseArguments(args []string) (*PipelineArgs, error) {
 	flagSet.Var(&mode, "mode", "cli|docker|drone. Default: cli")
 	flagSet.Var(&step, "step", "A number that defines what specific step to run")
 	flagSet.StringVar(&logLevel, "log-level", "info", "The level of detail in the pipeline's log output. Default: 'warn'. Options: [trace, debug, info, warn, error]")
-	flagSet.Var(&argMap, "arg", "")
+	flagSet.Var(&argMap, "arg", "Provide pre-available arguments for use in pipeline steps. This argument can be provided multiple times. Format: '-arg={key}={value}")
 	flagSet.BoolVar(&noStdinPrompt, "no-stdin", false, "If this flag is provided, then the CLI pipeline will not request absent arguments via stdin")
 	flagSet.StringVar(&pathOverride, "path", "", "Providing the path argument overrides the $PWD of the pipeline for generation")
 	flagSet.StringVar(&version, "version", "latest", "The version is provided by the 'shipwright' command, however if only using 'go run', it can be provided here")
+	flagSet.StringVar(&buildID, "build-id", randomString(12), "A unique identifier typically assigned by a build system. Defaults to a random string if no build ID is provided")
 
 	if err := flagSet.Parse(args); err != nil {
 		return nil, err
@@ -70,6 +92,7 @@ func ParseArguments(args []string) (*PipelineArgs, error) {
 		Mode:           mode,
 		Version:        version,
 		LogLevel:       level,
+		BuildID:        buildID,
 	}
 
 	if step.Valid {

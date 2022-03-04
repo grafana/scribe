@@ -43,7 +43,8 @@ func (c *Client) Validate(step pipeline.Step) error {
 
 func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 	wrapper := &wrappers.LogWrapper{
-		Log: c.Log,
+		Opts: c.Opts,
+		Log:  c.Log,
 	}
 
 	return w.Walk(ctx, wrapper.Wrap(c.WalkFunc))
@@ -52,10 +53,10 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 func (c *Client) wrap(step pipeline.Step) pipeline.Step {
 	action := step.Action
 	step.Action = func(ctx context.Context, opts pipeline.ActionOpts) error {
-		stdoutFields := plog.StepFields(step)
+		stdoutFields := plog.DefaultFields(step, c.Opts)
 		stdoutFields["stream"] = "stdout"
 
-		stderrFields := plog.StepFields(step)
+		stderrFields := plog.DefaultFields(step, c.Opts)
 		stderrFields["stream"] = "stderr"
 
 		opts.Stdout = c.Log.WithFields(stdoutFields).Writer()

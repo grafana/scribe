@@ -10,11 +10,12 @@ import (
 )
 
 type LogWrapper struct {
-	Log *logrus.Logger
+	Opts pipeline.CommonOpts
+	Log  *logrus.Logger
 }
 
-func Fields(step pipeline.Step) logrus.Fields {
-	fields := plog.StepFields(step)
+func (l *LogWrapper) Fields(step pipeline.Step) logrus.Fields {
+	fields := plog.DefaultFields(step, l.Opts)
 
 	fields["time"] = time.Now()
 
@@ -25,13 +26,13 @@ func (l *LogWrapper) WrapStep(step ...pipeline.Step) []pipeline.Step {
 	for i, v := range step {
 		action := step[i].Action
 		step[i].Action = func(ctx context.Context, opts pipeline.ActionOpts) error {
-			l.Log.WithFields(Fields(v)).Infoln("starting step'")
+			l.Log.WithFields(l.Fields(v)).Infoln("starting step'")
 			if err := action(ctx, opts); err != nil {
-				l.Log.WithFields(Fields(v)).Infoln("encountered error", err.Error())
+				l.Log.WithFields(l.Fields(v)).Infoln("encountered error", err.Error())
 				return err
 			}
 
-			l.Log.WithFields(Fields(v)).Infoln("done running step without error")
+			l.Log.WithFields(l.Fields(v)).Infoln("done running step without error")
 			return nil
 		}
 	}
