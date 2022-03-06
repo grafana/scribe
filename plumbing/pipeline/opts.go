@@ -3,6 +3,7 @@ package pipeline
 import (
 	"io"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"pkg.grafana.com/shipwright/v1/plumbing"
 )
@@ -15,4 +16,5 @@ type CommonOpts struct {
 	Output  io.Writer
 	Args    *plumbing.PipelineArgs
 	Log     *logrus.Logger
+	Tracer  opentracing.Tracer
 }

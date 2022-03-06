@@ -8,7 +8,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
-	"pkg.grafana.com/shipwright/v1/plumbing/plog"
 	"pkg.grafana.com/shipwright/v1/plumbing/syncutil"
 	"pkg.grafana.com/shipwright/v1/plumbing/wrappers"
 )
@@ -42,34 +41,21 @@ func (c *Client) Validate(step pipeline.Step) error {
 }
 
 func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
-	wrapper := &wrappers.LogWrapper{
+	logWrapper := &wrappers.LogWrapper{
 		Opts: c.Opts,
 		Log:  c.Log,
 	}
 
-	return w.Walk(ctx, wrapper.Wrap(c.WalkFunc))
-}
-
-func (c *Client) wrap(step pipeline.Step) pipeline.Step {
-	action := step.Action
-	step.Action = func(ctx context.Context, opts pipeline.ActionOpts) error {
-		stdoutFields := plog.DefaultFields(step, c.Opts)
-		stdoutFields["stream"] = "stdout"
-
-		stderrFields := plog.DefaultFields(step, c.Opts)
-		stderrFields["stream"] = "stderr"
-
-		opts.Stdout = c.Log.WithFields(stdoutFields).Writer()
-		opts.Stderr = c.Log.WithFields(stderrFields).Writer()
-
-		if err := action(ctx, opts); err != nil {
-			return err
-		}
-
-		return nil
+	traceWrapper := &wrappers.TraceWrapper{
+		Opts:   c.Opts,
+		Tracer: c.Opts.Tracer,
 	}
 
-	return step
+	// Because these wrappers wrap the actions of each step, the first wrapper typically runs first.
+	walkFunc := traceWrapper.Wrap(c.WalkFunc)
+	walkFunc = logWrapper.Wrap(walkFunc)
+
+	return w.Walk(ctx, walkFunc)
 }
 
 func (c *Client) runSteps(ctx context.Context, steps pipeline.StepList) error {
@@ -81,7 +67,7 @@ func (c *Client) runSteps(ctx context.Context, steps pipeline.StepList) error {
 	)
 
 	for _, v := range steps {
-		wg.Add(c.wrap(v))
+		wg.Add(v)
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
