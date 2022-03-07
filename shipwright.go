@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
@@ -127,7 +128,9 @@ func (s *Shipwright) Done() {
 	span, ctx := opentracing.StartSpanFromContextWithTracer(ctx, s.Opts.Tracer, "shipwright build")
 	defer span.Finish()
 
-	logger := s.Log.WithFields(plog.TracingFields(ctx))
+	logger := s.Log.WithFields(plog.Combine(plog.TracingFields(ctx), plog.PipelineFields(s.Opts)))
+
+	logger.WithField("mode", s.Opts.Args.Mode).Info("execution started")
 
 	// If the user has specified a specific step, then cut the "Collection" to only include that step
 	if s.Opts.Args.Step != nil {
@@ -142,8 +145,17 @@ func (s *Shipwright) Done() {
 	}
 
 	if err := s.Client.Done(ctx, collection); err != nil {
-		logger.Panicln(err)
+		logger.WithFields(logrus.Fields{
+			"status":       "error",
+			"completed_at": time.Now().Unix(),
+		}).WithError(err).Error("execution completed")
+		return
 	}
+
+	logger.WithFields(logrus.Fields{
+		"status":       "success",
+		"completed_at": time.Now().Unix(),
+	}).Info("execution completed")
 
 	if v, ok := s.Opts.Tracer.(*jaeger.Tracer); ok {
 		v.Close()

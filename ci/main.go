@@ -11,7 +11,7 @@ import (
 // This allows the various client modes to work properly in different scenarios, like in a CI environment or locally.
 // Logic and processing done outside of the `sw.*` family of functions may not be included in the resulting pipeline.
 func main() {
-	sw := shipwright.New("basic pipeline")
+	sw := shipwright.New("groan")
 	defer sw.Done()
 
 	sw.Run(

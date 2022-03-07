@@ -52,3 +52,15 @@ There are two places where command-line arguments are parsed:
 
 1. In the `shipwright.New` function, which is the first function called in a pipeline.
 2. In the `plumbing/cmd` package for parsing options supplied in the `shipwright` command.
+
+## Testing & Running Locally
+
+### Setting up the Grafana, Tempo, and Loki servers using Docker Compose
+
+There is a separate project for building panel visualizations for Shipwright pipelines located [here](github.com/grafana/shipwright-app). Before starting Grafana, this should be cloned and compiled.
+
+It's currently a git submodule just for ease of installation.
+
+```
+git submodule init --recursive
+```

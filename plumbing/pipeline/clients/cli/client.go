@@ -70,7 +70,7 @@ func (c *Client) runSteps(ctx context.Context, steps pipeline.StepList) error {
 		wg.Add(v)
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
 	defer cancel()
 
 	return wg.Wait(ctx, opts)

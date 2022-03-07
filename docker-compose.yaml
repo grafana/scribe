@@ -8,6 +8,7 @@ services:
     volumes:
     - db-data:/var/lib/grafana
     - ./.compose/grafana/provisioning:/etc/grafana/provisioning
+    - ./.compose/grafana/plugins/shipwright-app:/var/lib/grafana/plugins/shipwright-app
     - ./.compose/grafana/custom.ini:/etc/grafana/grafana.ini
     networks:
     - grafana

@@ -8,6 +8,7 @@ import (
 	"pkg.grafana.com/shipwright/v1/plumbing"
 	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
 	"pkg.grafana.com/shipwright/v1/plumbing/schemas/drone"
+	"pkg.grafana.com/shipwright/v1/plumbing/stringutil"
 )
 
 var (
@@ -54,7 +55,7 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 				return err
 			}
 
-			stepNames[i] = drone.Slugify(v.Name)
+			stepNames[i] = stringutil.Slugify(v.Name)
 
 			step.DependsOn = previous
 			cfg.Steps = append(cfg.Steps, step)
