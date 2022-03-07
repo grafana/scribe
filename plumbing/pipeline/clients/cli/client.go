@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
-	"pkg.grafana.com/shipwright/v1/plumbing/syncutil"
-	"pkg.grafana.com/shipwright/v1/plumbing/wrappers"
+	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/syncutil"
+	"github.com/grafana/shipwright/plumbing/wrappers"
 )
 
 var (

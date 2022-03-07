@@ -1,6 +1,6 @@
 package yarn
 
-import "pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+import "github.com/grafana/shipwright/plumbing/pipeline"
 
 func Install() pipeline.StepAction {
 	return NewStep("install")

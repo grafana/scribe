@@ -1,9 +1,9 @@
 package main
 
 import (
-	"pkg.grafana.com/shipwright/v1"
-	"pkg.grafana.com/shipwright/v1/ci/docker"
-	"pkg.grafana.com/shipwright/v1/golang"
+	"github.com/grafana/shipwright"
+	"github.com/grafana/shipwright/ci/docker"
+	"github.com/grafana/shipwright/golang"
 )
 
 // "main" defines our program pipeline.

@@ -3,9 +3,9 @@ package drone
 import (
 	"strings"
 
-	"pkg.grafana.com/shipwright/v1/plumbing/cmdutil"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
-	"pkg.grafana.com/shipwright/v1/plumbing/stringutil"
+	"github.com/grafana/shipwright/plumbing/cmdutil"
+	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/stringutil"
 )
 
 func NewStep(c pipeline.Configurer, path string, step pipeline.Step) (Step, error) {

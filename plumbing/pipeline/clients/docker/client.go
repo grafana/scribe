@@ -12,13 +12,13 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	golangx "pkg.grafana.com/shipwright/v1/golang/x"
-	"pkg.grafana.com/shipwright/v1/plumbing"
-	"pkg.grafana.com/shipwright/v1/plumbing/cmdutil"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline/clients/cli"
-	"pkg.grafana.com/shipwright/v1/plumbing/plog"
-	"pkg.grafana.com/shipwright/v1/plumbing/syncutil"
+	golangx "github.com/grafana/shipwright/golang/x"
+	"github.com/grafana/shipwright/plumbing"
+	"github.com/grafana/shipwright/plumbing/cmdutil"
+	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/pipeline/clients/cli"
+	"github.com/grafana/shipwright/plumbing/plog"
+	"github.com/grafana/shipwright/plumbing/syncutil"
 )
 
 // The Client is used when interacting with a shipwright pipeline using the shipwright CLI.

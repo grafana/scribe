@@ -5,7 +5,7 @@ import (
 	"io"
 	"os/exec"
 
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
 // RunCommandAt runs a given command and set of arguments at the given location

@@ -1,11 +1,11 @@
 package shipwright
 
 import (
-	"pkg.grafana.com/shipwright/v1/plumbing"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline/clients/cli"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline/clients/docker"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline/clients/drone"
+	"github.com/grafana/shipwright/plumbing"
+	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/pipeline/clients/cli"
+	"github.com/grafana/shipwright/plumbing/pipeline/clients/docker"
+	"github.com/grafana/shipwright/plumbing/pipeline/clients/drone"
 )
 
 func NewDefaultCollection() pipeline.Collection {

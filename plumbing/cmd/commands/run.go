@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"strconv"
 
-	"pkg.grafana.com/shipwright/v1/plumbing"
-	"pkg.grafana.com/shipwright/v1/plumbing/plog"
+	"github.com/grafana/shipwright/plumbing"
+	"github.com/grafana/shipwright/plumbing/plog"
 )
 
 type RunOpts struct {

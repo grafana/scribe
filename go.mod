@@ -1,4 +1,4 @@
-module pkg.grafana.com/shipwright/v1
+module github.com/grafana/shipwright
 
 go 1.17
 

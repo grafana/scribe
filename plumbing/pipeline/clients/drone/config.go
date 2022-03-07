@@ -3,8 +3,8 @@ package drone
 import (
 	"fmt"
 
-	"pkg.grafana.com/shipwright/v1/plumbing"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing"
+	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
 var argEnvMap = map[pipeline.Argument]string{

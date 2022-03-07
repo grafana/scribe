@@ -6,8 +6,8 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"github.com/uber/jaeger-client-go"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
-	"pkg.grafana.com/shipwright/v1/plumbing/stringutil"
+	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/stringutil"
 )
 
 // TracingFields adds fields that are derived from the context.Context.

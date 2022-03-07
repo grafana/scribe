@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"pkg.grafana.com/shipwright/v1/plumbing/cmd/commands"
+	"github.com/grafana/shipwright/plumbing/cmd/commands"
 )
 
 // Arguments provided at compile-time
