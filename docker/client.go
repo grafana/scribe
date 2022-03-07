@@ -1,6 +1,6 @@
 package docker
 
-import "pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+import "github.com/grafana/shipwright/plumbing/pipeline"
 
 type Client struct {
 	CommonOpts *pipeline.CommonOpts

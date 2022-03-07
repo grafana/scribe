@@ -3,7 +3,7 @@ package yarn
 import (
 	"context"
 
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
 func NewStep(args ...string) pipeline.StepAction {

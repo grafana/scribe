@@ -1,7 +1,7 @@
 package shipwright
 
 import (
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
 // NewClient creates a new Shipwright client based on the commonopts (mostly the mode).

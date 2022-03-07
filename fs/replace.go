@@ -3,7 +3,7 @@ package fs
 import (
 	"context"
 
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
 func Replace(file string, content string) pipeline.StepAction {

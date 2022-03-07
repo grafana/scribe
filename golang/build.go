@@ -3,8 +3,8 @@ package golang
 import (
 	"context"
 
-	"pkg.grafana.com/shipwright/v1/golang/x"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+	"github.com/grafana/shipwright/golang/x"
+	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
 func BuildStep(pkg, output string) pipeline.Step {

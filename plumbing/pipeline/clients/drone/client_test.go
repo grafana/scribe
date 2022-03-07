@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	shipwright "pkg.grafana.com/shipwright/v1"
-	"pkg.grafana.com/shipwright/v1/plumbing"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
-	"pkg.grafana.com/shipwright/v1/plumbing/testutil"
+	shipwright "github.com/grafana/shipwright"
+	"github.com/grafana/shipwright/plumbing"
+	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/testutil"
 )
 
 func TestDroneClient(t *testing.T) {

@@ -6,11 +6,16 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
-	"pkg.grafana.com/shipwright/v1/plumbing"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
-	"pkg.grafana.com/shipwright/v1/plumbing/plog"
+	"github.com/grafana/shipwright/plumbing"
+	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/plog"
+
+	"github.com/uber/jaeger-client-go"
+	"github.com/uber/jaeger-client-go/config"
 )
 
 // Shipwright is the client that is used in every pipeline to declare the steps that make up a pipeline.
@@ -120,20 +125,40 @@ func (s *Shipwright) Done() {
 		collection = s.Collection
 	)
 
+	span, ctx := opentracing.StartSpanFromContextWithTracer(ctx, s.Opts.Tracer, "shipwright build")
+	defer span.Finish()
+
+	logger := s.Log.WithFields(plog.Combine(plog.TracingFields(ctx), plog.PipelineFields(s.Opts)))
+
+	logger.WithField("mode", s.Opts.Args.Mode).Info("execution started")
+
 	// If the user has specified a specific step, then cut the "Collection" to only include that step
 	if s.Opts.Args.Step != nil {
 		step, err := collection.BySerial(*s.Opts.Args.Step)
 		if err != nil {
-			s.Log.Panicln("could not find step", err)
+			logger.Panicln("could not find step", err)
 		}
 
-		s.Log.Infoln("Found step at", *s.Opts.Args.Step, "named", step.Name)
+		logger.Infoln("Found step at", *s.Opts.Args.Step, "named", step.Name)
 
 		collection = collection.Sub(step)
 	}
 
 	if err := s.Client.Done(ctx, collection); err != nil {
-		s.Log.Panicln(err)
+		logger.WithFields(logrus.Fields{
+			"status":       "error",
+			"completed_at": time.Now().Unix(),
+		}).WithError(err).Error("execution completed")
+		return
+	}
+
+	logger.WithFields(logrus.Fields{
+		"status":       "success",
+		"completed_at": time.Now().Unix(),
+	}).Info("execution completed")
+
+	if v, ok := s.Opts.Tracer.(*jaeger.Tracer); ok {
+		v.Close()
 	}
 }
 
@@ -152,12 +177,30 @@ func New(name string, events ...pipeline.Event) Shipwright {
 		return Shipwright{}
 	}
 
+	// Create standard packages based on the arguments provided.
+	// This would be a good place to initialize loggers, tracers, etc
+	var tracer opentracing.Tracer = &opentracing.NoopTracer{}
+
+	logger := plog.New(args.LogLevel)
+	jaegerCfg, err := config.FromEnv()
+	if err == nil {
+		// Here we ignore the closer because the jaegerTracer is the closer and we will just close that.
+		jaegerTracer, _, err := jaegerCfg.NewTracer(config.Logger(jaeger.StdLogger))
+		if err == nil {
+			logger.Infoln("Initialized jaeger tracer")
+			tracer = jaegerTracer
+		} else {
+			logger.Infoln("Could not initialize jaeger tracer; using no-op tracer; Error:", err.Error())
+		}
+	}
+
 	sw := NewFromOpts(pipeline.CommonOpts{
 		Name:    name,
 		Version: args.Version,
 		Output:  os.Stdout,
 		Args:    args,
-		Log:     plog.New(args.LogLevel),
+		Log:     logger,
+		Tracer:  tracer,
 	})
 
 	// Ensure that no matter the behavior of the initializer, we still set the version on the shipwright object.
