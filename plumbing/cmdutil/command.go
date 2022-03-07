@@ -3,7 +3,7 @@ package cmdutil
 import (
 	"fmt"
 
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
 // StepCommand returns the command string for running a single step.

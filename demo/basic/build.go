@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 
-	"pkg.grafana.com/shipwright/v1"
-	"pkg.grafana.com/shipwright/v1/fs"
-	gitx "pkg.grafana.com/shipwright/v1/git/x"
-	"pkg.grafana.com/shipwright/v1/golang"
-	"pkg.grafana.com/shipwright/v1/makefile"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
-	"pkg.grafana.com/shipwright/v1/yarn"
+	"github.com/grafana/shipwright"
+	"github.com/grafana/shipwright/fs"
+	gitx "github.com/grafana/shipwright/git/x"
+	"github.com/grafana/shipwright/golang"
+	"github.com/grafana/shipwright/makefile"
+	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/shipwright/yarn"
 )
 
 func writeVersion(sw shipwright.Shipwright) pipeline.Step {

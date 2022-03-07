@@ -8,9 +8,9 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
-	"pkg.grafana.com/shipwright/v1/plumbing"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
-	"pkg.grafana.com/shipwright/v1/plumbing/plog"
+	"github.com/grafana/shipwright/plumbing"
+	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/plog"
 )
 
 // Shipwright is the client that is used in every pipeline to declare the steps that make up a pipeline.

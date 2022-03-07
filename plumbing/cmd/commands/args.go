@@ -1,6 +1,6 @@
 package commands
 
-import "pkg.grafana.com/shipwright/v1/plumbing"
+import "github.com/grafana/shipwright/plumbing"
 
 // MustParseRunArgs parses the "run" arguments from the args slice. These options are provided by the shipwright command and are typically not user-specified
 func MustParseArgs(args []string) *plumbing.PipelineArgs {

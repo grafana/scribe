@@ -2,7 +2,7 @@ package plog
 
 import (
 	"github.com/sirupsen/logrus"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
 func StepFields(step pipeline.Step) logrus.Fields {

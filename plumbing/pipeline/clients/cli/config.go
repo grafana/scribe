@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"pkg.grafana.com/shipwright/v1/plumbing"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing"
+	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
 // This function effectively runs 'git remote get-url $(git remote)'

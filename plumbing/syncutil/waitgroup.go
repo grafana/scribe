@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
 // WaitGroup is a wrapper around a sync.WaitGroup that runs the actions of a list of steps, handles errors, and watches for context cancellation.

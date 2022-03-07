@@ -1,10 +1,10 @@
 package golang
 
 import (
-	"pkg.grafana.com/shipwright/v1"
-	"pkg.grafana.com/shipwright/v1/exec"
-	"pkg.grafana.com/shipwright/v1/plumbing"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+	"github.com/grafana/shipwright"
+	"github.com/grafana/shipwright/exec"
+	"github.com/grafana/shipwright/plumbing"
+	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
 func Test(sw shipwright.Shipwright, pkg string) pipeline.Step {

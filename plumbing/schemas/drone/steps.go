@@ -3,8 +3,8 @@ package drone
 import (
 	"strings"
 
-	"pkg.grafana.com/shipwright/v1/plumbing/cmdutil"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/cmdutil"
+	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
 // Slugify removes illegal characters for use in identifiers in a Drone pipeline

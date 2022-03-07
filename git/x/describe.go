@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"pkg.grafana.com/shipwright/v1/exec"
+	"github.com/grafana/shipwright/exec"
 )
 
 func Describe(ctx context.Context, dir string, tags bool, dirty bool, always bool) (string, error) {

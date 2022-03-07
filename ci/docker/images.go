@@ -6,10 +6,10 @@ import (
 	"os/exec"
 	"strings"
 
-	"pkg.grafana.com/shipwright/v1"
-	"pkg.grafana.com/shipwright/v1/docker"
-	"pkg.grafana.com/shipwright/v1/plumbing"
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+	"github.com/grafana/shipwright"
+	"github.com/grafana/shipwright/docker"
+	"github.com/grafana/shipwright/plumbing"
+	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
 type ImageData struct {

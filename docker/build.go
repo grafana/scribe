@@ -1,9 +1,9 @@
 package docker
 
 import (
-	"pkg.grafana.com/shipwright/v1/exec"
+	"github.com/grafana/shipwright/exec"
 
-	"pkg.grafana.com/shipwright/v1/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
 func BuildWithArgs(name, path, context string, arg ...string) pipeline.Step {

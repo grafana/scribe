@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"pkg.grafana.com/shipwright/v1/exec"
+	"github.com/grafana/shipwright/exec"
 )
 
 type BuildOpts struct {
