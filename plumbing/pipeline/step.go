@@ -91,7 +91,7 @@ func NewStep(action StepAction) Step {
 	}
 }
 
-// NamedStep creates a new step with an automatically generated name
+// NamedStep creates a new step with a name provided
 func NamedStep(name string, action StepAction) Step {
 	return Step{
 		Name:   name,
