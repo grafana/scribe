@@ -8,16 +8,42 @@ import (
 	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
+type RunOpts struct {
+	Path   string
+	Stdout io.Writer
+	Stderr io.Writer
+	Env    []string
+	Name   string
+	Args   []string
+}
+
+func RunCommandWithOpts(ctx context.Context, opts RunOpts) error {
+	c := exec.CommandContext(ctx, opts.Name, opts.Args...)
+	c.Dir = opts.Path
+
+	if opts.Stdout != nil {
+		c.Stdout = opts.Stdout
+	}
+
+	if opts.Stderr != nil {
+		c.Stderr = opts.Stderr
+	}
+
+	c.Env = opts.Env
+
+	return c.Run()
+}
+
 // RunCommandAt runs a given command and set of arguments at the given location
 // The command's stdout and stderr are assigned the systems' stdout/stderr streams.
 func RunCommandAt(ctx context.Context, stdout, stderr io.Writer, path string, name string, arg ...string) error {
-	c := exec.CommandContext(ctx, name, arg...)
-	c.Stdout = stdout
-	c.Stderr = stderr
-
-	c.Dir = path
-
-	return c.Run()
+	return RunCommandWithOpts(ctx, RunOpts{
+		Path:   path,
+		Name:   name,
+		Args:   arg,
+		Stderr: stderr,
+		Stdout: stdout,
+	})
 }
 
 // RunCommand runs a given command and set of arguments.
