@@ -1,0 +1,6 @@
+The push refers to repository [docker.io/example/example]
+fecab273b6a0: Pushed
+a3efa5a9cf62: Pushed
+92e86890c45b: Pushed
+8d3ac3489996: Layer already exists
+latest: digest: sha256:908263a0488df507c78fe6c2fb1577c1b96f693256d056ac9ac1790345c62831 size: 1159

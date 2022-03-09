@@ -8,11 +8,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/opentracing/opentracing-go"
-	"github.com/sirupsen/logrus"
 	"github.com/grafana/shipwright/plumbing"
 	"github.com/grafana/shipwright/plumbing/pipeline"
 	"github.com/grafana/shipwright/plumbing/plog"
+	"github.com/opentracing/opentracing-go"
+	"github.com/sirupsen/logrus"
 
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
