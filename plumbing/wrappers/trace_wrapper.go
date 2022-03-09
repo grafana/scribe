@@ -25,13 +25,14 @@ func TagSpan(span opentracing.Span, opts pipeline.CommonOpts, step pipeline.Step
 	span.SetTag("build_id", opts.Args.BuildID)
 }
 
-func (l *TraceWrapper) WrapStep(step ...pipeline.Step) []pipeline.Step {
-	for i, v := range step {
-		action := step[i].Action
-		step[i].Action = func(ctx context.Context, opts pipeline.ActionOpts) error {
+func (l *TraceWrapper) WrapStep(steps ...pipeline.Step) []pipeline.Step {
+	for i := range steps {
+		step := steps[i]
+		action := step.Action
+		steps[i].Action = func(ctx context.Context, opts pipeline.ActionOpts) error {
 			parent := opentracing.SpanFromContext(ctx)
-			span, ctx := opentracing.StartSpanFromContextWithTracer(ctx, l.Tracer, v.Name, opentracing.ChildOf(parent.Context()))
-			TagSpan(span, l.Opts, v)
+			span, ctx := opentracing.StartSpanFromContextWithTracer(ctx, l.Tracer, step.Name, opentracing.ChildOf(parent.Context()))
+			TagSpan(span, l.Opts, step)
 			defer span.Finish()
 
 			if err := action(ctx, opts); err != nil {
@@ -43,7 +44,7 @@ func (l *TraceWrapper) WrapStep(step ...pipeline.Step) []pipeline.Step {
 		}
 	}
 
-	return step
+	return steps
 }
 
 func (l *TraceWrapper) Wrap(wf pipeline.WalkFunc) pipeline.WalkFunc {

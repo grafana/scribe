@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/opentracing/opentracing-go"
 )
 
 // The ActionOpts are provided to every step that is ran.
@@ -12,6 +14,7 @@ import (
 type ActionOpts struct {
 	Stdout io.Writer
 	Stderr io.Writer
+	Tracer opentracing.Tracer
 }
 
 type (

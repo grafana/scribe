@@ -3,9 +3,9 @@ package wrappers
 import (
 	"context"
 
-	"github.com/sirupsen/logrus"
 	"github.com/grafana/shipwright/plumbing/pipeline"
 	"github.com/grafana/shipwright/plumbing/plog"
+	"github.com/sirupsen/logrus"
 )
 
 type LogWrapper struct {
@@ -19,32 +19,33 @@ func (l *LogWrapper) Fields(ctx context.Context, step pipeline.Step) logrus.Fiel
 	return fields
 }
 
-func (l *LogWrapper) WrapStep(step ...pipeline.Step) []pipeline.Step {
-	for i, v := range step {
-		action := step[i].Action
-		step[i].Action = func(ctx context.Context, opts pipeline.ActionOpts) error {
-			l.Log.WithFields(l.Fields(ctx, v)).Infoln("starting step'")
+func (l *LogWrapper) WrapStep(steps ...pipeline.Step) []pipeline.Step {
+	for i := range steps {
+		step := steps[i]
+		action := steps[i].Action
+		steps[i].Action = func(ctx context.Context, opts pipeline.ActionOpts) error {
+			l.Log.WithFields(l.Fields(ctx, step)).Infoln("starting step'")
 
-			stdoutFields := l.Fields(ctx, step[i])
+			stdoutFields := l.Fields(ctx, step)
 			stdoutFields["stream"] = "stdout"
 
-			stderrFields := l.Fields(ctx, step[i])
+			stderrFields := l.Fields(ctx, step)
 			stderrFields["stream"] = "stderr"
 
 			opts.Stdout = l.Log.WithFields(stdoutFields).Writer()
 			opts.Stderr = l.Log.WithFields(stderrFields).Writer()
 
 			if err := action(ctx, opts); err != nil {
-				l.Log.WithFields(l.Fields(ctx, v)).Infoln("encountered error", err.Error())
+				l.Log.WithFields(l.Fields(ctx, step)).Infoln("encountered error", err.Error())
 				return err
 			}
 
-			l.Log.WithFields(l.Fields(ctx, v)).Infoln("done running step without error")
+			l.Log.WithFields(l.Fields(ctx, step)).Infoln("done running step without error")
 			return nil
 		}
 	}
 
-	return step
+	return steps
 }
 
 func (l *LogWrapper) Wrap(wf pipeline.WalkFunc) pipeline.WalkFunc {
