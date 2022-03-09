@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	golangx "github.com/grafana/shipwright/golang/x"
 	"github.com/grafana/shipwright/plumbing"
 	"github.com/grafana/shipwright/plumbing/cmdutil"
@@ -19,6 +18,7 @@ import (
 	"github.com/grafana/shipwright/plumbing/pipeline/clients/cli"
 	"github.com/grafana/shipwright/plumbing/plog"
 	"github.com/grafana/shipwright/plumbing/syncutil"
+	"github.com/sirupsen/logrus"
 )
 
 // The Client is used when interacting with a shipwright pipeline using the shipwright CLI.
@@ -41,7 +41,7 @@ func (c *Client) Validate(step pipeline.Step) error {
 func (c *Client) buildPipeline(ctx context.Context) (string, error) {
 	p, err := os.MkdirTemp(os.TempDir(), "shipwright-")
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error creating temporary directory: %w", err)
 	}
 
 	path := filepath.Join(p, "pipeline")
@@ -53,7 +53,7 @@ func (c *Client) buildPipeline(ctx context.Context) (string, error) {
 	c.Log.Warnf("Building pipeline binary '%s' at '%s' for use in docker container...", c.Opts.Args.Path, path)
 	wd, err := os.Getwd()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error getting current working directory: %w", err)
 	}
 
 	if err := golangx.Build(ctx, golangx.BuildOpts{
@@ -62,8 +62,13 @@ func (c *Client) buildPipeline(ctx context.Context) (string, error) {
 		Output: path,
 		Stdout: stdout,
 		Stderr: stderr,
+		Env: []string{
+			fmt.Sprintf("HOME=%s", os.Getenv("HOME")),
+			fmt.Sprintf("GOPATH=%s", os.Getenv("GOPATH")),
+			"CGO_ENABLED=0",
+		},
 	}); err != nil {
-		return "", fmt.Errorf("error: %w\nstdout: %s\nstderr: %s", err, stdout.String(), stderr.String())
+		return "", fmt.Errorf("error compiling pipeline binary: %w\nstdout: %s\nstderr: %s", err, stdout.String(), stderr.String())
 	}
 
 	return path, nil

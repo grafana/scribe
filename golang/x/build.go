@@ -8,6 +8,7 @@ import (
 )
 
 type BuildOpts struct {
+	Env    []string
 	Pkg    string
 	Output string
 	Module string
@@ -17,5 +18,12 @@ type BuildOpts struct {
 }
 
 func Build(ctx context.Context, opts BuildOpts) error {
-	return exec.RunCommandAt(ctx, opts.Stdout, opts.Stderr, opts.Module, "go", "build", "-o", opts.Output, opts.Pkg)
+	return exec.RunCommandWithOpts(ctx, exec.RunOpts{
+		Stdout: opts.Stdout,
+		Stderr: opts.Stderr,
+		Path:   opts.Module,
+		Name:   "go",
+		Args:   []string{"build", "-o", opts.Output, opts.Pkg},
+		Env:    opts.Env,
+	})
 }
