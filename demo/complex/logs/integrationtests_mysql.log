@@ -1,0 +1,30 @@
+Running integration tests for mysql...
+ok  	github.com/grafana/shipwright	0.003s
+?   	github.com/grafana/shipwright/ci	[no test files]
+?   	github.com/grafana/shipwright/ci/docker	[no test files]
+?   	github.com/grafana/shipwright/demo/basic	[no test files]
+?   	github.com/grafana/shipwright/demo/complex	[no test files]
+?   	github.com/grafana/shipwright/docker	[no test files]
+?   	github.com/grafana/shipwright/exec	[no test files]
+?   	github.com/grafana/shipwright/fs	[no test files]
+?   	github.com/grafana/shipwright/git	[no test files]
+?   	github.com/grafana/shipwright/git/x	[no test files]
+?   	github.com/grafana/shipwright/golang	[no test files]
+?   	github.com/grafana/shipwright/golang/x	[no test files]
+?   	github.com/grafana/shipwright/makefile	[no test files]
+?   	github.com/grafana/shipwright/plumbing	[no test files]
+?   	github.com/grafana/shipwright/plumbing/cmd	[no test files]
+?   	github.com/grafana/shipwright/plumbing/cmd/commands	[no test files]
+?   	github.com/grafana/shipwright/plumbing/cmdutil	[no test files]
+?   	github.com/grafana/shipwright/plumbing/pipeline	[no test files]
+?   	github.com/grafana/shipwright/plumbing/pipeline/clients/cli	[no test files]
+ok  	github.com/grafana/shipwright/plumbing/pipeline/clients/docker	0.009s
+ok  	github.com/grafana/shipwright/plumbing/pipeline/clients/drone	0.329s
+?   	github.com/grafana/shipwright/plumbing/plog	[no test files]
+?   	github.com/grafana/shipwright/plumbing/schemas/drone	[no test files]
+?   	github.com/grafana/shipwright/plumbing/stringutil	[no test files]
+?   	github.com/grafana/shipwright/plumbing/syncutil	[no test files]
+?   	github.com/grafana/shipwright/plumbing/testutil	[no test files]
+?   	github.com/grafana/shipwright/plumbing/wrappers	[no test files]
+?   	github.com/grafana/shipwright/yarn	[no test files]
+Integration tests done
