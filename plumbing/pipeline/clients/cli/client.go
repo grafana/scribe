@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/grafana/shipwright/plumbing/pipeline"
 	"github.com/grafana/shipwright/plumbing/syncutil"
 	"github.com/grafana/shipwright/plumbing/wrappers"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -63,7 +63,9 @@ func (c *Client) runSteps(ctx context.Context, steps pipeline.StepList) error {
 
 	var (
 		wg   = syncutil.NewWaitGroup()
-		opts = pipeline.ActionOpts{}
+		opts = pipeline.ActionOpts{
+			Tracer: c.Opts.Tracer,
+		}
 	)
 
 	for _, v := range steps {
