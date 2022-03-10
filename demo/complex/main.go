@@ -25,10 +25,10 @@ func main() {
 	)
 
 	sw.Run(
-		pipeline.NamedStep("integration tests: sqlite", IntegrationStepAction("integrationtests_sqlite", time.Minute)),
-		pipeline.NamedStep("integration tests: postgres", IntegrationStepAction("integrationtests_pg", time.Second*42)),
-		pipeline.NamedStep("integration tests: mysql", IntegrationStepAction("integrationtests_mysql", time.Second*32)),
-		pipeline.NamedStep("integration tests: mssql", IntegrationStepAction("integrationtests_mssql", time.Second*55)),
+		pipeline.NamedStep("integration tests: sqlite", IntegrationTest("integrationtests_sqlite", time.Minute)),
+		pipeline.NamedStep("integration tests: postgres", IntegrationTest("integrationtests_pg", time.Second*42)),
+		pipeline.NamedStep("integration tests: mysql", IntegrationTest("integrationtests_mysql", time.Second*32)),
+		pipeline.NamedStep("integration tests: mssql", IntegrationTest("integrationtests_mssql", time.Second*55)),
 	)
 
 	sw.Run(
