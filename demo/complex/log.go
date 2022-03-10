@@ -28,7 +28,7 @@ func NoOpAction(name string, duration time.Duration) pipeline.StepAction {
 	}
 }
 
-func IntegrationStepAction(variant string, duration time.Duration) pipeline.StepAction {
+func IntegrationTest(variant string, duration time.Duration) pipeline.StepAction {
 	return func(ctx context.Context, opts pipeline.ActionOpts) error {
 		d := int64(duration.Seconds()) / 2
 		tests := []string{"fs", "docker", "exec", "git", "golang", "makefile", "yarn"}
