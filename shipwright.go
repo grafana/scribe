@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/grafana/shipwright/plumbing"
+	"github.com/grafana/shipwright/plumbing/cmdutil"
 	"github.com/grafana/shipwright/plumbing/pipeline"
 	"github.com/grafana/shipwright/plumbing/plog"
 	"github.com/opentracing/opentracing-go"
@@ -119,6 +120,12 @@ func (s *Shipwright) validateSteps(steps ...pipeline.Step) error {
 	return nil
 }
 
+func (s *Shipwright) watchSignals() error {
+	sig := cmdutil.WatchSignals()
+
+	return fmt.Errorf("received OS signal: %s", sig.String())
+}
+
 func (s *Shipwright) Done() {
 	var (
 		ctx        = context.Background()
@@ -129,6 +136,19 @@ func (s *Shipwright) Done() {
 	defer span.Finish()
 
 	logger := s.Log.WithFields(plog.Combine(plog.TracingFields(ctx), plog.PipelineFields(s.Opts)))
+
+	go func(logger *logrus.Entry) {
+		if err := s.watchSignals(); err != nil {
+			logger.WithFields(logrus.Fields{
+				"status":       "cancelled",
+				"completed_at": time.Now().Unix(),
+			}).WithError(err).Errorln("execution completed")
+
+			span.Finish()
+
+			os.Exit(1)
+		}
+	}(logger)
 
 	logger.WithField("mode", s.Opts.Args.Mode).Info("execution started")
 

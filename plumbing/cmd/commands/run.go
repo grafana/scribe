@@ -42,7 +42,7 @@ type RunOpts struct {
 // The run command attempts to run the pipeline by using "go run ...".
 // This function will exit the program if it encounters an error.
 // TODO: there is a function in `cmdutil` that should be able to create this command to run.
-func Run(ctx context.Context, opts *RunOpts) error {
+func Run(ctx context.Context, opts *RunOpts) *exec.Cmd {
 	var (
 		path = opts.Path
 		args = opts.Args
@@ -89,15 +89,5 @@ func Run(ctx context.Context, opts *RunOpts) error {
 	cmd.Stderr = stderr
 	cmd.Stdin = stdin
 
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func MustRun(ctx context.Context, opts *RunOpts) {
-	if err := Run(ctx, opts); err != nil {
-		panic(err)
-	}
+	return cmd
 }

@@ -12,9 +12,9 @@ type RunOpts struct {
 	Path   string
 	Stdout io.Writer
 	Stderr io.Writer
-	Env    []string
 	Name   string
 	Args   []string
+	Env    []string
 }
 
 func RunCommandWithOpts(ctx context.Context, opts RunOpts) error {
