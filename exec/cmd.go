@@ -17,7 +17,8 @@ type RunOpts struct {
 	Env    []string
 }
 
-func RunCommandWithOpts(ctx context.Context, opts RunOpts) error {
+// CommandWithOpts returns the equivalent *exec.Cmd that matches the RunOpts provided (opts).
+func CommandWithOpts(ctx context.Context, opts RunOpts) *exec.Cmd {
 	c := exec.CommandContext(ctx, opts.Name, opts.Args...)
 	c.Dir = opts.Path
 
@@ -31,7 +32,13 @@ func RunCommandWithOpts(ctx context.Context, opts RunOpts) error {
 
 	c.Env = opts.Env
 
-	return c.Run()
+	return c
+}
+
+// RunCommandWithOpts runs the command defined by the RunOpts provided (opts).
+// Be warned that the stdout and stderr are not captured by this function and are instead written to opts.Stdout/opts.Stderr.
+func RunCommandWithOpts(ctx context.Context, opts RunOpts) error {
+	return CommandWithOpts(ctx, opts).Run()
 }
 
 // RunCommandAt runs a given command and set of arguments at the given location

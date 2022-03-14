@@ -1,7 +1,6 @@
 package docker
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -11,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	golangx "github.com/grafana/shipwright/golang/x"
 	"github.com/grafana/shipwright/plumbing"
 	"github.com/grafana/shipwright/plumbing/cmdutil"
 	"github.com/grafana/shipwright/plumbing/pipeline"
 	"github.com/grafana/shipwright/plumbing/pipeline/clients/cli"
+	"github.com/grafana/shipwright/plumbing/pipelineutil"
 	"github.com/grafana/shipwright/plumbing/plog"
 	"github.com/grafana/shipwright/plumbing/syncutil"
 	"github.com/sirupsen/logrus"
@@ -37,41 +36,56 @@ func (c *Client) Validate(step pipeline.Step) error {
 	return nil
 }
 
-// buildPipeline compiles the provided pipeline so that it can be mounted in a container without requiring that the pipeline has the shipwright command or go installed.
+// buildPipeline creates a docker container that compiles the provided pipeline so that the compiled pipeline can be mounted in
+// other containers without requiring that the container has the shipwright command or go installed.
 func (c *Client) buildPipeline(ctx context.Context) (string, error) {
 	p, err := os.MkdirTemp(os.TempDir(), "shipwright-")
 	if err != nil {
 		return "", fmt.Errorf("error creating temporary directory: %w", err)
 	}
 
-	path := filepath.Join(p, "pipeline")
-	var (
-		stdout = bytes.NewBuffer(nil)
-		stderr = bytes.NewBuffer(nil)
-	)
-
-	c.Log.Warnf("Building pipeline binary '%s' at '%s' for use in docker container...", c.Opts.Args.Path, path)
+	c.Log.Warnf("Building pipeline binary '%s' at '%s' for use in docker container...", c.Opts.Args.Path, p)
 	wd, err := os.Getwd()
 	if err != nil {
 		return "", fmt.Errorf("error getting current working directory: %w", err)
 	}
 
-	if err := golangx.Build(ctx, golangx.BuildOpts{
-		Pkg:    c.Opts.Args.Path,
-		Module: wd,
-		Output: path,
-		Stdout: stdout,
-		Stderr: stderr,
-		Env: []string{
-			fmt.Sprintf("HOME=%s", os.Getenv("HOME")),
-			fmt.Sprintf("GOPATH=%s", os.Getenv("GOPATH")),
-			"CGO_ENABLED=0",
-		},
-	}); err != nil {
-		return "", fmt.Errorf("error compiling pipeline binary: %w\nstdout: %s\nstderr: %s", err, stdout.String(), stderr.String())
+	env := []string{
+		"GOOS=linux",
+		"GOARCH=amd64",
+		"CGO_ENABLED=0",
 	}
 
-	return path, nil
+	output := filepath.Join(p, "pipeline")
+	cmd := pipelineutil.GoBuild(ctx, pipelineutil.GoBuildOpts{
+		Pipeline: c.Opts.Args.Path,
+		Module:   wd,
+		Output:   output,
+	})
+
+	opts := RunOpts{
+		Stdout:  c.Log.WithField("stream", "stdout").Writer(),
+		Stderr:  c.Log.WithField("stream", "stderr").Writer(),
+		Image:   plumbing.SubImage("go", c.Opts.Version),
+		Command: cmd.Args[0],
+		Args:    cmd.Args[1:],
+		Env:     env,
+		Volumes: []string{
+			fmt.Sprintf("%s:%s", p, p),
+			fmt.Sprintf("%s:/var/shipwright", wd),
+		},
+	}
+
+	c.Log.Infof("Running docker command '%s'", append([]string{"docker"}, RunArgs(opts)...))
+	// This should run a command very similar to this:
+	// docker run --rm -v $TMPDIR:/var/shipwright shipwright/go:{version} go build -o /var/shipwright/pipeline ./{pipeline}
+	if err := Run(ctx, opts); err != nil {
+		return "", err
+	}
+
+	c.Log.Infof("Successfully compiled pipeline at '%s'", output)
+
+	return output, nil
 }
 
 func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
@@ -81,7 +95,7 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 	// without requiring that every image has a copy of the shipwright binary
 	p, err := c.buildPipeline(ctx)
 	if err != nil {
-		logger.Fatalln("failed to compile the pipeline", err.Error())
+		return fmt.Errorf("failed to compile the pipeline in docker. Error: %w", err)
 	}
 
 	return w.Walk(ctx, func(ctx context.Context, steps ...pipeline.Step) error {
@@ -223,12 +237,13 @@ func (c *Client) runAction(ctx context.Context, pipelinePath string, step pipeli
 	}
 
 	runOpts := RunOpts{
-		PipelinePath: pipelinePath,
-		Image:        step.Image,
-		Command:      PipelineVolumePath,
-		Volumes:      []string{},
-		Args:         args,
+		Image:   step.Image,
+		Command: PipelineVolumePath,
+		Volumes: []string{},
+		Args:    args,
 	}
+
+	runOpts = runOpts.WithPipelinePath(pipelinePath)
 
 	runOpts, err = c.applyArguments(runOpts, step.Arguments)
 	if err != nil {
@@ -247,8 +262,8 @@ func (c *Client) runAction(ctx context.Context, pipelinePath string, step pipeli
 
 func (c *Client) wrap(pipelinePath string, step pipeline.Step) pipeline.Step {
 	step.Action = func(ctx context.Context, opts pipeline.ActionOpts) error {
-		opts.Stdout = os.Stdout
-		opts.Stderr = os.Stderr
+		opts.Stdout = c.Log.WithField("stream", "stdout").Writer()
+		opts.Stderr = c.Log.WithField("stream", "stderr").Writer()
 
 		if err := c.runAction(ctx, pipelinePath, step)(ctx, opts); err != nil {
 			return err

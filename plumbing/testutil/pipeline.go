@@ -12,15 +12,18 @@ import (
 )
 
 func RunPipeline(ctx context.Context, t *testing.T, path string, stdout io.Writer, stderr io.Writer, args *plumbing.PipelineArgs) {
-	buf := bytes.NewBuffer(nil)
+	stderrBuf := bytes.NewBuffer(nil)
+	stdoutBuf := bytes.NewBuffer(nil)
 	t.Log("Running pipeline with args", args)
-	if err := commands.Run(ctx, &commands.RunOpts{
+	cmd := commands.Run(ctx, &commands.RunOpts{
 		Path:   path,
-		Stdout: stdout,
-		Stderr: io.MultiWriter(stderr, buf),
+		Stdout: io.MultiWriter(stdout, stdoutBuf),
+		Stderr: io.MultiWriter(stderr, stderrBuf),
 		Args:   args,
-	}); err != nil {
-		t.Fatalf("Error running pipeline. Error: '%s'\nStderr: '%s'\n", err, buf.String())
+	})
+
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Error running pipeline. Error: '%s'\nStdout: '%s'\nStderr: '%s'\n", err, stdoutBuf.String(), stderrBuf.String())
 	}
 }
 
