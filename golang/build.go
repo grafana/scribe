@@ -9,7 +9,7 @@ import (
 
 func BuildStep(pkg, output string) pipeline.Step {
 	return pipeline.NewStep(func(ctx context.Context, opts pipeline.ActionOpts) error {
-		return x.Build(ctx, x.BuildOpts{
+		return x.RunBuild(ctx, x.BuildOpts{
 			Pkg:    pkg,
 			Output: output,
 			Stdout: opts.Stdout,

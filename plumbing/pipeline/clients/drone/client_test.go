@@ -21,15 +21,15 @@ func TestDroneClient(t *testing.T) {
 		testutil.WithTimeout(time.Second*10, func(t *testing.T) {
 			var (
 				buf          = bytes.NewBuffer(nil)
-				errBuff      = bytes.NewBuffer(nil)
 				ctx          = context.Background()
 				pipelinePath = "../../../../demo/basic"
 				path         = "./demo/basic"
 			)
 
-			testutil.RunPipeline(ctx, t, pipelinePath, io.MultiWriter(buf, os.Stdout), errBuff, &plumbing.PipelineArgs{
-				Mode: plumbing.RunModeDrone,
-				Path: path,
+			testutil.RunPipeline(ctx, t, pipelinePath, io.MultiWriter(buf, os.Stdout), os.Stderr, &plumbing.PipelineArgs{
+				BuildID: "test",
+				Mode:    plumbing.RunModeDrone,
+				Path:    path,
 			})
 
 			expected, err := os.Open(filepath.Join(pipelinePath, "gen_drone.yml"))
