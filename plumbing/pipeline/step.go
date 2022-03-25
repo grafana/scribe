@@ -18,12 +18,23 @@ type ActionOpts struct {
 }
 
 type (
+	StepType   int
 	StepAction func(context.Context, ActionOpts) error
 	Output     interface{}
 )
 
+const (
+	StepTypeDefault StepType = iota
+	StepTypeBackground
+)
+
 // A Step stores a StepAction and a name for use in pipelines
 type Step struct {
+	// Type represents the how the step is intended to operate. 90% of the time, the default type should be a sufficient descriptor of a step.
+	// However in some circumstances, clients may want to handle a step differently based on how it's defined.
+	// Background steps, for example, have to have their lifecycles handled differently.
+	Type StepType
+
 	// Name is a string that represents or describes the step, essentially the identifier.
 	// Not all run modes will support using the name.
 	Name string
@@ -47,6 +58,10 @@ type Step struct {
 	// Serial is the unique number that represents this step.
 	// This value is used when calling `shipwright -step={serial} [pipeline]`
 	Serial int
+}
+
+func (s Step) IsBackground() bool {
+	return s.Action == nil
 }
 
 func (s Step) After(step Step) Step {
@@ -119,6 +134,10 @@ func (s *StepList) Names() []string {
 func (s *StepList) String() string {
 	return fmt.Sprintf("[%s]", strings.Join(s.Names(), " | "))
 }
+
+// DefaultAction is a nil action intentionally. In some client implementations, a nil step indicates a specific behavior.
+// In Drone and Docker, for example, a nil step indicates that the docker command or entrypoint should not be supplied, thus using the default command for that image.
+var DefaultAction StepAction = nil
 
 // NoOpStep is used to represent a step which only exists to form uncommon relationships or for testing.
 // Most clients should completely ignore NoOpSteps.

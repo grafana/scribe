@@ -7,9 +7,10 @@ type StepGroup []Step
 
 // WalkFunc is implemented by the executors. This function is executed for each step.
 // If multiple steps are provided in the argument, then they were provided in "Parallel".
+// If one step in the list of steps is of type "Background", then they all should be.
 type WalkFunc func(context.Context, ...Step) error
 
-// StepWalker is an interface that collections of steps should satisfy.
+// Walker is an interface that collections of steps should satisfy.
 type Walker interface {
 	Walk(context.Context, WalkFunc) error
 }
