@@ -1,3 +1,4 @@
+// Package shipwright provides the primary library / client functions, types, and methods for creating Shipwright pipelines.
 package shipwright
 
 import (
@@ -36,9 +37,31 @@ type Shipwright struct {
 	Version string
 }
 
+// Background allows users to define steps that run in the background. In some environments this is referred to as a "Service" or "Background service".
+// In many scenarios, users would like to simply use a docker image with the default command. In order to accomplish that, simply provide a step without an action.
+func (s *Shipwright) Background(step ...pipeline.Step) {
+	steps := s.Setup(step...)
+
+	if err := s.validateSteps(steps...); err != nil {
+		s.Log.Fatalln(err)
+	}
+
+	// Before being added to the collection, each step ran with 'Background' needs to have the 'Type' set to 'StepTypeBackground'.
+	// Clients should know to handle background steps in their 'WalkFunc' implementations.
+	for i := range step {
+		step[i].Type = pipeline.StepTypeBackground
+	}
+
+	if err := s.Collection.Append(steps...); err != nil {
+		s.Log.Fatalln(err)
+	}
+}
+
 // Run allows users to define steps that are ran sequentially. For example, the second step will not run until the first step has completed.
 // This function blocks the goroutine until all of the steps have completed.
 func (s *Shipwright) Run(step ...pipeline.Step) {
+	// Initialize each step with the appropriate serial number.
+	// If there are any default values that should be set (like Image), then Setup will set them.
 	steps := s.Setup(step...)
 
 	if err := s.validateSteps(steps...); err != nil {

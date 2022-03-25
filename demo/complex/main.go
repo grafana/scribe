@@ -11,6 +11,8 @@ func main() {
 	sw := shipwright.New("complex-pipeline")
 	defer sw.Done()
 
+	sw.Background(pipeline.NamedStep("redis", pipeline.DefaultAction).WithImage("redis:6"))
+
 	sw.Run(pipeline.NamedStep("initalize", NoOpAction("initialize", time.Second*22)))
 
 	sw.Parallel(
