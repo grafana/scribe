@@ -6,14 +6,18 @@ import (
 	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
-// StepCommand returns the command string for running a single step.
-// The path argument can be omitted, which is particularly helpful if the current directory is a pipeline.
+// CommandOpts is a list of arguments that can be provided to the StepCommand function.
 type CommandOpts struct {
-	Path    string
-	Step    pipeline.Step
+	// Path is an optional argument that refers to the path of the pipeline. For example, if our plan is to have this function generate `shipwright ./ci`, the 'Path' would be './ci'.
+	Path string
+	// Step is the pipeline step this command is being generated for. The step contains a lot of necessary information for generating a command, mostly around arguments.
+	Step pipeline.Step
+	// BuildID is an optional argument that will be supplied to the 'shipwright' command as '-build-id'.
 	BuildID string
 }
 
+// StepCommand returns the command string for running a single step.
+// The path argument can be omitted, which is particularly helpful if the current directory is a pipeline.
 func StepCommand(c pipeline.Configurer, opts CommandOpts) ([]string, error) {
 	args := []string{}
 
