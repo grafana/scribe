@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"regexp"
 
 	"github.com/grafana/shipwright"
 	"github.com/grafana/shipwright/fs"
@@ -38,11 +37,11 @@ func main() {
 	defer sw.Done()
 
 	sw.When(
-		pipeline.GitCommitEvent(pipeline.GitCommitFilters[string]{
+		pipeline.GitCommitEvent(pipeline.GitCommitFilters{
 			Branch: pipeline.StringFilter("main"),
 		}),
-		pipeline.GitTagEvent(pipeline.GitTagFilters[*regexp.Regexp]{
-			Name: pipeline.RegexpFilter(regexp.MustCompile("^v([0-9]).*$")),
+		pipeline.GitTagEvent(pipeline.GitTagFilters{
+			Name: pipeline.GlobFilter("v*"),
 		}),
 	)
 

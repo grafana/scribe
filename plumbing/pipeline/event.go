@@ -2,34 +2,51 @@ package pipeline
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 )
 
-type FilterValue[T string | *regexp.Regexp] struct {
-	v T
+type Stringer string
+
+func (s Stringer) String() string {
+	return string(s)
 }
 
-func (f *FilterValue[T]) String() string {
-	switch x := any(f.v).(type) {
-	case string:
-		return x
-	case *regexp.Regexp:
-		return x.String()
+// FilterValueType is the metadata type that identifies the type present event filter.
+type FilterValueType int
+
+const (
+	FilterValueString FilterValueType = iota
+	FilterValueRegex
+	FilterValueGlob
+)
+
+type FilterValue struct {
+	Type  FilterValueType
+	Value fmt.Stringer
+}
+
+func (f *FilterValue) String() string {
+	return f.Value.String()
+}
+
+func StringFilter(v string) *FilterValue {
+	return &FilterValue{
+		Type:  FilterValueString,
+		Value: Stringer(v),
 	}
-
-	return "Unknown type"
 }
 
-func StringFilter(v string) *FilterValue[string] {
-	return &FilterValue[string]{
-		v: v,
+func RegexpFilter(v *regexp.Regexp) *FilterValue {
+	return &FilterValue{
+		Type:  FilterValueRegex,
+		Value: v,
 	}
 }
 
-func RegexpFilter(v *regexp.Regexp) *FilterValue[*regexp.Regexp] {
-	return &FilterValue[*regexp.Regexp]{
-		v: v,
+func GlobFilter(v string) *FilterValue {
+	return &FilterValue{
+		Type:  FilterValueGlob,
+		Value: Stringer(v),
 	}
 }
 
@@ -44,16 +61,16 @@ func RegexpFilter(v *regexp.Regexp) *FilterValue[*regexp.Regexp] {
 // The only case where this may happen is if the event is a manual one, where users are able to submit the event with any arbitrary set of keys/values.
 // The 'Filters' key is provided in the pipeline code and should not be populated when pre-defined in the Shipwright package.
 type Event struct {
-	Filters  map[string]fmt.Stringer
+	Filters  map[string]*FilterValue
 	Provides []Argument
 }
 
-type GitCommitFilters[T string | *regexp.Regexp] struct {
-	Branch *FilterValue[T]
+type GitCommitFilters struct {
+	Branch *FilterValue
 }
 
-func GitCommitEvent[T string | *regexp.Regexp](filters GitCommitFilters[T]) Event {
-	f := map[string]fmt.Stringer{}
+func GitCommitEvent(filters GitCommitFilters) Event {
+	f := map[string]*FilterValue{}
 
 	if filters.Branch != nil {
 		f["branch"] = filters.Branch
@@ -69,13 +86,12 @@ func GitCommitEvent[T string | *regexp.Regexp](filters GitCommitFilters[T]) Even
 	}
 }
 
-type GitTagFilters[T string | *regexp.Regexp] struct {
-	Name *FilterValue[T]
+type GitTagFilters struct {
+	Name *FilterValue
 }
 
-func GitTagEvent[T string | *regexp.Regexp](filters GitTagFilters[T]) Event {
-	f := map[string]fmt.Stringer{}
-	log.Println("got git tag event...", filters)
+func GitTagEvent(filters GitTagFilters) Event {
+	f := map[string]*FilterValue{}
 	if filters.Name != nil {
 		f["tag"] = filters.Name
 	}
