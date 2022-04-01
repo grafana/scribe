@@ -1,2 +1,2 @@
-// Package pipeline contains functions and types for pipelines, steps, and pipeline collections.
+// Package pipeline contains the meta types and interfaces that define a Shipwright pipeline.
 package pipeline

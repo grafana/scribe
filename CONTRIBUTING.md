@@ -21,9 +21,11 @@
 
 | directory / format            | description                                                                                                                                                                     |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `./initializers.go`           | Defines functions and logic for initializing different clients.                                                                                                                 |
 | `./shipwright*.go`            | Defines the `Client` interface and wrapper types that Pipeline developers use to create pipelines.                                                                              |
 | `./ci`                        | Shipwright pipeline that tests / builds this repository.                                                                                                                        |
 | `./demo`                      | Demo pipelines. Each sub-directory should be a separate pipeline that introduces a new / separate concept.                                                                      |
+| `./.compose`                  | Contains configuration files for the different services in 'docker-compose'                                                                                                     |
 | `./{package}`                 | Represents a Go package that should contain only definitions for **Steps** or **Actions** for use in Shipwright pipelines.                                                      |
 | `./{package}/x`               | The small, unit-testable functions that power the actions used in `{package}`.                                                                                                  |
 | `./plumbing`                  | The packages that power the pipeline logic including asyncronous / goroutine handling and client code.                                                                          |

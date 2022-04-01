@@ -27,7 +27,8 @@ func handleSignal(log *logrus.Logger, cmd *exec.Cmd, sig os.Signal) int {
 	log.Infoln("Waiting for pipeline to exit...")
 	p, err := cmd.Process.Wait()
 	if err != nil {
-		panic(err)
+		log.Error(err)
+		return 0
 	}
 
 	return p.ExitCode()
