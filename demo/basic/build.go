@@ -63,4 +63,11 @@ func main() {
 		pipeline.NamedStep("compile backend", makefile.Target("build")),
 		pipeline.NamedStep("compile frontend", makefile.Target("package")),
 	)
+
+	sw.Run(
+		pipeline.NamedStep("publish", makefile.Target("publish")).
+			WithArguments(
+				pipeline.NewSecretArgument("gcs-publish-key"),
+			),
+	)
 }
