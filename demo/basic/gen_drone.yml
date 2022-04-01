@@ -48,6 +48,6 @@ trigger:
   - branch
   - tag
   ref:
-  - refs/tags/^v([0-9]).*$
+  - refs/tags/v*
 
 ...
