@@ -36,6 +36,15 @@ func main() {
 	sw := shipwright.New("basic pipeline")
 	defer sw.Done()
 
+	sw.When(
+		pipeline.GitCommitEvent(pipeline.GitCommitFilters{
+			Branch: pipeline.StringFilter("main"),
+		}),
+		pipeline.GitTagEvent(pipeline.GitTagFilters{
+			Name: pipeline.GlobFilter("v*"),
+		}),
+	)
+
 	// In parallel, install the yarn and go dependencies, and cache the node_modules and $GOPATH/pkg folders.
 	// The cache should invalidate if the yarn.lock or go.sum files have changed
 	sw.Run(

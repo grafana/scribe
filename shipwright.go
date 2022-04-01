@@ -24,6 +24,7 @@ import (
 type Shipwright struct {
 	Client     pipeline.Client
 	Collection pipeline.Collection
+	Events     []pipeline.Event
 
 	pipeline.Configurer
 
@@ -35,6 +36,11 @@ type Shipwright struct {
 	// It ensures that the 11th step in a Drone generated pipeline is also the 11th step in a CLI pipeline
 	n       int
 	Version string
+}
+
+// When allows users to define when this pipeline is executed, especially in the remote environment.
+func (s *Shipwright) When(event ...pipeline.Event) {
+	s.Events = event
 }
 
 // Background allows users to define steps that run in the background. In some environments this is referred to as a "Service" or "Background service".
@@ -58,7 +64,7 @@ func (s *Shipwright) Background(step ...pipeline.Step) {
 }
 
 // Run allows users to define steps that are ran sequentially. For example, the second step will not run until the first step has completed.
-// This function blocks the goroutine until all of the steps have completed.
+// This function blocks the pipeline execution until all of the steps provided (step) have completed sequentially.
 func (s *Shipwright) Run(step ...pipeline.Step) {
 	// Initialize each step with the appropriate serial number.
 	// If there are any default values that should be set (like Image), then Setup will set them.
@@ -76,7 +82,7 @@ func (s *Shipwright) Run(step ...pipeline.Step) {
 }
 
 // Parallel will run the listed steps at the same time.
-// This function blocks the goroutine until all of the steps have completed.
+// This function blocks the pipeline execution until all of the steps have completed.
 func (s *Shipwright) Parallel(step ...pipeline.Step) {
 	steps := s.Setup(step...)
 
@@ -187,7 +193,7 @@ func (s *Shipwright) Done() {
 		collection = collection.Sub(step)
 	}
 
-	if err := s.Client.Done(ctx, collection); err != nil {
+	if err := s.Client.Done(ctx, collection, s.Events); err != nil {
 		logger.WithFields(logrus.Fields{
 			"status":       "error",
 			"completed_at": time.Now().Unix(),
@@ -209,7 +215,7 @@ func (s *Shipwright) Done() {
 // This function will panic if the arguments in os.Args do not match what's expected.
 // This function, and the type it returns, are only ran inside of a Shipwright pipeline, and so it is okay to treat this like it is the entrypoint of a command.
 // Watching for signals, parsing command line arguments, and panics are all things that are OK in this function.
-func New(name string, events ...pipeline.Event) Shipwright {
+func New(name string) Shipwright {
 	args, err := plumbing.ParseArguments(os.Args[1:])
 	if err != nil {
 		log.Fatalln("Error parsing arguments. Error:", err)
@@ -252,6 +258,6 @@ func New(name string, events ...pipeline.Event) Shipwright {
 	return sw
 }
 
-func NewFromOpts(opts pipeline.CommonOpts, events ...pipeline.Event) Shipwright {
+func NewFromOpts(opts pipeline.CommonOpts) Shipwright {
 	return NewClient(opts)
 }

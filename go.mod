@@ -1,6 +1,6 @@
 module github.com/grafana/shipwright
 
-go 1.17
+go 1.18
 
 require (
 	github.com/google/go-cmp v0.5.6
@@ -12,6 +12,10 @@ require (
 )
 
 require (
+	github.com/bmatcuk/doublestar v1.1.1 // indirect
+	github.com/buildkite/yaml v2.1.0+incompatible // indirect
+	github.com/docker/go-units v0.3.3 // indirect
+	github.com/drone/drone-yaml v1.2.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.uber.org/atomic v1.9.0 // indirect

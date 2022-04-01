@@ -40,7 +40,15 @@ func (c *Client) Validate(step pipeline.Step) error {
 	return nil
 }
 
-func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
+func (c *Client) HandleEvents(events []pipeline.Event) error {
+	return nil
+}
+
+func (c *Client) Done(ctx context.Context, w pipeline.Walker, events []pipeline.Event) error {
+	if err := c.HandleEvents(events); err != nil {
+		return err
+	}
+
 	logWrapper := &wrappers.LogWrapper{
 		Opts: c.Opts,
 		Log:  c.Log,
