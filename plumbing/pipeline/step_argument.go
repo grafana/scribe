@@ -42,7 +42,7 @@ func NewSecretArgument(key string) Argument {
 	}
 }
 
-// These arguments are the pre-defined ones.
+// These arguments are the pre-defined ones and are mostly used in events.
 var (
 	ArgumentSourceFS       = NewFSArgument("source")
 	ArgumentDockerSocketFS = NewFSArgument("docker-socket")
@@ -52,6 +52,7 @@ var (
 	ArgumentCommitRef = NewStringArgument("git-commit-ref")
 	ArgumentBranch    = NewStringArgument("git-branch")
 	ArgumentRemoteURL = NewStringArgument("remote-url")
+	ArgumentTagName   = NewStringArgument("git-tag")
 
 	// Standard pipeline arguments
 	ArgumentWorkingDir = NewStringArgument("workdir")
