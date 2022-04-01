@@ -88,7 +88,7 @@ func (c *Client) buildPipeline(ctx context.Context) (string, error) {
 	return output, nil
 }
 
-func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
+func (c *Client) Done(ctx context.Context, w pipeline.Walker, events []pipeline.Event) error {
 	logger := c.Log.WithFields(plog.PipelineFields(c.Opts))
 
 	// Every step needs a compiled version of the pipeline in order to know what to do

@@ -3,12 +3,13 @@ package drone
 import (
 	"strings"
 
+	"github.com/drone/drone-yaml/yaml"
 	"github.com/grafana/shipwright/plumbing/cmdutil"
 	"github.com/grafana/shipwright/plumbing/pipeline"
 	"github.com/grafana/shipwright/plumbing/stringutil"
 )
 
-func NewStep(c pipeline.Configurer, path string, step pipeline.Step) (Step, error) {
+func NewStep(c pipeline.Configurer, path string, step pipeline.Step) (*yaml.Container, error) {
 	var (
 		name  = stringutil.Slugify(step.Name)
 		deps  = make([]string, len(step.Dependencies))
@@ -26,10 +27,10 @@ func NewStep(c pipeline.Configurer, path string, step pipeline.Step) (Step, erro
 	})
 
 	if err != nil {
-		return Step{}, err
+		return nil, err
 	}
 
-	return Step{
+	return &yaml.Container{
 		Name:  name,
 		Image: image,
 		Commands: []string{

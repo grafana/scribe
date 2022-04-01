@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"regexp"
 
 	"github.com/grafana/shipwright"
 	"github.com/grafana/shipwright/fs"
@@ -35,6 +36,15 @@ func writeVersion(sw shipwright.Shipwright) pipeline.Step {
 func main() {
 	sw := shipwright.New("basic pipeline")
 	defer sw.Done()
+
+	sw.When(
+		pipeline.GitCommitEvent(pipeline.GitCommitFilters[string]{
+			Branch: pipeline.StringFilter("main"),
+		}),
+		pipeline.GitTagEvent(pipeline.GitTagFilters[*regexp.Regexp]{
+			Name: pipeline.RegexpFilter(regexp.MustCompile("^v([0-9]).*$")),
+		}),
+	)
 
 	// In parallel, install the yarn and go dependencies, and cache the node_modules and $GOPATH/pkg folders.
 	// The cache should invalidate if the yarn.lock or go.sum files have changed
