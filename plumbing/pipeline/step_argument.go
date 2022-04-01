@@ -35,6 +35,13 @@ func NewFSArgument(key string) Argument {
 	}
 }
 
+func NewSecretArgument(key string) Argument {
+	return Argument{
+		Type: ArgumentTypeSecret,
+		Key:  key,
+	}
+}
+
 // These arguments are the pre-defined ones.
 var (
 	ArgumentSourceFS       = NewFSArgument("source")
