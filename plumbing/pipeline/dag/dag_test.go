@@ -143,15 +143,6 @@ func TestGraphAdj(t *testing.T) {
 		EnsureNodesExist(t, adj, 2, 3, 4)
 	})
 
-	t.Run("Adj should return nodes connected by an edge", func(t *testing.T) {
-		adj := g.Adj(1)
-		if len(adj) != 3 {
-			t.Fatalf("Expected 3 adjacent nodes to node 1. Received '%d'", len(adj))
-		}
-
-		EnsureNodesExist(t, adj, 2, 3, 4)
-	})
-
 	t.Run("Adj should not return parent nodes that have edges to this node", func(t *testing.T) {
 		adj := g.Adj(2)
 		if adj != nil {
