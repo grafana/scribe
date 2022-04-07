@@ -2,6 +2,7 @@ package dag_test
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 	"testing"
 
@@ -113,6 +114,7 @@ func TestGraphAddEdge(t *testing.T) {
 		EnsureError(t, g.AddEdge(1, 2), nil)
 		EnsureError(t, g.AddEdge(2, 3), nil)
 		EnsureError(t, g.AddEdge(3, 4), dag.ErrorNotFound)
+		EnsureError(t, g.AddEdge(10, 10), dag.ErrorNotFound)
 	})
 }
 
@@ -192,15 +194,38 @@ func TestGraphDepthFirstSearch_12(t *testing.T) {
 		order         = []int64{}
 	)
 
-	var visitFunc = func(node *dag.Node[Node]) {
+	var visitFunc = func(node *dag.Node[Node]) error {
 		order = append(order, node.ID)
+		return nil
 	}
 
-	g.DepthFirstSearch(0, visitFunc)
+	EnsureError(t, g.DepthFirstSearch(0, visitFunc), nil)
 
 	if !int64SlicesEqual(expectedOrder, order) {
 		t.Fatalf("Nodes visited in unexpected order. Expected: '%v', visited order: '%v'", expectedOrder, order)
 	}
+
+	t.Run("if the visitfunc returns an error, DepthFirstSearch should return that same error", func(t *testing.T) {
+		err := errors.New("test error")
+		vf := func(node *dag.Node[Node]) error {
+			return err
+		}
+
+		EnsureError(t, g.DepthFirstSearch(0, vf), err)
+	})
+
+	t.Run("if the visitfunc returns an error that is a 'dag.ErrorBreak',  DepthFirstSearch should stop without returning an error", func(t *testing.T) {
+		it := 0
+		vf := func(node *dag.Node[Node]) error {
+			it++
+			return fmt.Errorf("example break error: %w", dag.ErrorBreak)
+		}
+
+		EnsureError(t, g.DepthFirstSearch(0, vf), nil)
+		if it != 1 {
+			t.Fatalf("Expected 1 iteration before stopping, but found '%d'", it)
+		}
+	})
 }
 
 func TestGraphDepthFirstSearch_24(t *testing.T) {
@@ -261,13 +286,45 @@ func TestGraphDepthFirstSearch_24(t *testing.T) {
 		order         = []int64{}
 	)
 
-	var visitFunc = func(node *dag.Node[Node]) {
+	var visitFunc = func(node *dag.Node[Node]) error {
 		order = append(order, node.ID)
+		return nil
 	}
 
-	g.DepthFirstSearch(0, visitFunc)
+	EnsureError(t, g.DepthFirstSearch(0, visitFunc), nil)
 
 	if !int64SlicesEqual(expectedOrder, order) {
 		t.Fatalf("Nodes visited in unexpected order. Expected: '%v', visited order: '%v'", expectedOrder, order)
 	}
+}
+
+func TestGraphNode(t *testing.T) {
+	g := dag.New[Node]()
+
+	EnsureError(t, g.AddNode(1, Node{}), nil)
+	EnsureError(t, g.AddNode(2, Node{}), nil)
+	EnsureError(t, g.AddNode(3, Node{}), nil)
+	EnsureError(t, g.AddNode(4, Node{}), nil)
+
+	t.Run("graph.Node should return the node with a specific ID", func(t *testing.T) {
+		node, err := g.Node(4)
+		if err != nil {
+			t.Fatalf("Expected no error but got '%s'", err.Error())
+		}
+
+		if node.ID != 4 {
+			t.Fatalf("Expected node with id 4, got '%d'", node.ID)
+		}
+	})
+
+	t.Run("graph.Node should return an ErrorNotFound if no node was found", func(t *testing.T) {
+		_, err := g.Node(5)
+		if err == nil {
+			t.Fatal("Expected an error but did not receive one")
+		}
+
+		if !errors.Is(err, dag.ErrorNotFound) {
+			t.Fatal("Expected error to be a dag.ErrorNotFound but got:", err.Error())
+		}
+	})
 }

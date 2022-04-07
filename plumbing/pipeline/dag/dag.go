@@ -8,18 +8,28 @@ import (
 var (
 	ErrorDuplicateID = errors.New("node with ID already exists")
 	ErrorNotFound    = errors.New("node with ID not found")
+
+	ErrorBreak = errors.New("break will stop the depth first search without an error")
 )
 
+// Node is a graph node that has an ID and data.
+// Nodes are connected by Edges.
 type Node[T any] struct {
 	ID    int64
 	Value T
 }
 
+// Edge is a connection from one node to another.
+// Because this is a Directed graph, the edge has a direction.
+// A connection from 'node A' to 'node B' is not the same as a connection from 'node B' to 'node A'.
 type Edge[T any] struct {
 	From *Node[T]
 	To   *Node[T]
 }
 
+// Graph is a data structure that stores a list of Nodes (data) and Edges that connect nodes.
+// Because it is a Directed graph, the edges connect from a node to another node, and the connection is not equal if reversed.
+// Because it is an Acyclic graph, the nodes can not be connected in a loop or a cycle. If the nodes/edges look like (0 -> 1 -> 2 -> 0), then that is a cycle and is not allowed.
 type Graph[T any] struct {
 	Nodes []Node[T]
 	Edges map[int64][]Edge[T]
@@ -27,6 +37,7 @@ type Graph[T any] struct {
 	visited map[int64]bool
 }
 
+// AddNode adds a new node to the graph with the given ID and data (v).
 func (g *Graph[T]) AddNode(id int64, v T) error {
 	node := Node[T]{
 		ID:    id,
@@ -43,6 +54,7 @@ func (g *Graph[T]) AddNode(id int64, v T) error {
 	return nil
 }
 
+// AddEdge adds a new node from node with the ID 'from' to the node with the ID 'to'.
 func (g *Graph[T]) AddEdge(from, to int64) error {
 	var fromNode, toNode *Node[T]
 
@@ -74,6 +86,8 @@ func (g *Graph[T]) AddEdge(from, to int64) error {
 	return nil
 }
 
+// Node returns the node with the given ID.
+// If no node is found, ErrorNotFound is returned.
 func (g *Graph[T]) Node(id int64) (Node[T], error) {
 	for _, v := range g.Nodes {
 		if v.ID == id {
@@ -100,30 +114,45 @@ func (g *Graph[T]) Adj(id int64) []*Node[T] {
 	return siblings
 }
 
-func (g *Graph[T]) dfs(id int64, visitFunc func(n *Node[T])) {
+type VisitFunc[T any] func(n *Node[T]) error
+
+func (g *Graph[T]) dfs(id int64, visitFunc VisitFunc[T]) error {
 	g.visited[id] = true
 	node, err := g.Node(id)
 	if err != nil {
 		panic(err)
 	}
 
-	visitFunc(&node)
+	if err := visitFunc(&node); err != nil {
+		if errors.Is(err, ErrorBreak) {
+			return nil
+		}
+
+		return err
+	}
 
 	adj := g.Adj(id)
 	if adj == nil {
-		return
+		return nil
 	}
 
 	for _, v := range adj {
 		g.dfs(v.ID, visitFunc)
 	}
+
+	return nil
 }
 
-func (g *Graph[T]) DepthFirstSearch(start int64, visitFunc func(n *Node[T])) {
+// DepthFirstSearch performs a depth-first search and calls the provided visitFunc callback for every node.
+// 'visitFunc' is not called more than once per node.
+// If 'visitFunc' returns an error, then so will this function.
+// If 'visitFunc' returns ErrorBreak, then this function will return nil and will stop visiting nodes.
+func (g *Graph[T]) DepthFirstSearch(start int64, visitFunc VisitFunc[T]) error {
 	g.visited = make(map[int64]bool, len(g.Nodes))
-	g.dfs(start, visitFunc)
+	return g.dfs(start, visitFunc)
 }
 
+// New creates a new Graph with nodes that contain data with type T.
 func New[T any]() *Graph[T] {
 	return &Graph[T]{
 		Nodes: []Node[T]{
