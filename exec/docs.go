@@ -1,2 +1,2 @@
-// Package exec provides helper functions and StepActions for executing shell commands.
+// Package exec provides helper functions and Actions for executing shell commands.
 package exec

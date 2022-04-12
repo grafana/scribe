@@ -3,12 +3,13 @@ module github.com/grafana/shipwright
 go 1.18
 
 require (
-	github.com/google/go-cmp v0.5.6
+	github.com/google/go-cmp v0.5.7
 	github.com/magefile/mage v1.12.1
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 	gopkg.in/yaml.v2 v2.4.0
+	gonum.org/v1/gonum v0.11.0
 )
 
 require (

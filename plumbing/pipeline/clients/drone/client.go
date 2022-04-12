@@ -22,7 +22,7 @@ type Client struct {
 	Log *logrus.Logger
 }
 
-func (c *Client) Validate(step pipeline.Step) error {
+func (c *Client) Validate(step pipeline.Step[pipeline.Action]) error {
 	if step.Image == "" {
 		return ErrorNoImage
 	}
@@ -56,7 +56,7 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker, events []pipeline.
 
 	// When walking through each list of steps, we assume that the previous list of steps are required before this one will run.
 	// It's entirely possible in the future, when this Walk function is backed by a DAG, we can't safely make that assumption. Instead, we will have to defer to the parent nodes and use those as "DependsOn"
-	if err := w.Walk(ctx, func(ctx context.Context, s ...pipeline.Step) error {
+	if err := w.WalkSteps(ctx, 1, func(ctx context.Context, s ...pipeline.Step[pipeline.Action]) error {
 		stepNames := make([]string, len(s))
 		for i, v := range s {
 			step, err := NewStep(c, c.Opts.Args.Path, v)

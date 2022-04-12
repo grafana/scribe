@@ -31,7 +31,7 @@ func version() (string, error) {
 	return strings.TrimSpace(string(version)), nil
 }
 
-func (i Image) BuildStep(sw shipwright.Shipwright) pipeline.Step {
+func (i Image) BuildStep(sw shipwright.Shipwright[pipeline.Action]) pipeline.Step[pipeline.Action] {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		v, err := version()
 		if err != nil {
@@ -45,7 +45,7 @@ func (i Image) BuildStep(sw shipwright.Shipwright) pipeline.Step {
 			name = plumbing.SubImage(i.Name, v)
 		}
 
-		return docker.BuildWithArgs(name, i.Dockerfile, i.Context, fmt.Sprintf("VERSION=%s", v)).Action(ctx, opts)
+		return docker.BuildWithArgs(name, i.Dockerfile, i.Context, fmt.Sprintf("VERSION=%s", v)).Content(ctx, opts)
 	}
 
 	return pipeline.NewStep(action).
@@ -83,8 +83,8 @@ var Images = []Image{
 	},
 }
 
-func Steps(sw shipwright.Shipwright, images []Image) []pipeline.Step {
-	steps := make([]pipeline.Step, len(images))
+func Steps(sw shipwright.Shipwright[pipeline.Action], images []Image) []pipeline.Step[pipeline.Action] {
+	steps := make([]pipeline.Step[pipeline.Action], len(images))
 
 	for i, image := range images {
 		steps[i] = image.BuildStep(sw).WithName(fmt.Sprintf("build %s image", image.Name))

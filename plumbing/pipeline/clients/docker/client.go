@@ -29,7 +29,7 @@ type Client struct {
 	Log *logrus.Logger
 }
 
-func (c *Client) Validate(step pipeline.Step) error {
+func (c *Client) Validate(step pipeline.Step[pipeline.Action]) error {
 	if step.Image == "" {
 		return errors.New("no image provided")
 	}
@@ -98,7 +98,7 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker, events []pipeline.
 		return fmt.Errorf("failed to compile the pipeline in docker. Error: %w", err)
 	}
 
-	return w.Walk(ctx, func(ctx context.Context, steps ...pipeline.Step) error {
+	return w.WalkSteps(ctx, 0, func(ctx context.Context, steps ...pipeline.Step[pipeline.Action]) error {
 		s := make([]string, len(steps))
 		for i, v := range steps {
 			s[i] = v.Name
@@ -221,7 +221,7 @@ func (c *Client) applyArguments(opts RunOpts, args []pipeline.Argument) (RunOpts
 	return opts, nil
 }
 
-func (c *Client) runAction(ctx context.Context, pipelinePath string, step pipeline.Step) pipeline.StepAction {
+func (c *Client) runAction(ctx context.Context, pipelinePath string, step pipeline.Step[pipeline.Action]) pipeline.Action {
 	cmd, err := cmdutil.StepCommand(c, cmdutil.CommandOpts{
 		Step:    step,
 		BuildID: c.Opts.Args.BuildID,
@@ -260,8 +260,8 @@ func (c *Client) runAction(ctx context.Context, pipelinePath string, step pipeli
 	}
 }
 
-func (c *Client) wrap(pipelinePath string, step pipeline.Step) pipeline.Step {
-	step.Action = func(ctx context.Context, opts pipeline.ActionOpts) error {
+func (c *Client) wrap(pipelinePath string, step pipeline.Step[pipeline.Action]) pipeline.Step[pipeline.Action] {
+	step.Content = func(ctx context.Context, opts pipeline.ActionOpts) error {
 		opts.Stdout = c.Log.WithField("stream", "stdout").Writer()
 		opts.Stderr = c.Log.WithField("stream", "stderr").Writer()
 

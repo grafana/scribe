@@ -6,7 +6,7 @@ import (
 	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
-func ModDownload() pipeline.StepAction {
+func ModDownload() pipeline.Action {
 	return func(context.Context, pipeline.ActionOpts) error {
 		return nil
 	}

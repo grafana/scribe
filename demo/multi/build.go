@@ -28,25 +28,7 @@ func writeVersion(sw shipwright.Shipwright[pipeline.Action]) pipeline.Step[pipel
 	return pipeline.NewStep(action)
 }
 
-// "main" defines our program pipeline.
-// Every pipeline step should be instantiated using the shipwright client (sw).
-// This allows the various client modes to work properly in different scenarios, like in a CI environment or locally.
-// Logic and processing done outside of the `sw.*` family of functions may not be included in the resulting pipeline.
-func main() {
-	sw := shipwright.New("basic pipeline")
-	defer sw.Done()
-
-	sw.When(
-		pipeline.GitCommitEvent(pipeline.GitCommitFilters{
-			Branch: pipeline.StringFilter("main"),
-		}),
-		pipeline.GitTagEvent(pipeline.GitTagFilters{
-			Name: pipeline.GlobFilter("v*"),
-		}),
-	)
-
-	// In parallel, install the yarn and go dependencies, and cache the node_modules and $GOPATH/pkg folders.
-	// The cache should invalidate if the yarn.lock or go.sum files have changed
+func installDependencies(sw shipwright.Shipwright[pipeline.Action]) {
 	sw.Run(
 		pipeline.NamedStep("install frontend dependencies", sw.Cache(
 			yarn.Install(),
@@ -56,11 +38,50 @@ func main() {
 			golang.ModDownload(),
 			fs.Cache("$GOPATH/pkg", fs.FileHasChanged("go.sum")),
 		)),
-		writeVersion(sw).WithName("write-version-file"),
 	)
+}
+
+func testPipeline(sw shipwright.Shipwright[pipeline.Action]) {
+	installDependencies(sw)
+
+	sw.Parallel(
+		golang.Test(sw, "./...").WithName("test backend"),
+		pipeline.NamedStep("test frontend", makefile.Target("test-frontend")),
+	)
+}
+
+func publishPipeline(sw shipwright.Shipwright[pipeline.Action]) {
+	sw.When(
+		pipeline.GitCommitEvent(pipeline.GitCommitFilters{
+			Branch: pipeline.StringFilter("main"),
+		}),
+		pipeline.GitTagEvent(pipeline.GitTagFilters{
+			Name: pipeline.GlobFilter("v*"),
+		}),
+	)
+
+	installDependencies(sw)
 
 	sw.Run(
 		pipeline.NamedStep("compile backend", makefile.Target("build")),
 		pipeline.NamedStep("compile frontend", makefile.Target("package")),
+	)
+
+	sw.Run(
+		pipeline.NamedStep("publish", makefile.Target("publish")).WithArguments(pipeline.NewSecretArgument("gcp-publish-key")),
+	)
+}
+
+// "main" defines our program pipeline.
+// Every pipeline step should be instantiated using the shipwright client (sw).
+// This allows the various client modes to work properly in different scenarios, like in a CI environment or locally.
+// Logic and processing done outside of the `sw.*` family of functions may not be included in the resulting pipeline.
+func main() {
+	sw := shipwright.NewMulti()
+	defer sw.Done()
+
+	sw.Run(
+		sw.Multi("test", testPipeline),
+		sw.Multi("publish", publishPipeline),
 	)
 }

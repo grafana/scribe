@@ -8,12 +8,25 @@ import (
 	"github.com/grafana/shipwright/plumbing/pipeline/clients/drone"
 )
 
-func NewDefaultCollection() pipeline.Collection {
-	return pipeline.NewQueue()
+func NewDefaultCollection(opts pipeline.CommonOpts) *pipeline.Collection {
+	p := pipeline.NewCollection()
+
+	p.AddPipelines(pipeline.Step[pipeline.Pipeline]{
+		Name:   opts.Name,
+		Serial: DefaultPipelineID,
+	})
+
+	return p
 }
 
+func NewMultiCollection() *pipeline.Collection {
+	return pipeline.NewCollection()
+}
+
+type InitializerFunc func(pipeline.CommonOpts) pipeline.Client
+
 // The ClientInitializers define how different RunModes initialize the Shipwright client
-var ClientInitializers = map[plumbing.RunModeOption]func(pipeline.CommonOpts) Shipwright{
+var ClientInitializers = map[plumbing.RunModeOption]InitializerFunc{
 	plumbing.RunModeCLI:    NewCLIClient,
 	plumbing.RunModeDrone:  NewDroneClient,
 	plumbing.RunModeConfig: NewCLIClient,
@@ -21,32 +34,23 @@ var ClientInitializers = map[plumbing.RunModeOption]func(pipeline.CommonOpts) Sh
 	plumbing.RunModeDocker: NewDockerClient,
 }
 
-func NewDroneClient(opts pipeline.CommonOpts) Shipwright {
-	return Shipwright{
-		Collection: NewDefaultCollection(),
-		Client: &drone.Client{
-			Opts: opts,
-			Log:  opts.Log,
-		},
+func NewDroneClient(opts pipeline.CommonOpts) pipeline.Client {
+	return &drone.Client{
+		Opts: opts,
+		Log:  opts.Log,
 	}
 }
 
-func NewCLIClient(opts pipeline.CommonOpts) Shipwright {
-	return Shipwright{
-		Collection: NewDefaultCollection(),
-		Client: &cli.Client{
-			Opts: opts,
-			Log:  opts.Log,
-		},
+func NewCLIClient(opts pipeline.CommonOpts) pipeline.Client {
+	return &cli.Client{
+		Opts: opts,
+		Log:  opts.Log,
 	}
 }
 
-func NewDockerClient(opts pipeline.CommonOpts) Shipwright {
-	return Shipwright{
-		Collection: NewDefaultCollection(),
-		Client: &docker.Client{
-			Opts: opts,
-			Log:  opts.Log,
-		},
+func NewDockerClient(opts pipeline.CommonOpts) pipeline.Client {
+	return &docker.Client{
+		Opts: opts,
+		Log:  opts.Log,
 	}
 }

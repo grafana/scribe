@@ -11,7 +11,7 @@ type CommandOpts struct {
 	// Path is an optional argument that refers to the path of the pipeline. For example, if our plan is to have this function generate `shipwright ./ci`, the 'Path' would be './ci'.
 	Path string
 	// Step is the pipeline step this command is being generated for. The step contains a lot of necessary information for generating a command, mostly around arguments.
-	Step pipeline.Step
+	Step pipeline.Step[pipeline.Action]
 	// BuildID is an optional argument that will be supplied to the 'shipwright' command as '-build-id'.
 	BuildID string
 }

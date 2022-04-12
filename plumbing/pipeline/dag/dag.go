@@ -8,6 +8,7 @@ import (
 var (
 	ErrorDuplicateID = errors.New("node with ID already exists")
 	ErrorNotFound    = errors.New("node with ID not found")
+	ErrorNoVisitFunc = errors.New("no visitfunc provided")
 
 	ErrorBreak = errors.New("break will stop the depth first search without an error")
 )
@@ -88,14 +89,30 @@ func (g *Graph[T]) AddEdge(from, to int64) error {
 
 // Node returns the node with the given ID.
 // If no node is found, ErrorNotFound is returned.
-func (g *Graph[T]) Node(id int64) (Node[T], error) {
-	for _, v := range g.Nodes {
+func (g *Graph[T]) Node(id int64) (*Node[T], error) {
+	for i, v := range g.Nodes {
 		if v.ID == id {
-			return v, nil
+			return &g.Nodes[i], nil
 		}
 	}
 
-	return Node[T]{}, ErrorNotFound
+	return nil, fmt.Errorf("id: %d. error: %w", id, ErrorNotFound)
+}
+
+// Nodes returns the nodes with the given IDs.
+// If one of the nodes is not found, ErrorNotFound is returned.
+func (g *Graph[T]) NodeList(id ...int64) ([]*Node[T], error) {
+	nodes := make([]*Node[T], len(id))
+	for i, v := range id {
+		node, err := g.Node(v)
+		if err != nil {
+			return nil, fmt.Errorf("id: %d. error: %w", v, err)
+		}
+
+		nodes[i] = node
+	}
+
+	return nodes, nil
 }
 
 // Adj returns nodes with edges that start at the provided node (n) (Where 'From' is this node).
@@ -114,21 +131,23 @@ func (g *Graph[T]) Adj(id int64) []*Node[T] {
 	return siblings
 }
 
+func (g *Graph[T]) resetVisited() {
+	for _, v := range g.Nodes {
+		g.visited[v.ID] = false
+	}
+}
+
 type VisitFunc[T any] func(n *Node[T]) error
 
 func (g *Graph[T]) dfs(id int64, visitFunc VisitFunc[T]) error {
-	g.visited[id] = true
-	node, err := g.Node(id)
-	if err != nil {
-		panic(err)
-	}
+	if !g.visited[id] {
+		if err := g.visit(id, visitFunc); err != nil {
+			if errors.Is(err, ErrorBreak) {
+				return nil
+			}
 
-	if err := visitFunc(&node); err != nil {
-		if errors.Is(err, ErrorBreak) {
-			return nil
+			return err
 		}
-
-		return err
 	}
 
 	adj := g.Adj(id)
@@ -137,7 +156,12 @@ func (g *Graph[T]) dfs(id int64, visitFunc VisitFunc[T]) error {
 	}
 
 	for _, v := range adj {
-		g.dfs(v.ID, visitFunc)
+		if err := g.dfs(v.ID, visitFunc); err != nil {
+			if errors.Is(err, ErrorBreak) {
+				return nil
+			}
+			return err
+		}
 	}
 
 	return nil
@@ -148,18 +172,70 @@ func (g *Graph[T]) dfs(id int64, visitFunc VisitFunc[T]) error {
 // If 'visitFunc' returns an error, then so will this function.
 // If 'visitFunc' returns ErrorBreak, then this function will return nil and will stop visiting nodes.
 func (g *Graph[T]) DepthFirstSearch(start int64, visitFunc VisitFunc[T]) error {
-	g.visited = make(map[int64]bool, len(g.Nodes))
+	if visitFunc == nil {
+		return ErrorNoVisitFunc
+	}
+
+	g.resetVisited()
+
 	return g.dfs(start, visitFunc)
+}
+
+func (g *Graph[T]) visit(id int64, visitFunc VisitFunc[T]) error {
+	g.visited[id] = true
+
+	n, err := g.Node(id)
+	if err != nil {
+		return err
+	}
+
+	if err := visitFunc(n); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (g *Graph[T]) BreadthFirstSearch(id int64, visitFunc VisitFunc[T]) error {
+	if visitFunc == nil {
+		return ErrorNoVisitFunc
+	}
+
+	queue := []int64{id}
+	if err := g.visit(id, visitFunc); err != nil {
+		if errors.Is(err, ErrorBreak) {
+			return nil
+		}
+		return err
+	}
+
+	i := 0
+
+	for i < len(queue) {
+		id = queue[i]
+		for _, v := range g.Adj(id) {
+			if g.visited[v.ID] {
+				continue
+			}
+			queue = append(queue, v.ID)
+			if err := g.visit(v.ID, visitFunc); err != nil {
+				if errors.Is(err, ErrorBreak) {
+					return nil
+				}
+
+				return err
+			}
+		}
+		i++
+	}
+	return nil
 }
 
 // New creates a new Graph with nodes that contain data with type T.
 func New[T any]() *Graph[T] {
 	return &Graph[T]{
-		Nodes: []Node[T]{
-			{
-				ID: 0,
-			},
-		},
-		Edges: map[int64][]Edge[T]{},
+		Nodes:   []Node[T]{},
+		Edges:   map[int64][]Edge[T]{},
+		visited: map[int64]bool{},
 	}
 }

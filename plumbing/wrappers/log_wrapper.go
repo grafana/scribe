@@ -13,25 +13,25 @@ type LogWrapper struct {
 	Log  *logrus.Logger
 }
 
-func (l *LogWrapper) Fields(ctx context.Context, step pipeline.Step) logrus.Fields {
+func (l *LogWrapper) Fields(ctx context.Context, step pipeline.Step[pipeline.Action]) logrus.Fields {
 	fields := plog.DefaultFields(ctx, step, l.Opts)
 
 	return fields
 }
 
-func (l *LogWrapper) WrapStep(steps ...pipeline.Step) []pipeline.Step {
+func (l *LogWrapper) WrapStep(steps ...pipeline.Step[pipeline.Action]) []pipeline.Step[pipeline.Action] {
 	for i := range steps {
 		step := steps[i]
-		action := steps[i].Action
+		action := steps[i].Content
 
 		// Steps that provide a nil action should continue to provide a nil action.
 		// There is nothing for us to log in the execution of this action anyways, though there is an implication that
 		// this step may execute something that is not defined in the pipeline.
-		if steps[i].Action == nil {
+		if steps[i].Content == nil {
 			continue
 		}
 
-		steps[i].Action = func(ctx context.Context, opts pipeline.ActionOpts) error {
+		steps[i].Content = func(ctx context.Context, opts pipeline.ActionOpts) error {
 			l.Log.WithFields(l.Fields(ctx, step)).Infoln("starting step'")
 
 			stdoutFields := l.Fields(ctx, step)
@@ -56,8 +56,8 @@ func (l *LogWrapper) WrapStep(steps ...pipeline.Step) []pipeline.Step {
 	return steps
 }
 
-func (l *LogWrapper) Wrap(wf pipeline.WalkFunc) pipeline.WalkFunc {
-	return func(ctx context.Context, step ...pipeline.Step) error {
+func (l *LogWrapper) Wrap(wf pipeline.StepWalkFunc) pipeline.StepWalkFunc {
+	return func(ctx context.Context, step ...pipeline.Step[pipeline.Action]) error {
 		steps := l.WrapStep(step...)
 
 		if err := wf(ctx, steps...); err != nil {

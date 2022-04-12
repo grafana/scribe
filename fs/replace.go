@@ -6,13 +6,13 @@ import (
 	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
-func Replace(file string, content string) pipeline.StepAction {
+func Replace(file string, content string) pipeline.Action {
 	return func(context.Context, pipeline.ActionOpts) error {
 		return nil
 	}
 }
 
-func ReplaceString(file string, content string) pipeline.StepAction {
+func ReplaceString(file string, content string) pipeline.Action {
 	return func(context.Context, pipeline.ActionOpts) error {
 		return nil
 	}

@@ -18,18 +18,31 @@ type ActionOpts struct {
 }
 
 type (
-	StepType   int
-	StepAction func(context.Context, ActionOpts) error
-	Output     interface{}
+	StepType int
+
+	// Action is the function signature that a step provides when it does something.
+	Action func(context.Context, ActionOpts) error
+	Output interface{}
+
+	// A StepList is a list of steps that are ran in parallel.
+	// This type is only used for intermittent storage and should not be used in the Shipwright client library
+	StepList []Step[Action]
+	Pipeline []StepList
 )
 
 const (
 	StepTypeDefault StepType = iota
 	StepTypeBackground
+	StepTypeList
 )
 
-// A Step stores a StepAction and a name for use in pipelines
-type Step struct {
+type StepContent interface {
+	Action | StepList | Pipeline
+}
+
+// A Step stores a Action and a name for use in pipelines.
+// A Step can consist of either a single action or represent a list of actions.
+type Step[T StepContent] struct {
 	// Type represents the how the step is intended to operate. 90% of the time, the default type should be a sufficient descriptor of a step.
 	// However in some circumstances, clients may want to handle a step differently based on how it's defined.
 	// Background steps, for example, have to have their lifecycles handled differently.
@@ -43,11 +56,12 @@ type Step struct {
 	// Typically, in docker environments (or drone with a Docker executor), it defines the docker image that is used to run the step.
 	Image string
 
-	// Action defines the action that this step takes in order to execute.
-	Action StepAction
+	// Content defines the contents of this step
+	Content T
 
 	// Dependencies define other steps that are required to run before this one.
-	Dependencies []Step
+	// As far as we're concerned, Steps can only depend on other steps of the same type.
+	Dependencies []Step[T]
 
 	// Arguments are arguments that are must exist in order for this step to run.
 	Arguments []Argument
@@ -57,16 +71,16 @@ type Step struct {
 
 	// Serial is the unique number that represents this step.
 	// This value is used when calling `shipwright -step={serial} [pipeline]`
-	Serial int
+	Serial int64
 }
 
-func (s Step) IsBackground() bool {
-	return s.Action == nil
+func (s Step[T]) IsBackground() bool {
+	return s.Content == nil && s.Type != StepTypeList
 }
 
-func (s Step) After(step Step) Step {
+func (s Step[T]) After(step Step[T]) Step[T] {
 	if s.Dependencies == nil {
-		s.Dependencies = []Step{}
+		s.Dependencies = []Step[T]{}
 	}
 
 	s.Dependencies = append(s.Dependencies, step)
@@ -74,52 +88,48 @@ func (s Step) After(step Step) Step {
 	return s
 }
 
-func (s Step) WithImage(image string) Step {
+func (s Step[T]) WithImage(image string) Step[T] {
 	s.Image = image
 	return s
 }
 
-func (s Step) WithOutput(artifact Artifact) Step {
+func (s Step[T]) WithOutput(artifact Artifact) Step[T] {
 	return s
 }
 
-func (s Step) WithInput(artifact Artifact) Step {
+func (s Step[T]) WithInput(artifact Artifact) Step[T] {
 	return s
 }
 
-func (s Step) WithArguments(arg ...Argument) Step {
+func (s Step[T]) WithArguments(arg ...Argument) Step[T] {
 	s.Arguments = arg
 	return s
 }
 
-func (s Step) Provides(arg ...Argument) Step {
+func (s Step[T]) Provides(arg ...Argument) Step[T] {
 	s.ProvidesArgs = arg
 	return s
 }
 
-func (s Step) WithName(name string) Step {
+func (s Step[T]) WithName(name string) Step[T] {
 	s.Name = name
 	return s
 }
 
 // NewStep creates a new step with an automatically generated name
-func NewStep(action StepAction) Step {
-	return Step{
-		Action: action,
+func NewStep(action Action) Step[Action] {
+	return Step[Action]{
+		Content: action,
 	}
 }
 
 // NamedStep creates a new step with a name provided
-func NamedStep(name string, action StepAction) Step {
-	return Step{
-		Name:   name,
-		Action: action,
+func NamedStep(name string, action Action) Step[Action] {
+	return Step[Action]{
+		Name:    name,
+		Content: action,
 	}
 }
-
-// A StepList is a list of steps that are ran in parallel.
-// This type is only used for intermittent storage and should not be used in the Shipwright client library
-type StepList []Step
 
 func (s *StepList) Names() []string {
 	names := make([]string, len(*s))
@@ -137,13 +147,13 @@ func (s *StepList) String() string {
 
 // DefaultAction is a nil action intentionally. In some client implementations, a nil step indicates a specific behavior.
 // In Drone and Docker, for example, a nil step indicates that the docker command or entrypoint should not be supplied, thus using the default command for that image.
-var DefaultAction StepAction = nil
+var DefaultAction Action = nil
 
 // NoOpStep is used to represent a step which only exists to form uncommon relationships or for testing.
 // Most clients should completely ignore NoOpSteps.
-var NoOpStep = Step{
+var NoOpStep = Step[Action]{
 	Name: "no op",
-	Action: func(context.Context, ActionOpts) error {
+	Content: func(context.Context, ActionOpts) error {
 		return nil
 	},
 }
@@ -151,11 +161,11 @@ var NoOpStep = Step{
 // Combine combines the list of steps into one step, combining all of their required and provided arguments, as well as their actions.
 // For string values that can not be combined, like Name and Image, the first step's values are chosen.
 // These can be overridden with further chaining.
-func Combine(step ...Step) Step {
-	s := Step{
+func Combine(step ...Step[Action]) Step[Action] {
+	s := Step[Action]{
 		Name:         step[0].Name,
 		Image:        step[0].Image,
-		Dependencies: []Step{},
+		Dependencies: []Step[Action]{},
 		Arguments:    []Argument{},
 		ProvidesArgs: []Argument{},
 	}
@@ -166,9 +176,9 @@ func Combine(step ...Step) Step {
 		s.ProvidesArgs = append(s.ProvidesArgs, v.ProvidesArgs...)
 	}
 
-	s.Action = func(ctx context.Context, opts ActionOpts) error {
+	s.Content = func(ctx context.Context, opts ActionOpts) error {
 		for _, v := range step {
-			if err := v.Action(ctx, opts); err != nil {
+			if err := v.Content(ctx, opts); err != nil {
 				return err
 			}
 		}

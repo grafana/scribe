@@ -20,10 +20,13 @@ import (
 	"github.com/uber/jaeger-client-go/config"
 )
 
+const DefaultPipelineID int64 = 1
+
 // Shipwright is the client that is used in every pipeline to declare the steps that make up a pipeline.
-type Shipwright struct {
+// The Shipwright type is not thread safe. Running any of the functions from this type concurrently may have unexpected results.
+type Shipwright[T pipeline.StepContent] struct {
 	Client     pipeline.Client
-	Collection pipeline.Collection
+	Collection *pipeline.Collection
 	Events     []pipeline.Event
 
 	pipeline.Configurer
@@ -34,78 +37,156 @@ type Shipwright struct {
 
 	// n tracks the ID of a step so that the "shipwright -step=" argument will function independently of the client implementation
 	// It ensures that the 11th step in a Drone generated pipeline is also the 11th step in a CLI pipeline
-	n       int
-	Version string
+	n        int64
+	pipeline int64
+	Version  string
+
+	prev          []pipeline.Step[pipeline.StepList]
+	prevPipelines []pipeline.Step[pipeline.Pipeline]
+}
+
+// Pipeline returns the current Pipeline ID used in the collection.
+func (s *Shipwright[T]) Pipeline() int64 {
+	return s.pipeline
 }
 
 // When allows users to define when this pipeline is executed, especially in the remote environment.
-func (s *Shipwright) When(event ...pipeline.Event) {
+func (s *Shipwright[T]) When(event ...pipeline.Event) {
 	s.Events = event
+}
+
+func (s *Shipwright[T]) newList(steps ...pipeline.Step[pipeline.Action]) pipeline.Step[pipeline.StepList] {
+	list := pipeline.Step[pipeline.StepList]{
+		Serial:  s.n,
+		Content: steps,
+	}
+
+	s.n++
+
+	return list
 }
 
 // Background allows users to define steps that run in the background. In some environments this is referred to as a "Service" or "Background service".
 // In many scenarios, users would like to simply use a docker image with the default command. In order to accomplish that, simply provide a step without an action.
-func (s *Shipwright) Background(step ...pipeline.Step) {
-	steps := s.Setup(step...)
-
+func (s *Shipwright[T]) Background(steps ...pipeline.Step[pipeline.Action]) {
 	if err := s.validateSteps(steps...); err != nil {
 		s.Log.Fatalln(err)
 	}
 
-	// Before being added to the collection, each step ran with 'Background' needs to have the 'Type' set to 'StepTypeBackground'.
-	// Clients should know to handle background steps in their 'WalkFunc' implementations.
-	for i := range step {
-		step[i].Type = pipeline.StepTypeBackground
-	}
+	st := s.setup(any(steps).([]pipeline.Step[T])...)
+	list := s.newList(any(st).([]pipeline.Step[pipeline.Action])...)
 
-	if err := s.Collection.Append(steps...); err != nil {
+	if err := s.Collection.AddSteps(s.pipeline, list); err != nil {
 		s.Log.Fatalln(err)
 	}
 }
 
 // Run allows users to define steps that are ran sequentially. For example, the second step will not run until the first step has completed.
 // This function blocks the pipeline execution until all of the steps provided (step) have completed sequentially.
-func (s *Shipwright) Run(step ...pipeline.Step) {
-	// Initialize each step with the appropriate serial number.
-	// If there are any default values that should be set (like Image), then Setup will set them.
-	steps := s.Setup(step...)
+func (s *Shipwright[T]) Run(steps ...pipeline.Step[T]) {
+	steps = s.setup(steps...)
 
-	if err := s.validateSteps(steps...); err != nil {
-		s.Log.Fatalln(err)
-	}
-
-	for i := range steps {
-		if err := s.Collection.Append(steps[i]); err != nil {
+	switch x := any(steps).(type) {
+	case []pipeline.Step[pipeline.Action]:
+		if err := s.runSteps(x...); err != nil {
+			s.Log.Fatalln(err)
+		}
+	case []pipeline.Step[pipeline.Pipeline]:
+		if err := s.runPipelines(x...); err != nil {
 			s.Log.Fatalln(err)
 		}
 	}
 }
 
-// Parallel will run the listed steps at the same time.
-// This function blocks the pipeline execution until all of the steps have completed.
-func (s *Shipwright) Parallel(step ...pipeline.Step) {
-	steps := s.Setup(step...)
-
+func (s *Shipwright[T]) runSteps(steps ...pipeline.Step[pipeline.Action]) error {
 	if err := s.validateSteps(steps...); err != nil {
-		s.Log.Fatalln(err)
+		return err
 	}
 
-	if err := s.Collection.Append(steps...); err != nil {
-		s.Log.Fatalln(err)
+	prev := s.prev
+
+	for _, v := range steps {
+		list := s.newList(v)
+		list.Dependencies = prev
+
+		if err := s.Collection.AddSteps(s.pipeline, list); err != nil {
+			return fmt.Errorf("error adding step '%d' to collection. error: %w", list.Serial, err)
+		}
+
+		prev = []pipeline.Step[pipeline.StepList]{list}
 	}
+
+	s.prev = prev
+
+	return nil
 }
 
-// These functions are just ideas at the moment.
-// // Go is the equivalent of `go func()`. This function will run a step asynchronously and continue on to the next.
-// // Go(...pipeline.Step)
-// // func (s *Shipwright) Input(...pipeline.Argument) {}
-// // func (s *Shipwright) Output(...pipeline.Output) {}
+// runPipeliens adds the list of pipelines to the collection. Pipelines are essentially branches in the graph.
+// The pipelines provided run one after another.
+func (s *Shipwright[T]) runPipelines(pipelines ...pipeline.Step[pipeline.Pipeline]) error {
+	prev := s.prevPipelines
 
-func (s *Shipwright) Cache(action pipeline.StepAction, c pipeline.Cacher) pipeline.StepAction {
+	for _, v := range pipelines {
+		v.Dependencies = prev
+		if err := s.Collection.AddPipelines(v); err != nil {
+			return fmt.Errorf("error adding pipeline '%d' to collection. error: %w", v.Serial, err)
+		}
+
+		prev = []pipeline.Step[pipeline.Pipeline]{v}
+	}
+
+	return nil
+}
+
+// Parallel will run the listed steps at the same time.
+// This function blocks the pipeline execution until all of the steps have completed.
+func (s *Shipwright[T]) Parallel(steps ...pipeline.Step[T]) {
+	steps = s.setup(steps...)
+
+	switch x := any(steps).(type) {
+	case []pipeline.Step[pipeline.Action]:
+		if err := s.parallelSteps(x...); err != nil {
+			s.Log.Fatalln(err)
+		}
+	case []pipeline.Step[pipeline.Pipeline]:
+		if err := s.parallelPipelines(x...); err != nil {
+			s.Log.Fatalln(err)
+		}
+	}
+}
+func (s *Shipwright[T]) parallelSteps(steps ...pipeline.Step[pipeline.Action]) error {
+	if err := s.validateSteps(steps...); err != nil {
+		return err
+	}
+
+	list := s.newList(steps...)
+	list.Dependencies = s.prev
+
+	if err := s.Collection.AddSteps(s.pipeline, list); err != nil {
+		return fmt.Errorf("error adding step '%d' to collection. error: %w", list.Serial, err)
+	}
+
+	s.prev = []pipeline.Step[pipeline.StepList]{list}
+
+	return nil
+}
+func (s *Shipwright[T]) parallelPipelines(steps ...pipeline.Step[pipeline.Pipeline]) error {
+	return nil
+}
+
+func (s *Shipwright[T]) Cache(action pipeline.Action, c pipeline.Cacher) pipeline.Action {
 	return action
 }
 
-func (s *Shipwright) Setup(steps ...pipeline.Step) []pipeline.Step {
+func (s *Shipwright[T]) setup(steps ...pipeline.Step[T]) []pipeline.Step[T] {
+	// if len(s.prev) > 0 {
+	// 	for i := range steps {
+	// 		if steps[i].Type != pipeline.StepTypeBackground {
+	// 			steps[i].Dependencies = s.prev
+	// 		}
+	// 	}
+	// }
+
 	for i, step := range steps {
 		// Set a default image for steps that don't provide one.
 		// Most pre-made steps like `yarn`, `node`, `go` steps should provide a separate default image with those utilities installed.
@@ -122,7 +203,7 @@ func (s *Shipwright) Setup(steps ...pipeline.Step) []pipeline.Step {
 	return steps
 }
 
-func formatError(step pipeline.Step, err error) error {
+func formatError(step pipeline.Step[pipeline.Action], err error) error {
 	name := step.Name
 	if name == "" {
 		name = fmt.Sprintf("unnamed-step-%d", step.Serial)
@@ -131,7 +212,7 @@ func formatError(step pipeline.Step, err error) error {
 	return fmt.Errorf("[name: %s, id: %d] %w", name, step.Serial, err)
 }
 
-func (s *Shipwright) validateSteps(steps ...pipeline.Step) error {
+func (s *Shipwright[T]) validateSteps(steps ...pipeline.Step[pipeline.Action]) error {
 	for _, v := range steps {
 		err := s.Client.Validate(v)
 		if err == nil {
@@ -149,16 +230,38 @@ func (s *Shipwright) validateSteps(steps ...pipeline.Step) error {
 	return nil
 }
 
-func (s *Shipwright) watchSignals() error {
+func (s *Shipwright[T]) watchSignals() error {
 	sig := cmdutil.WatchSignals()
 
 	return fmt.Errorf("received OS signal: %s", sig.String())
 }
 
-func (s *Shipwright) Done() {
+// Execute is the equivalent of Done, but returns an error.
+// Done should be preferred in Shipwright pipelines as it includes sub-process handling and logging.
+func (s *Shipwright[T]) Execute(ctx context.Context) error {
 	var (
-		ctx        = context.Background()
 		collection = s.Collection
+	)
+	// If the user has specified a specific step, then cut the "Collection" to only include that step
+	if s.Opts.Args.Step != nil {
+		step, err := collection.BySerial(*s.Opts.Args.Step)
+		if err != nil {
+			return fmt.Errorf("could not find step. Error: %w", err)
+		}
+
+		collection = collection.Sub(step)
+	}
+
+	if err := s.Client.Done(ctx, collection, s.Events); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Shipwright[T]) Done() {
+	var (
+		ctx = context.Background()
 	)
 
 	span, ctx := opentracing.StartSpanFromContextWithTracer(ctx, s.Opts.Tracer, "shipwright build")
@@ -181,19 +284,7 @@ func (s *Shipwright) Done() {
 
 	logger.WithField("mode", s.Opts.Args.Mode).Info("execution started")
 
-	// If the user has specified a specific step, then cut the "Collection" to only include that step
-	if s.Opts.Args.Step != nil {
-		step, err := collection.BySerial(*s.Opts.Args.Step)
-		if err != nil {
-			logger.Panicln("could not find step", err)
-		}
-
-		logger.Infoln("Found step at", *s.Opts.Args.Step, "named", step.Name)
-
-		collection = collection.Sub(step)
-	}
-
-	if err := s.Client.Done(ctx, collection, s.Events); err != nil {
+	if err := s.Execute(ctx); err != nil {
 		logger.WithFields(logrus.Fields{
 			"status":       "error",
 			"completed_at": time.Now().Unix(),
@@ -211,11 +302,14 @@ func (s *Shipwright) Done() {
 	}
 }
 
-// New creates a new Shipwright client which is used to create pipeline steps.
+type MultiFunc func(Shipwright[pipeline.Action])
+
+// New creates a new Shipwright client which is used to create pipeline a single pipeline with many steps.
 // This function will panic if the arguments in os.Args do not match what's expected.
 // This function, and the type it returns, are only ran inside of a Shipwright pipeline, and so it is okay to treat this like it is the entrypoint of a command.
 // Watching for signals, parsing command line arguments, and panics are all things that are OK in this function.
-func New(name string) Shipwright {
+// New is used when creating a single pipeline. In order to create multiple pipelines, use the NewMulti function.
+func New(name string) Shipwright[pipeline.Action] {
 	args, err := plumbing.ParseArguments(os.Args[1:])
 	if err != nil {
 		log.Fatalln("Error parsing arguments. Error:", err)
@@ -223,7 +317,7 @@ func New(name string) Shipwright {
 
 	if args == nil {
 		log.Fatalln("Arguments list must not be nil")
-		return Shipwright{}
+		return Shipwright[pipeline.Action]{}
 	}
 
 	// Create standard packages based on the arguments provided.
@@ -254,10 +348,29 @@ func New(name string) Shipwright {
 
 	// Ensure that no matter the behavior of the initializer, we still set the version on the shipwright object.
 	sw.Version = args.Version
+	sw.pipeline = DefaultPipelineID
 
 	return sw
 }
 
-func NewFromOpts(opts pipeline.CommonOpts) Shipwright {
-	return NewClient(opts)
+func NewFromOpts(opts pipeline.CommonOpts) Shipwright[pipeline.Action] {
+	return NewClient[pipeline.Action](opts)
+}
+
+// NewWithClient creates a new Shipwright object with a specific client implementation.
+// This function is intended to be used in very specific environments, like in tests.
+func NewWithClient[T pipeline.StepContent](opts pipeline.CommonOpts, client pipeline.Client) Shipwright[T] {
+	if opts.Args == nil {
+		opts.Args = &plumbing.PipelineArgs{}
+	}
+
+	return Shipwright[T]{
+		Client:     client,
+		Opts:       opts,
+		Log:        opts.Log,
+		Collection: NewDefaultCollection(opts),
+		pipeline:   DefaultPipelineID,
+
+		n: 1,
+	}
 }

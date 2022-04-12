@@ -6,7 +6,7 @@ import (
 	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
-func BuildWithArgs(name, path, context string, arg ...string) pipeline.Step {
+func BuildWithArgs(name, path, context string, arg ...string) pipeline.Step[pipeline.Action] {
 	args := []string{
 		"build",
 		"-f", path,
@@ -21,6 +21,6 @@ func BuildWithArgs(name, path, context string, arg ...string) pipeline.Step {
 	return pipeline.NewStep(exec.Run("docker", args...))
 }
 
-func Build(name, path, context string) pipeline.Step {
+func Build(name, path, context string) pipeline.Step[pipeline.Action] {
 	return BuildWithArgs(name, path, context).WithArguments(pipeline.ArgumentDockerSocketFS)
 }

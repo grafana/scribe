@@ -30,7 +30,7 @@
 | `./{package}/x`               | The small, unit-testable functions that power the actions used in `{package}`.                                                                                                  |
 | `./plumbing`                  | The packages that power the pipeline logic including asyncronous / goroutine handling and client code.                                                                          |
 | `./plumbing/cmd`              | The `main` package and commands that make up the `shipwright` binary.                                                                                                           |
-| `./plumbing/pipeline`         | The types that make up a Pipeline, regardless of client. Primarily `Collection`, `Step` and `StepAction`.                                                                       |
+| `./plumbing/pipeline`         | The types that make up a Pipeline, regardless of client. Primarily `Collection`, `Step` and `Action`.                                                                           |
 | `./plumbing/pipeline/clients` | The Clients that satisfy the `Client` interface. These Clients can run the pipeline in an environment of some kind, or can generate configuration that represents the pipeline. |
 | `./plumbing/plog`             | The Logger that is used in Shipwright Clients.                                                                                                                                  |
 | `./plumbing/schemas`          | Strictly contains types that represent third-party configuration schemas that Clients will use for generation. (TODO: Maybe those schemas should live next to the clients?      |
@@ -38,7 +38,7 @@
 
 Important notes:
 
-- Try to limit the amount of non-Step/StepAction logic in a `./{package}` to a minimum and delegate that logic to the `x` sub-package.
+- Try to limit the amount of non-Step/Action logic in a `./{package}` to a minimum and delegate that logic to the `x` sub-package.
   - For example, the `Docker` client builds a Go binary of the requested pipeline, but does not perform this action in the pipeline as a Step, so it uses the `pkg.grafana.com/shipwright/v1/golang/x` package.
 - Packages inside `plumbing` should contain code that a pipeline developer is not actively encouraged to import.
   - This is intentionally restrictive; packages OUTSIDE plumbing should only be there if pipeline developers are encouraged to use them.

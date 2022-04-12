@@ -3,11 +3,11 @@ package plog
 import (
 	"context"
 
+	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/stringutil"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"github.com/uber/jaeger-client-go"
-	"github.com/grafana/shipwright/plumbing/pipeline"
-	"github.com/grafana/shipwright/plumbing/stringutil"
 )
 
 // TracingFields adds fields that are derived from the context.Context.
@@ -26,7 +26,7 @@ func TracingFields(ctx context.Context) logrus.Fields {
 	return fields
 }
 
-func StepFields(step pipeline.Step) logrus.Fields {
+func StepFields(step pipeline.Step[pipeline.Action]) logrus.Fields {
 	return logrus.Fields{
 		"step":   step.Name,
 		"serial": step.Serial,
@@ -52,6 +52,6 @@ func Combine(field ...logrus.Fields) logrus.Fields {
 	return fields
 }
 
-func DefaultFields(ctx context.Context, step pipeline.Step, opts pipeline.CommonOpts) logrus.Fields {
+func DefaultFields(ctx context.Context, step pipeline.Step[pipeline.Action], opts pipeline.CommonOpts) logrus.Fields {
 	return Combine(TracingFields(ctx), StepFields(step), PipelineFields(opts))
 }

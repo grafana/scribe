@@ -13,7 +13,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 )
 
-func NoOpAction(name string, duration time.Duration) pipeline.StepAction {
+func NoOpAction(name string, duration time.Duration) pipeline.Action {
 	return func(ctx context.Context, opts pipeline.ActionOpts) error {
 		f, err := os.Open(filepath.Join("demo", "complex", "logs", name+".log"))
 		if err != nil {
@@ -28,7 +28,7 @@ func NoOpAction(name string, duration time.Duration) pipeline.StepAction {
 	}
 }
 
-func IntegrationTest(variant string, duration time.Duration) pipeline.StepAction {
+func IntegrationTest(variant string, duration time.Duration) pipeline.Action {
 	return func(ctx context.Context, opts pipeline.ActionOpts) error {
 		d := int64(duration.Seconds()) / 2
 		tests := []string{"fs", "docker", "exec", "git", "golang", "makefile", "yarn"}

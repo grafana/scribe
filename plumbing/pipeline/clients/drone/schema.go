@@ -9,7 +9,7 @@ import (
 	"github.com/grafana/shipwright/plumbing/stringutil"
 )
 
-func NewStep(c pipeline.Configurer, path string, step pipeline.Step) (*yaml.Container, error) {
+func NewStep(c pipeline.Configurer, path string, step pipeline.Step[pipeline.Action]) (*yaml.Container, error) {
 	var (
 		name  = stringutil.Slugify(step.Name)
 		deps  = make([]string, len(step.Dependencies))

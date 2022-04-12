@@ -16,12 +16,12 @@ type DescribeOpts struct {
 	Always bool
 }
 
-func DescribeAction(opts DescribeOpts) pipeline.StepAction {
+func DescribeAction(opts DescribeOpts) pipeline.Action {
 	return func(context.Context, pipeline.ActionOpts) error {
 		return nil
 	}
 }
 
-func Describe(opts DescribeOpts) pipeline.Step {
+func Describe(opts DescribeOpts) pipeline.Step[pipeline.Action] {
 	return pipeline.NewStep(DescribeAction(opts)).Provides(ArgGitDescription)
 }

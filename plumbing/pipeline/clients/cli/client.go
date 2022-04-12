@@ -17,7 +17,7 @@ var (
 )
 
 // WalkFunc walks through the steps that the collector provides
-func (c *Client) WalkFunc(ctx context.Context, step ...pipeline.Step) error {
+func (c *Client) WalkFunc(ctx context.Context, step ...pipeline.Step[pipeline.Action]) error {
 	if err := c.runSteps(ctx, step); err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ type Client struct {
 	Log  *logrus.Logger
 }
 
-func (c *Client) Validate(step pipeline.Step) error {
+func (c *Client) Validate(step pipeline.Step[pipeline.Action]) error {
 	if step.Image != "" {
 		c.Log.Debugln(fmt.Sprintf("[%s]", step.Name), ErrorCLIStepHasImage.Error())
 	}
@@ -63,7 +63,7 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker, events []pipeline.
 	walkFunc := traceWrapper.Wrap(c.WalkFunc)
 	walkFunc = logWrapper.Wrap(walkFunc)
 
-	return w.Walk(ctx, walkFunc)
+	return w.WalkSteps(ctx, 0, walkFunc)
 }
 
 func (c *Client) runSteps(ctx context.Context, steps pipeline.StepList) error {

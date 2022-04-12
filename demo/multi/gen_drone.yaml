@@ -37,7 +37,7 @@ steps:
 - name: compile-frontend
   image: ghcr.io/grafana/shipwright:latest
   commands:
-  - shipwright -step=7 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  - shipwright -step=4 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
   depends_on:
   - compile-backend
 

@@ -7,7 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func LogSteps(logger logrus.FieldLogger, steps []pipeline.Step) {
+func LogSteps[T pipeline.StepContent](logger logrus.FieldLogger, steps []pipeline.Step[T]) {
 	s := make([]string, len(steps))
 	for i, v := range steps {
 		s[i] = v.Name

@@ -12,7 +12,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	shipwright "github.com/grafana/shipwright"
 	"github.com/grafana/shipwright/plumbing"
-	"github.com/grafana/shipwright/plumbing/pipeline"
 	"github.com/grafana/shipwright/plumbing/testutil"
 )
 
@@ -48,7 +47,7 @@ func TestDroneRun(t *testing.T) {
 			t.SkipNow()
 
 			t.Log("Creating new drone client...")
-			sw := shipwright.NewDroneClient(pipeline.CommonOpts{})
+			sw := testutil.NewShipwright(shipwright.NewDroneClient)
 
 			t.Log("Creating new test steps...")
 			var (

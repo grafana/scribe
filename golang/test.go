@@ -7,7 +7,7 @@ import (
 	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
-func Test(sw shipwright.Shipwright, pkg string) pipeline.Step {
+func Test(sw shipwright.Shipwright[pipeline.Action], pkg string) pipeline.Step[pipeline.Action] {
 	return pipeline.NewStep(exec.Run("go", "test", pkg)).
 		WithImage(plumbing.SubImage("go", sw.Opts.Version)).
 		WithArguments(pipeline.ArgumentSourceFS)
