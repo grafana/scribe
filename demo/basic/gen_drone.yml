@@ -41,6 +41,16 @@ steps:
   depends_on:
   - compile-backend
 
+- name: publish
+  image: ghcr.io/grafana/shipwright:latest
+  commands:
+  - shipwright -step=10 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  environment:
+    secret-gcs-publish-key:
+      from_secret: gcs-publish-key
+  depends_on:
+  - compile-frontend
+
 trigger:
   branch:
   - main
