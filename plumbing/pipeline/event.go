@@ -105,3 +105,14 @@ func GitTagEvent(filters GitTagFilters) Event {
 		},
 	}
 }
+
+type PullRequestFilters struct{}
+
+func PullRequestEvent(filters PullRequestFilters) Event {
+	f := map[string]*FilterValue{}
+
+	return Event{
+		Filters:  f,
+		Provides: []Argument{},
+	}
+}

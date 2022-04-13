@@ -12,7 +12,7 @@ import (
 	"github.com/grafana/shipwright/yarn"
 )
 
-func writeVersion(sw shipwright.Shipwright[pipeline.Action]) pipeline.Step[pipeline.Action] {
+func writeVersion(sw *shipwright.Shipwright[pipeline.Action]) pipeline.Step[pipeline.Action] {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 
 		// equivalent of `git describe --tags --dirty --always`
@@ -28,7 +28,7 @@ func writeVersion(sw shipwright.Shipwright[pipeline.Action]) pipeline.Step[pipel
 	return pipeline.NewStep(action)
 }
 
-func installDependencies(sw shipwright.Shipwright[pipeline.Action]) {
+func installDependencies(sw *shipwright.Shipwright[pipeline.Action]) {
 	sw.Run(
 		pipeline.NamedStep("install frontend dependencies", sw.Cache(
 			yarn.Install(),
@@ -41,7 +41,7 @@ func installDependencies(sw shipwright.Shipwright[pipeline.Action]) {
 	)
 }
 
-func testPipeline(sw shipwright.Shipwright[pipeline.Action]) {
+func testPipeline(sw *shipwright.Shipwright[pipeline.Action]) {
 	installDependencies(sw)
 
 	sw.Parallel(
@@ -50,7 +50,7 @@ func testPipeline(sw shipwright.Shipwright[pipeline.Action]) {
 	)
 }
 
-func publishPipeline(sw shipwright.Shipwright[pipeline.Action]) {
+func publishPipeline(sw *shipwright.Shipwright[pipeline.Action]) {
 	sw.When(
 		pipeline.GitCommitEvent(pipeline.GitCommitFilters{
 			Branch: pipeline.StringFilter("main"),

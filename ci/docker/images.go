@@ -31,7 +31,7 @@ func version() (string, error) {
 	return strings.TrimSpace(string(version)), nil
 }
 
-func (i Image) BuildStep(sw shipwright.Shipwright[pipeline.Action]) pipeline.Step[pipeline.Action] {
+func (i Image) BuildStep(sw *shipwright.Shipwright[pipeline.Action]) pipeline.Step[pipeline.Action] {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		v, err := version()
 		if err != nil {
@@ -83,7 +83,7 @@ var Images = []Image{
 	},
 }
 
-func Steps(sw shipwright.Shipwright[pipeline.Action], images []Image) []pipeline.Step[pipeline.Action] {
+func Steps(sw *shipwright.Shipwright[pipeline.Action], images []Image) []pipeline.Step[pipeline.Action] {
 	steps := make([]pipeline.Step[pipeline.Action], len(images))
 
 	for i, image := range images {

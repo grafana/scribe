@@ -81,6 +81,11 @@ func (s *Shipwright[T]) Background(steps ...pipeline.Step[pipeline.Action]) {
 	}
 }
 
+type SubFunc[T pipeline.StepContent] func(*Shipwright[T])
+
+func (s *Shipwright[T]) Sub(sf SubFunc[T]) {
+}
+
 // Run allows users to define steps that are ran sequentially. For example, the second step will not run until the first step has completed.
 // This function blocks the pipeline execution until all of the steps provided (step) have completed sequentially.
 func (s *Shipwright[T]) Run(steps ...pipeline.Step[T]) {
@@ -302,14 +307,12 @@ func (s *Shipwright[T]) Done() {
 	}
 }
 
-type MultiFunc func(Shipwright[pipeline.Action])
-
 // New creates a new Shipwright client which is used to create pipeline a single pipeline with many steps.
 // This function will panic if the arguments in os.Args do not match what's expected.
 // This function, and the type it returns, are only ran inside of a Shipwright pipeline, and so it is okay to treat this like it is the entrypoint of a command.
 // Watching for signals, parsing command line arguments, and panics are all things that are OK in this function.
 // New is used when creating a single pipeline. In order to create multiple pipelines, use the NewMulti function.
-func New(name string) Shipwright[pipeline.Action] {
+func New(name string) *Shipwright[pipeline.Action] {
 	args, err := plumbing.ParseArguments(os.Args[1:])
 	if err != nil {
 		log.Fatalln("Error parsing arguments. Error:", err)
@@ -317,7 +320,7 @@ func New(name string) Shipwright[pipeline.Action] {
 
 	if args == nil {
 		log.Fatalln("Arguments list must not be nil")
-		return Shipwright[pipeline.Action]{}
+		return &Shipwright[pipeline.Action]{}
 	}
 
 	// Create standard packages based on the arguments provided.
@@ -353,7 +356,7 @@ func New(name string) Shipwright[pipeline.Action] {
 	return sw
 }
 
-func NewFromOpts(opts pipeline.CommonOpts) Shipwright[pipeline.Action] {
+func NewFromOpts(opts pipeline.CommonOpts) *Shipwright[pipeline.Action] {
 	return NewClient[pipeline.Action](opts)
 }
 

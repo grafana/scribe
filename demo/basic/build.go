@@ -12,7 +12,7 @@ import (
 	"github.com/grafana/shipwright/yarn"
 )
 
-func writeVersion(sw shipwright.Shipwright[pipeline.Action]) pipeline.Step[pipeline.Action] {
+func writeVersion(sw *shipwright.Shipwright[pipeline.Action]) pipeline.Step[pipeline.Action] {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 
 		// equivalent of `git describe --tags --dirty --always`

@@ -2,30 +2,28 @@ package shipwright
 
 import "github.com/grafana/shipwright/plumbing/pipeline"
 
-type ShipwrightMulti struct {
-	Shipwright[pipeline.StepList]
+func NewMulti() *Shipwright[pipeline.Pipeline] {
+	return &Shipwright[pipeline.Pipeline]{}
 }
 
-func NewMulti() *ShipwrightMulti {
-	return &ShipwrightMulti{}
-}
+type MultiFunc func(*Shipwright[pipeline.Action])
 
 // Multi executes the provided MultiFunc onto a new `*Shipwright` type, creating a DAG.
 // Because this function returns a pipeline.Step[T], it can be used with the normal Shipwright functions like `Run` and `Parallel`.
-func (s *ShipwrightMulti) Multi(name string, mf MultiFunc) pipeline.Step[pipeline.StepList] {
-	sw := s.sub()
+func (s *Shipwright[T]) Multi(name string, mf MultiFunc) pipeline.Step[pipeline.Pipeline] {
+	sw := s.clone()
 
 	// This function adds the pipeline the way the user specified. It should look exactly like a normal shipwright pipeline.
 	// This collection will be populated with a collection of Steps with actions.
 	mf(sw)
 
-	return pipeline.Step[pipeline.StepList]{
+	return pipeline.Step[pipeline.Pipeline]{
 		Serial: s.n,
 	}
 }
 
-func (s *ShipwrightMulti) sub() Shipwright[pipeline.Action] {
-	return Shipwright[pipeline.Action]{
+func (s *Shipwright[T]) clone() *Shipwright[pipeline.Action] {
+	return &Shipwright[pipeline.Action]{
 		Collection: NewMultiCollection(),
 		Opts:       s.Opts,
 		Log:        s.Log,
