@@ -181,8 +181,19 @@ func (s *Shipwright[T]) parallelSteps(steps ...pipeline.Step[pipeline.Action]) e
 
 	return nil
 }
-func (s *Shipwright[T]) parallelPipelines(steps ...pipeline.Step[pipeline.Pipeline]) error {
+func (s *Shipwright[T]) parallelPipelines(pipelines ...pipeline.Step[pipeline.Pipeline]) error {
+	for i := range pipelines {
+		pipelines[i].Dependencies = s.prevPipelines
+	}
+
+	if err := s.Collection.AddPipelines(pipelines...); err != nil {
+		return fmt.Errorf("error adding '%d' parallel pipelines to collection. error: %w", len(pipelines), err)
+	}
+
+	s.prevPipelines = pipelines
+
 	return nil
+
 }
 
 func (s *Shipwright[T]) Cache(action pipeline.Action, c pipeline.Cacher) pipeline.Action {

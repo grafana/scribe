@@ -50,26 +50,28 @@ func testPipeline(sw *shipwright.Shipwright[pipeline.Action]) {
 	)
 }
 
-func publishPipeline(sw *shipwright.Shipwright[pipeline.Action]) {
-	sw.When(
-		pipeline.GitCommitEvent(pipeline.GitCommitFilters{
-			Branch: pipeline.StringFilter("main"),
-		}),
-		pipeline.GitTagEvent(pipeline.GitTagFilters{
-			Name: pipeline.GlobFilter("v*"),
-		}),
-	)
+func publishPipeline(v string) func(sw *shipwright.Shipwright[pipeline.Action]) {
+	return func(sw *shipwright.Shipwright[pipeline.Action]) {
+		sw.When(
+			pipeline.GitCommitEvent(pipeline.GitCommitFilters{
+				Branch: pipeline.StringFilter("main"),
+			}),
+			pipeline.GitTagEvent(pipeline.GitTagFilters{
+				Name: pipeline.GlobFilter("v*"),
+			}),
+		)
 
-	installDependencies(sw)
+		installDependencies(sw)
 
-	sw.Parallel(
-		pipeline.NamedStep("compile backend", makefile.Target("build")),
-		pipeline.NamedStep("compile frontend", makefile.Target("package")),
-	)
+		sw.Parallel(
+			pipeline.NamedStep("compile backend", makefile.Target("build")),
+			pipeline.NamedStep("compile frontend", makefile.Target("package")),
+		)
 
-	sw.Run(
-		pipeline.NamedStep("publish", makefile.Target("publish")).WithArguments(pipeline.NewSecretArgument("gcp-publish-key")),
-	)
+		sw.Run(
+			pipeline.NamedStep("publish", makefile.Target("publish")).WithArguments(pipeline.NewSecretArgument("gcp-publish-key")),
+		)
+	}
 }
 
 // "main" defines our program pipeline.
@@ -79,9 +81,16 @@ func publishPipeline(sw *shipwright.Shipwright[pipeline.Action]) {
 func main() {
 	sw := shipwright.NewMulti()
 	defer sw.Done()
+	sw.Sub(func(sw *shipwright.Shipwright[pipeline.Pipeline]) {
+		sw.Run(sw.New("test-sub", testPipeline))
+	})
 
 	sw.Run(
 		sw.New("test", testPipeline),
-		sw.New("publish", publishPipeline),
+	)
+
+	sw.Parallel(
+		sw.New("publish-docker-hub", publishPipeline("docker")),
+		sw.New("publish-gcr", publishPipeline("gcr")),
 	)
 }
