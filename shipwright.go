@@ -26,7 +26,6 @@ const DefaultPipelineID int64 = 1
 type Shipwright[T pipeline.StepContent] struct {
 	Client     pipeline.Client
 	Collection *pipeline.Collection
-	Events     []pipeline.Event
 
 	pipeline.Configurer
 
@@ -56,8 +55,10 @@ func (s *Shipwright[T]) Pipeline() int64 {
 }
 
 // When allows users to define when this pipeline is executed, especially in the remote environment.
-func (s *Shipwright[T]) When(event ...pipeline.Event) {
-	s.Events = event
+func (s *Shipwright[T]) When(events ...pipeline.Event) {
+	if err := s.Collection.AddEvents(s.pipeline, events...); err != nil {
+		s.Log.WithError(err).Fatalln("Failed to add events to graph")
+	}
 }
 
 func (s *Shipwright[T]) newList(steps ...pipeline.Step[pipeline.Action]) pipeline.Step[pipeline.StepList] {
@@ -261,7 +262,7 @@ func (s *Shipwright[T]) Execute(ctx context.Context) error {
 		collection = collection.Sub(step)
 	}
 
-	if err := s.Client.Done(ctx, collection, s.Events); err != nil {
+	if err := s.Client.Done(ctx, collection); err != nil {
 		return err
 	}
 
@@ -347,11 +348,13 @@ func parseOpts() (pipeline.CommonOpts, error) {
 	}, nil
 }
 
-func newShipwright[T pipeline.StepContent]() *Shipwright[T] {
+func newShipwright[T pipeline.StepContent](name string) *Shipwright[T] {
 	opts, err := parseOpts()
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse arguments: %s", err.Error()))
 	}
+
+	opts.Name = name
 
 	sw := NewClient[T](opts, NewDefaultCollection(opts))
 
@@ -368,10 +371,7 @@ func newShipwright[T pipeline.StepContent]() *Shipwright[T] {
 // Watching for signals, parsing command line arguments, and panics are all things that are OK in this function.
 // New is used when creating a single pipeline. In order to create multiple pipelines, use the NewMulti function.
 func New(name string) *Shipwright[pipeline.Action] {
-	sw := newShipwright[pipeline.Action]()
-	sw.Opts.Name = name
-
-	return sw
+	return newShipwright[pipeline.Action](name)
 }
 
 // NewWithClient creates a new Shipwright object with a specific client implementation.

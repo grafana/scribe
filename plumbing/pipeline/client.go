@@ -11,5 +11,5 @@ type Client interface {
 
 	// Done must be ran at the end of the pipeline.
 	// This is typically what takes the defined pipeline steps, runs them in the order defined, and produces some kind of output.
-	Done(context.Context, Walker, []Event) error
+	Done(context.Context, Walker) error
 }

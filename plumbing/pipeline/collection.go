@@ -50,7 +50,7 @@ type StepWalkFunc func(context.Context, ...Step[Action]) error
 // PipelineWalkFunc is implemented by the pipeline 'Clients'. This function is executed for each pipeline.
 // This function follows the same rules for pipelines as the StepWalker func does for pipelines. If multiple pipelines are provided in the steps argument,
 // then those pipelines are intended to be executed in parallel.
-type PipelineWalkFunc func(context.Context, ...Step[StepList]) error
+type PipelineWalkFunc func(context.Context, ...Step[Pipeline]) error
 
 // Walker is an interface that collections of steps should satisfy.
 type Walker interface {
@@ -69,7 +69,7 @@ func StepIDs(steps []Step[Action]) []int64 {
 
 // Collection defines a directed acyclic Graph that stores a collection of Steps.
 type Collection struct {
-	Graph *dag.Graph[Pipeline]
+	Graph *dag.Graph[Step[Pipeline]]
 }
 
 func stepListEqual(a, b []Step[Action]) bool {
@@ -107,14 +107,28 @@ func withoutBackgroundSteps(steps []Step[Action]) []Step[Action] {
 	return s
 }
 
-func nodeListToSteps(nodes []*dag.Node[Step[Action]]) []Step[Action] {
-	steps := make([]Step[Action], len(nodes))
+func nodeListToSteps[T StepContent](nodes []*dag.Node[Step[T]]) []Step[T] {
+	steps := make([]Step[T], len(nodes))
 
 	for i, v := range nodes {
 		steps[i] = v.Value
 	}
 
 	return steps
+}
+
+func nodeListsEqual[T StepContent](a, b []Step[T]) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i, v := range a {
+		if b[i].Serial != v.Serial {
+			return false
+		}
+	}
+
+	return true
 }
 
 // stepVisitFunc returns a dag.VisitFunc that popules the provided list of `steps` with the order that they should be ran.
@@ -125,6 +139,20 @@ func (c *Collection) stepVisitFunc(ctx context.Context, wf StepWalkFunc) dag.Vis
 		}
 
 		list := n.Value
+
+		// Because every group of steps run in parallel, they all share dependencies.
+		// Those dependencies however should not be the single ID that represents the group,
+		// but all of the steps that are contained within the group.
+		deps := []Step[Action]{}
+		for _, step := range list.Dependencies {
+			for _, v := range step.Content {
+				deps = append(deps, v)
+			}
+		}
+
+		for i := range list.Content {
+			list.Content[i].Dependencies = deps
+		}
 		return wf(ctx, list.Content...)
 	}
 }
@@ -137,14 +165,57 @@ func (c *Collection) WalkSteps(ctx context.Context, pipelineID int64, wf StepWal
 
 	pipeline := node.Value
 
-	if err := pipeline.BreadthFirstSearch(0, c.stepVisitFunc(ctx, wf)); err != nil {
+	if err := pipeline.Content.BreadthFirstSearch(0, c.stepVisitFunc(ctx, wf)); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *Collection) WalkPipelines(ctx context.Context, wf PipelineWalkFunc) error { return nil }
+func (c *Collection) AddEvents(pipelineID int64, events ...Event) error {
+	node, err := c.Graph.Node(pipelineID)
+	if err != nil {
+		return err
+	}
+	node.Value.Content.Events = append(node.Value.Content.Events, events...)
+
+	return nil
+}
+
+// stepVisitFunc returns a dag.VisitFunc that popules the provided list of `steps` with the order that they should be ran.
+func (c *Collection) pipelineVisitFunc(ctx context.Context, wf PipelineWalkFunc) dag.VisitFunc[Step[Pipeline]] {
+	var (
+		adj  = []Step[Pipeline]{}
+		next = []Step[Pipeline]{}
+	)
+
+	return func(n *dag.Node[Step[Pipeline]]) error {
+		if n.ID == 0 {
+			adj = nodeListToSteps(c.Graph.Adj(0))
+			return nil
+		}
+
+		next = append(next, n.Value)
+
+		if nodeListsEqual(adj, next) {
+			if err := wf(ctx, next...); err != nil {
+				return err
+			}
+
+			adj = nodeListToSteps(c.Graph.Adj(n.ID))
+			next = []Step[Pipeline]{}
+		}
+
+		return nil
+	}
+}
+
+func (c *Collection) WalkPipelines(ctx context.Context, wf PipelineWalkFunc) error {
+	if err := c.Graph.BreadthFirstSearch(0, c.pipelineVisitFunc(ctx, wf)); err != nil {
+		return err
+	}
+	return nil
+}
 
 // Add adds a new list of Steps which are siblings to a pipeline.
 // Because they are siblings, they must all depend on the same step(s).
@@ -155,7 +226,7 @@ func (c *Collection) AddSteps(pipelineID int64, steps Step[StepList]) error {
 		return fmt.Errorf("error getting pipeline graph: %w", err)
 	}
 
-	pipeline := v.Value
+	pipeline := v.Value.Content
 	if err := pipeline.AddSteps(steps); err != nil {
 		return fmt.Errorf("error adding steps to pipelien graph: %w", err)
 	}
@@ -180,7 +251,7 @@ func (c *Collection) AddSteps(pipelineID int64, steps Step[StepList]) error {
 }
 
 func (c *Collection) addPipeline(p Step[Pipeline]) error {
-	if err := c.Graph.AddNode(p.Serial, p.Content); err != nil {
+	if err := c.Graph.AddNode(p.Serial, p); err != nil {
 		return fmt.Errorf("error adding new pipeline to graph: %w", err)
 	}
 
@@ -230,8 +301,8 @@ func (c *Collection) Sub(...Step[Action]) *Collection {
 }
 
 func NewCollection() *Collection {
-	graph := dag.New[Pipeline]()
-	graph.AddNode(0, NewPipeline())
+	graph := dag.New[Step[Pipeline]]()
+	graph.AddNode(0, NewPipelineNode("default", 0))
 	return &Collection{
 		Graph: graph,
 	}

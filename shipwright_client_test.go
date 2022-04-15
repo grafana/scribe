@@ -54,7 +54,7 @@ func (e *ensurer) Validate(pipeline.Step[pipeline.Action]) error {
 
 // Done must be ran at the end of the pipeline.
 // This is typically what takes the defined pipeline steps, runs them in the order defined, and produces some kind of output.
-func (e *ensurer) Done(ctx context.Context, w pipeline.Walker, events []pipeline.Event) error {
+func (e *ensurer) Done(ctx context.Context, w pipeline.Walker) error {
 	if err := w.WalkSteps(ctx, shipwright.DefaultPipelineID, e.Walk); err != nil {
 		return err
 	}

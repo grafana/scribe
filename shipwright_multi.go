@@ -46,7 +46,6 @@ func (s *Shipwright[T]) New(name string, mf MultiFunc) pipeline.Step[pipeline.Pi
 	})
 
 	sw, err := s.clone(name)
-
 	if err != nil {
 		log.WithError(err).Fatalln("Failed to clone pipeline for use in multi-pipeline")
 	}
@@ -55,21 +54,21 @@ func (s *Shipwright[T]) New(name string, mf MultiFunc) pipeline.Step[pipeline.Pi
 	// This collection will be populated with a collection of Steps with actions.
 	wrapped := MultiFuncWithLogging(log, mf)
 	wrapped(sw)
-
+	s.n = sw.n
 	node, err := sw.Collection.Graph.Node(DefaultPipelineID)
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	graph := node.Value.Content
 	log.WithFields(logrus.Fields{
-		"nodes": len(node.Value.Nodes),
-		"edges": len(node.Value.Edges),
+		"nodes": len(graph.Nodes),
+		"edges": len(graph.Edges),
 	}).Debugln("Graph populated")
 
 	return pipeline.Step[pipeline.Pipeline]{
 		Name:    name,
 		Serial:  s.serial(),
-		Content: node.Value,
+		Content: node.Value.Content,
 	}
 }
 

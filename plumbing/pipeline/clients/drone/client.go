@@ -34,51 +34,82 @@ func (c *Client) Validate(step pipeline.Step[pipeline.Action]) error {
 	return nil
 }
 
-// Done traverses through the tree and writes a .drone.yml file to the provided writer
-func (c *Client) Done(ctx context.Context, w pipeline.Walker, events []pipeline.Event) error {
-	cfg := &yaml.Pipeline{
-		Name:  c.Opts.Name,
-		Kind:  "pipeline",
-		Type:  "docker",
-		Steps: []*yaml.Container{},
+func stepsToNames[T pipeline.StepContent](steps []pipeline.Step[T]) []string {
+	s := make([]string, len(steps))
+	for i, v := range steps {
+		s[i] = stringutil.Slugify(v.Name)
 	}
 
-	if len(events) != 0 {
-		cond, err := c.Events(events)
-		if err != nil {
-			return err
-		}
+	return s
+}
 
-		cfg.Trigger = cond
-	}
+type stepList struct {
+	steps []*yaml.Container
+}
 
-	previous := []string{}
+func (s *stepList) AddStep(step *yaml.Container) {
+	s.steps = append(s.steps, step)
+}
 
-	// When walking through each list of steps, we assume that the previous list of steps are required before this one will run.
-	// It's entirely possible in the future, when this Walk function is backed by a DAG, we can't safely make that assumption. Instead, we will have to defer to the parent nodes and use those as "DependsOn"
-	if err := w.WalkSteps(ctx, 1, func(ctx context.Context, s ...pipeline.Step[pipeline.Action]) error {
-		stepNames := make([]string, len(s))
-		for i, v := range s {
+func (c *Client) StepWalkFunc(log logrus.FieldLogger, s *stepList) func(ctx context.Context, steps ...pipeline.Step[pipeline.Action]) error {
+	return func(ctx context.Context, steps ...pipeline.Step[pipeline.Action]) error {
+		log.Debugf("Processing '%d' steps...", len(steps))
+		for _, v := range steps {
+			log := log.WithField("dependencies", stepsToNames(v.Dependencies))
+			log.Debugf("Processing step '%s'...", v.Name)
 			step, err := NewStep(c, c.Opts.Args.Path, v)
 			if err != nil {
 				return err
 			}
 
-			stepNames[i] = stringutil.Slugify(v.Name)
-
-			step.DependsOn = previous
-			cfg.Steps = append(cfg.Steps, step)
+			step.DependsOn = stepsToNames(v.Dependencies)
+			s.AddStep(step)
+			log.Debugf("Done Processing step '%s'.", v.Name)
 		}
-
-		previous = stepNames
-
+		log.Debugf("Done processing '%d' steps...", len(steps))
 		return nil
-	}); err != nil {
-		return err
 	}
+}
+
+// Done traverses through the tree and writes a .drone.yml file to the provided writer
+func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
+	cfg := []yaml.Resource{}
+	log := c.Log.WithField("client", "drone")
+
+	w.WalkPipelines(ctx, func(ctx context.Context, pipelines ...pipeline.Step[pipeline.Pipeline]) error {
+		log.Debugf("Walking '%d' pipelines...", len(pipelines))
+		for _, v := range pipelines {
+			log.Debugf("Processing pipeline '%s'...", v.Name)
+			sl := &stepList{}
+			if err := w.WalkSteps(ctx, v.Serial, c.StepWalkFunc(log, sl)); err != nil {
+				return err
+			}
+			pipeline := &yaml.Pipeline{
+				Name:      v.Name,
+				Kind:      "pipeline",
+				Type:      "docker",
+				Steps:     sl.steps,
+				DependsOn: stepsToNames(v.Dependencies),
+			}
+
+			events := v.Content.Events
+			if len(events) != 0 {
+				cond, err := c.Events(events)
+				if err != nil {
+					return err
+				}
+
+				pipeline.Trigger = cond
+			}
+
+			log.Debugf("Done processing pipeline '%s'", v.Name)
+			cfg = append(cfg, pipeline)
+		}
+		return nil
+	})
 
 	manifest := &yaml.Manifest{
-		Resources: []yaml.Resource{cfg},
+		Resources: cfg,
 	}
 
 	pretty.Print(c.Opts.Output, manifest)

@@ -40,27 +40,27 @@ func TestMulti(t *testing.T) {
 			sw.New("test 2", mf),
 		)
 
+		t.Run("It should have three nodes", func(t *testing.T) {
+			dag.EnsureGraphNodes(t, []int64{0, 23, 24}, sw.Collection.Graph.Nodes)
+		})
+
 		t.Run("It should have two edges", func(t *testing.T) {
 			dag.EnsureGraphEdges(t, map[int64][]int64{
-				0: {3},
-				3: {4},
+				0:  {23},
+				23: {24},
 			}, sw.Collection.Graph.Edges)
 		})
 
-		t.Run("It should have three nodes", func(t *testing.T) {
-			dag.EnsureGraphNodes(t, []int64{0, 3, 4}, sw.Collection.Graph.Nodes)
-		})
-
-		t.Run("The first node should be a graph with 5 nodes", func(t *testing.T) {
-			sub1, err := sw.Collection.Graph.Node(3)
+		t.Run("The first node should be a graph with 6 nodes", func(t *testing.T) {
+			sub1, err := sw.Collection.Graph.Node(23)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			dag.EnsureGraphNodes(t, []int64{0, 3, 4, 6, 9, 10}, sub1.Value.Nodes)
+			dag.EnsureGraphNodes(t, []int64{0, 3, 4, 6, 9, 10}, sub1.Value.Content.Nodes)
 		})
 		t.Run("The first node should be a graph with 5 edges", func(t *testing.T) {
-			sub1, err := sw.Collection.Graph.Node(3)
+			sub1, err := sw.Collection.Graph.Node(23)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -71,7 +71,30 @@ func TestMulti(t *testing.T) {
 				4: {6},
 				6: {9},
 				9: {10},
-			}, sub1.Value.Edges)
+			}, sub1.Value.Content.Edges)
+		})
+
+		t.Run("The second node should be a graph with 6 nodes", func(t *testing.T) {
+			sub1, err := sw.Collection.Graph.Node(24)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			dag.EnsureGraphNodes(t, []int64{0, 14, 15, 17, 20, 21}, sub1.Value.Content.Nodes)
+		})
+		t.Run("The second node should be a graph with 5 edges", func(t *testing.T) {
+			sub1, err := sw.Collection.Graph.Node(24)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			dag.EnsureGraphEdges(t, map[int64][]int64{
+				0:  {14},
+				14: {15},
+				15: {17},
+				17: {20},
+				20: {21},
+			}, sub1.Value.Content.Edges)
 		})
 	})
 

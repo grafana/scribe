@@ -90,7 +90,7 @@ func TestCollectionAddSteps(t *testing.T) {
 		}
 
 		g, _ := col.Graph.Node(shipwright.DefaultPipelineID)
-		dag.EnsureGraphEdges(t, expectedEdges, g.Value.Edges)
+		dag.EnsureGraphEdges(t, expectedEdges, g.Value.Content.Edges)
 	})
 
 	t.Run("AddSteps should always make steps where type == StepTypeBackground a child of the root node", func(t *testing.T) {
@@ -159,6 +159,6 @@ func TestCollectionAddSteps(t *testing.T) {
 
 		g, _ := col.Graph.Node(shipwright.DefaultPipelineID)
 
-		dag.EnsureGraphEdges(t, expectedEdges, g.Value.Edges)
+		dag.EnsureGraphEdges(t, expectedEdges, g.Value.Content.Edges)
 	})
 }

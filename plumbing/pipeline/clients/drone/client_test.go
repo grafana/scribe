@@ -13,6 +13,7 @@ import (
 	shipwright "github.com/grafana/shipwright"
 	"github.com/grafana/shipwright/plumbing"
 	"github.com/grafana/shipwright/plumbing/testutil"
+	"github.com/sirupsen/logrus"
 )
 
 func TestDroneClient(t *testing.T) {
@@ -20,16 +21,47 @@ func TestDroneClient(t *testing.T) {
 		testutil.WithTimeout(time.Second*10, func(t *testing.T) {
 			var (
 				buf          = bytes.NewBuffer(nil)
+				stderr       = bytes.NewBuffer(nil)
 				ctx          = context.Background()
 				pipelinePath = "../../../../demo/basic"
 				path         = "./demo/basic"
 			)
 
-			testutil.RunPipeline(ctx, t, pipelinePath, io.MultiWriter(buf, os.Stdout), os.Stderr, &plumbing.PipelineArgs{
-				BuildID: "test",
-				Mode:    plumbing.RunModeDrone,
-				Path:    path,
+			testutil.RunPipeline(ctx, t, pipelinePath, io.MultiWriter(buf, os.Stdout), stderr, &plumbing.PipelineArgs{
+				BuildID:  "test",
+				Mode:     plumbing.RunModeDrone,
+				Path:     path,
+				LogLevel: logrus.DebugLevel,
 			})
+
+			t.Log(stderr.String())
+
+			expected, err := os.Open(filepath.Join(pipelinePath, "gen_drone.yml"))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			testutil.ReadersEqual(t, buf, expected)
+		}),
+	)
+	t.Run("It should generate a more complex multi Drone pipeline",
+		testutil.WithTimeout(time.Second*10, func(t *testing.T) {
+			var (
+				buf          = bytes.NewBuffer(nil)
+				stderr       = bytes.NewBuffer(nil)
+				ctx          = context.Background()
+				pipelinePath = "../../../../demo/multi"
+				path         = "./demo/multi"
+			)
+
+			testutil.RunPipeline(ctx, t, pipelinePath, io.MultiWriter(buf, os.Stdout), stderr, &plumbing.PipelineArgs{
+				BuildID:  "test",
+				Mode:     plumbing.RunModeDrone,
+				Path:     path,
+				LogLevel: logrus.DebugLevel,
+			})
+
+			t.Log(stderr.String())
 
 			expected, err := os.Open(filepath.Join(pipelinePath, "gen_drone.yml"))
 			if err != nil {

@@ -10,7 +10,6 @@ import (
 
 func NewDefaultCollection(opts pipeline.CommonOpts) *pipeline.Collection {
 	p := pipeline.NewCollection()
-
 	if err := p.AddPipelines(pipeline.NewPipelineNode(opts.Name, DefaultPipelineID)); err != nil {
 		panic(err)
 	}

@@ -28,7 +28,10 @@ type (
 	// A StepList is a list of steps that are ran in parallel.
 	// This type is only used for intermittent storage and should not be used in the Shipwright client library
 	StepList []Step[Action]
-	Pipeline struct{ *dag.Graph[Step[StepList]] }
+	Pipeline struct {
+		*dag.Graph[Step[StepList]]
+		Events []Event
+	}
 )
 
 const (

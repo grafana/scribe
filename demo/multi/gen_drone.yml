@@ -1,0 +1,95 @@
+---
+kind: pipeline
+type: docker
+name: test
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: install-frontend-dependencies
+  image: ghcr.io/grafana/shipwright:latest
+  commands:
+  - shipwright -step=0 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+
+- name: install-backend-dependencies
+  image: ghcr.io/grafana/shipwright:latest
+  commands:
+  - shipwright -step=1 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  depends_on:
+  - install-frontend-dependencies
+
+- name: test-backend
+  image: ghcr.io/grafana/shipwright/go:latest
+  commands:
+  - shipwright -step=4 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  depends_on:
+  - install-backend-dependencies
+
+- name: test-frontend
+  image: ghcr.io/grafana/shipwright:latest
+  commands:
+  - shipwright -step=5 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  depends_on:
+  - install-backend-dependencies
+
+---
+kind: pipeline
+type: docker
+name: publish
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: install-frontend-dependencies
+  image: ghcr.io/grafana/shipwright:latest
+  commands:
+  - shipwright -step=8 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+
+- name: install-backend-dependencies
+  image: ghcr.io/grafana/shipwright:latest
+  commands:
+  - shipwright -step=9 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  depends_on:
+  - install-frontend-dependencies
+
+- name: compile-backend
+  image: ghcr.io/grafana/shipwright:latest
+  commands:
+  - shipwright -step=12 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  depends_on:
+  - install-backend-dependencies
+
+- name: compile-frontend
+  image: ghcr.io/grafana/shipwright:latest
+  commands:
+  - shipwright -step=13 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  depends_on:
+  - compile-backend
+
+- name: publish
+  image: ghcr.io/grafana/shipwright:latest
+  commands:
+  - shipwright -step=16 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  environment:
+    secret-gcp-publish-key:
+      from_secret: gcp-publish-key
+  depends_on:
+  - compile-frontend
+
+trigger:
+  branch:
+  - main
+  event:
+  - branch
+  - tag
+  ref:
+  - refs/tags/v*
+
+depends_on:
+- test
+
+...

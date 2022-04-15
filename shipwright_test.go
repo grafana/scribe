@@ -91,7 +91,7 @@ func TestShipwrightRun(t *testing.T) {
 			5: {6},
 			6: {7},
 			7: {8},
-		}, n.Value.Edges)
+		}, n.Value.Content.Edges)
 	})
 
 	t.Run("Using a multiple single-Run functions", func(t *testing.T) {
@@ -112,7 +112,7 @@ func TestShipwrightRun(t *testing.T) {
 			2: {4},
 			4: {6},
 			6: {8},
-		}, n.Value.Edges)
+		}, n.Value.Content.Edges)
 	})
 
 	t.Run("Using a combination of multi and single Run functions", func(t *testing.T) {
@@ -133,7 +133,7 @@ func TestShipwrightRun(t *testing.T) {
 			4: {6},
 			6: {9},
 			9: {10},
-		}, n.Value.Edges)
+		}, n.Value.Content.Edges)
 	})
 }
 
@@ -176,7 +176,7 @@ func TestBasictPipelineWithBackground(t *testing.T) {
 		0: {2, 4, 12},
 		4: {8},
 		8: {10},
-	}, n.Value.Edges)
+	}, n.Value.Content.Edges)
 
 	if err := client.Execute(context.Background()); err != nil {
 		t.Fatal(err)
