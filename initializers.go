@@ -11,10 +11,9 @@ import (
 func NewDefaultCollection(opts pipeline.CommonOpts) *pipeline.Collection {
 	p := pipeline.NewCollection()
 
-	p.AddPipelines(pipeline.Step[pipeline.Pipeline]{
-		Name:   opts.Name,
-		Serial: DefaultPipelineID,
-	})
+	if err := p.AddPipelines(pipeline.NewPipelineNode(opts.Name, DefaultPipelineID)); err != nil {
+		panic(err)
+	}
 
 	return p
 }

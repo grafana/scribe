@@ -81,7 +81,7 @@ func main() {
 	defer sw.Done()
 
 	sw.Run(
-		sw.Multi("test", testPipeline),
-		sw.Multi("publish", publishPipeline),
+		sw.New("test", testPipeline),
+		sw.New("publish", publishPipeline),
 	)
 }

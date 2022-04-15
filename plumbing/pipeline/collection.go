@@ -12,33 +12,34 @@ var (
 	ErrorNoSteps = errors.New("no steps were provided")
 )
 
-// A PipelineNode is a Graph node that holds a Graph of steps.
-type PipelineNode struct {
-	*dag.Graph[Step[StepList]]
-
-	n int
+func NewPipelineNode(name string, id int64) Step[Pipeline] {
+	return Step[Pipeline]{
+		Name:    name,
+		Serial:  id,
+		Content: NewPipeline(),
+	}
 }
 
-func NewPipelineNode() *PipelineNode {
+func NewPipeline() Pipeline {
 	graph := dag.New[Step[StepList]]()
 	graph.AddNode(0, Step[StepList]{})
 
-	return &PipelineNode{
+	return Pipeline{
 		Graph: graph,
 	}
 }
 
-func nodeID(steps []Step[Action]) int64 {
-	return steps[len(steps)-1].Serial
-}
-
 // AddStep adds the steps as a single node in the pipeline.
-func (p *PipelineNode) AddSteps(steps Step[StepList]) error {
+func (p *Pipeline) AddSteps(steps Step[StepList]) error {
 	if err := p.AddNode(steps.Serial, steps); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func nodeID(steps []Step[Action]) int64 {
+	return steps[len(steps)-1].Serial
 }
 
 // WalkFunc is implemented by the pipeline 'Clients'. This function is executed for each step.
@@ -68,7 +69,7 @@ func StepIDs(steps []Step[Action]) []int64 {
 
 // Collection defines a directed acyclic Graph that stores a collection of Steps.
 type Collection struct {
-	Graph *dag.Graph[*PipelineNode]
+	Graph *dag.Graph[Pipeline]
 }
 
 func stepListEqual(a, b []Step[Action]) bool {
@@ -151,12 +152,12 @@ func (c *Collection) AddSteps(pipelineID int64, steps Step[StepList]) error {
 	// Find the pipeline in our Graph of pipelines
 	v, err := c.Graph.Node(pipelineID)
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting pipeline graph: %w", err)
 	}
 
 	pipeline := v.Value
 	if err := pipeline.AddSteps(steps); err != nil {
-		return err
+		return fmt.Errorf("error adding steps to pipelien graph: %w", err)
 	}
 
 	// Background steps should only have an edge from the root node. This is automatically added as Background Steps do not have dependencies.
@@ -171,7 +172,7 @@ func (c *Collection) AddSteps(pipelineID int64, steps Step[StepList]) error {
 
 	for _, parent := range steps.Dependencies {
 		if err := pipeline.AddEdge(parent.Serial, steps.Serial); err != nil {
-			return err
+			return fmt.Errorf("error adding edges to pipeline graph: %w", err)
 		}
 	}
 
@@ -179,12 +180,20 @@ func (c *Collection) AddSteps(pipelineID int64, steps Step[StepList]) error {
 }
 
 func (c *Collection) addPipeline(p Step[Pipeline]) error {
-	if err := c.Graph.AddNode(p.Serial, NewPipelineNode()); err != nil {
-		return err
+	if err := c.Graph.AddNode(p.Serial, p.Content); err != nil {
+		return fmt.Errorf("error adding new pipeline to graph: %w", err)
+	}
+
+	if len(p.Dependencies) == 0 {
+		if err := c.Graph.AddEdge(0, p.Serial); err != nil {
+			return err
+		}
 	}
 
 	for _, v := range p.Dependencies {
-		c.Graph.AddEdge(v.Serial, p.Serial)
+		if err := c.Graph.AddEdge(v.Serial, p.Serial); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -221,8 +230,8 @@ func (c *Collection) Sub(...Step[Action]) *Collection {
 }
 
 func NewCollection() *Collection {
-	graph := dag.New[*PipelineNode]()
-	graph.AddNode(0, &PipelineNode{})
+	graph := dag.New[Pipeline]()
+	graph.AddNode(0, NewPipeline())
 	return &Collection{
 		Graph: graph,
 	}

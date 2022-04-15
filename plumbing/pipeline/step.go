@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/grafana/shipwright/plumbing/pipeline/dag"
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -27,7 +28,7 @@ type (
 	// A StepList is a list of steps that are ran in parallel.
 	// This type is only used for intermittent storage and should not be used in the Shipwright client library
 	StepList []Step[Action]
-	Pipeline []StepList
+	Pipeline struct{ *dag.Graph[Step[StepList]] }
 )
 
 const (
@@ -36,6 +37,10 @@ const (
 	StepTypeList
 )
 
+// StepContent is used as a type argument to the "Step" type.
+// * Step[Action] is a Step that performs a single action. This type mostly exists for use by pipeline developers to define a single step that performs a single action.
+// * Step[StepList] is a Step that stores multiple Steps that have actions. This is used for storage purposes in the internal data DAG structure.
+// * Step[Pipeline] is a Step that stores
 type StepContent interface {
 	Action | StepList | Pipeline
 }
@@ -75,7 +80,7 @@ type Step[T StepContent] struct {
 }
 
 func (s Step[T]) IsBackground() bool {
-	return s.Content == nil && s.Type != StepTypeList
+	return s.Type == StepTypeBackground
 }
 
 func (s Step[T]) After(step Step[T]) Step[T] {

@@ -29,6 +29,10 @@ func NodeIDs[T any](nodes []Node[T]) []int64 {
 }
 
 func ensureGraphEdges[T any](expected map[int64][]int64, graphEdges map[int64][]Edge[T]) error {
+	if len(expected) != len(graphEdges) {
+		return fmt.Errorf("Unexpected number of graph edges. Expected '%d' but received '%d'", len(expected), len(graphEdges))
+	}
+
 	for id, expect := range expected {
 		edges := graphEdges[id]
 		if _, ok := expected[id]; !ok {
@@ -59,5 +63,32 @@ func EnsureGraphEdges[T any](t *testing.T, expected map[int64][]int64, graphEdge
 
 	if err := ensureGraphEdges(expected, graphEdges); err != nil {
 		t.Fatalf("Unexpected graph edges received.\nError: %s\nEdges: %+v\nExpected: %+v", err.Error(), EdgesToMap(graphEdges), expected)
+	}
+}
+
+func ensureGraphNodes(expected []int64, nodes []int64) error {
+	if len(expected) != len(nodes) {
+		return fmt.Errorf("Unexpected number of graph nodes. Expected '%d' but received '%d'", len(expected), len(nodes))
+	}
+
+	for i, expect := range expected {
+		if nodes[i] != expect {
+			return fmt.Errorf("Found unexpected node ID '%d' in graph edges", nodes[i])
+		}
+	}
+	return nil
+}
+
+// EnsureGraphNodes is a test helper function that is used inside the dag tests and outside in other implementations
+// to easily ensure that we are using the dag properly.
+func EnsureGraphNodes[T any](t *testing.T, expected []int64, nodes []Node[T]) {
+	t.Helper()
+	nodeIDs := make([]int64, len(nodes))
+	for i, v := range nodes {
+		nodeIDs[i] = v.ID
+	}
+
+	if err := ensureGraphNodes(expected, nodeIDs); err != nil {
+		t.Fatalf("Unexpected graph nodes received.\nError: %s\nNodes: %+v\nExpected: %+v", err.Error(), nodeIDs, expected)
 	}
 }

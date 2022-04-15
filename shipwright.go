@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -33,7 +32,7 @@ type Shipwright[T pipeline.StepContent] struct {
 
 	// Opts are the options that are provided to the pipeline from outside sources. This includes mostly command-line arguments and environment variables
 	Opts pipeline.CommonOpts
-	Log  *logrus.Logger
+	Log  logrus.FieldLogger
 
 	// n tracks the ID of a step so that the "shipwright -step=" argument will function independently of the client implementation
 	// It ensures that the 11th step in a Drone generated pipeline is also the 11th step in a CLI pipeline
@@ -43,6 +42,12 @@ type Shipwright[T pipeline.StepContent] struct {
 
 	prev          []pipeline.Step[pipeline.StepList]
 	prevPipelines []pipeline.Step[pipeline.Pipeline]
+}
+
+func (s *Shipwright[T]) serial() int64 {
+	n := s.n
+	s.n++
+	return n
 }
 
 // Pipeline returns the current Pipeline ID used in the collection.
@@ -57,11 +62,9 @@ func (s *Shipwright[T]) When(event ...pipeline.Event) {
 
 func (s *Shipwright[T]) newList(steps ...pipeline.Step[pipeline.Action]) pipeline.Step[pipeline.StepList] {
 	list := pipeline.Step[pipeline.StepList]{
-		Serial:  s.n,
+		Serial:  s.serial(),
 		Content: steps,
 	}
-
-	s.n++
 
 	return list
 }
@@ -115,7 +118,7 @@ func (s *Shipwright[T]) runSteps(steps ...pipeline.Step[pipeline.Action]) error 
 		list.Dependencies = prev
 
 		if err := s.Collection.AddSteps(s.pipeline, list); err != nil {
-			return fmt.Errorf("error adding step '%d' to collection. error: %w", list.Serial, err)
+			return fmt.Errorf("Run: error adding step '%d' to collection. error: %w", list.Serial, err)
 		}
 
 		prev = []pipeline.Step[pipeline.StepList]{list}
@@ -139,6 +142,8 @@ func (s *Shipwright[T]) runPipelines(pipelines ...pipeline.Step[pipeline.Pipelin
 
 		prev = []pipeline.Step[pipeline.Pipeline]{v}
 	}
+
+	s.prevPipelines = prev
 
 	return nil
 }
@@ -201,8 +206,7 @@ func (s *Shipwright[T]) setup(steps ...pipeline.Step[T]) []pipeline.Step[T] {
 		}
 
 		// Set a serial / unique identifier for this step so that we can reference it using the '-step' argument consistently.
-		steps[i].Serial = s.n
-		s.n++
+		steps[i].Serial = s.serial()
 	}
 
 	return steps
@@ -307,20 +311,14 @@ func (s *Shipwright[T]) Done() {
 	}
 }
 
-// New creates a new Shipwright client which is used to create pipeline a single pipeline with many steps.
-// This function will panic if the arguments in os.Args do not match what's expected.
-// This function, and the type it returns, are only ran inside of a Shipwright pipeline, and so it is okay to treat this like it is the entrypoint of a command.
-// Watching for signals, parsing command line arguments, and panics are all things that are OK in this function.
-// New is used when creating a single pipeline. In order to create multiple pipelines, use the NewMulti function.
-func New(name string) *Shipwright[pipeline.Action] {
+func parseOpts() (pipeline.CommonOpts, error) {
 	args, err := plumbing.ParseArguments(os.Args[1:])
 	if err != nil {
-		log.Fatalln("Error parsing arguments. Error:", err)
+		return pipeline.CommonOpts{}, fmt.Errorf("Error parsing arguments. Error: %w", err)
 	}
 
 	if args == nil {
-		log.Fatalln("Arguments list must not be nil")
-		return &Shipwright[pipeline.Action]{}
+		return pipeline.CommonOpts{}, fmt.Errorf("Arguments list must not be nil")
 	}
 
 	// Create standard packages based on the arguments provided.
@@ -340,34 +338,50 @@ func New(name string) *Shipwright[pipeline.Action] {
 		}
 	}
 
-	sw := NewFromOpts(pipeline.CommonOpts{
-		Name:    name,
+	return pipeline.CommonOpts{
 		Version: args.Version,
 		Output:  os.Stdout,
 		Args:    args,
 		Log:     logger,
 		Tracer:  tracer,
-	})
+	}, nil
+}
+
+func newShipwright[T pipeline.StepContent]() *Shipwright[T] {
+	opts, err := parseOpts()
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse arguments: %s", err.Error()))
+	}
+
+	sw := NewClient[T](opts, NewDefaultCollection(opts))
 
 	// Ensure that no matter the behavior of the initializer, we still set the version on the shipwright object.
-	sw.Version = args.Version
+	sw.Version = opts.Args.Version
 	sw.pipeline = DefaultPipelineID
 
 	return sw
 }
 
-func NewFromOpts(opts pipeline.CommonOpts) *Shipwright[pipeline.Action] {
-	return NewClient[pipeline.Action](opts)
+// New creates a new Shipwright client which is used to create pipeline a single pipeline with many steps.
+// This function will panic if the arguments in os.Args do not match what's expected.
+// This function, and the type it returns, are only ran inside of a Shipwright pipeline, and so it is okay to treat this like it is the entrypoint of a command.
+// Watching for signals, parsing command line arguments, and panics are all things that are OK in this function.
+// New is used when creating a single pipeline. In order to create multiple pipelines, use the NewMulti function.
+func New(name string) *Shipwright[pipeline.Action] {
+	sw := newShipwright[pipeline.Action]()
+	sw.Opts.Name = name
+
+	return sw
 }
 
 // NewWithClient creates a new Shipwright object with a specific client implementation.
 // This function is intended to be used in very specific environments, like in tests.
-func NewWithClient[T pipeline.StepContent](opts pipeline.CommonOpts, client pipeline.Client) Shipwright[T] {
+func NewWithClient[T pipeline.StepContent](opts pipeline.CommonOpts, client pipeline.Client) *Shipwright[T] {
 	if opts.Args == nil {
 		opts.Args = &plumbing.PipelineArgs{}
 	}
 
-	return Shipwright[T]{
+	return &Shipwright[T]{
 		Client:     client,
 		Opts:       opts,
 		Log:        opts.Log,
@@ -376,4 +390,39 @@ func NewWithClient[T pipeline.StepContent](opts pipeline.CommonOpts, client pipe
 
 		n: 1,
 	}
+}
+
+func NewMultiWithClient[T pipeline.StepContent](opts pipeline.CommonOpts, client pipeline.Client) *Shipwright[T] {
+	if opts.Args == nil {
+		opts.Args = &plumbing.PipelineArgs{}
+	}
+
+	return &Shipwright[T]{
+		Client:     client,
+		Opts:       opts,
+		Log:        opts.Log,
+		Collection: NewMultiCollection(),
+		n:          1,
+	}
+}
+
+// NewClient creates a new Shipwright client based on the commonopts (mostly the mode).
+// It does not check for a non-nil "Args" field.
+func NewClient[T pipeline.StepContent](c pipeline.CommonOpts, collection *pipeline.Collection) *Shipwright[T] {
+	c.Log.Infof("Initializing Shipwright client with mode '%s'", c.Args.Mode.String())
+	sw := &Shipwright[T]{}
+
+	initializer, ok := ClientInitializers[c.Args.Mode]
+	if !ok {
+		c.Log.Fatalln("Could not initialize shipwright. Could not find initializer for mode", c.Args.Mode)
+		return nil
+	}
+
+	sw.Client = initializer(c)
+	sw.Collection = collection
+
+	sw.Opts = c
+	sw.Log = c.Log
+
+	return sw
 }

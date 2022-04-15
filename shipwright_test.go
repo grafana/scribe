@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	shipwright "github.com/grafana/shipwright"
+	"github.com/grafana/shipwright"
 	"github.com/grafana/shipwright/plumbing"
 	"github.com/grafana/shipwright/plumbing/pipeline"
 	"github.com/grafana/shipwright/plumbing/pipeline/clients/cli"
@@ -15,10 +15,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func logger() *logrus.Logger {
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+
+	return logger
+}
+
 var testOpts = pipeline.CommonOpts{
-	Name:    "test",
-	Version: "test",
-	Log:     logrus.New(),
+	Name:    "test piepline",
+	Version: "v0.0.0-test",
+	Log:     logger(),
 }
 
 func TestNew(t *testing.T) {
@@ -29,10 +36,11 @@ func TestNew(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		sw := shipwright.NewFromOpts(pipeline.CommonOpts{
+		opts := pipeline.CommonOpts{
 			Log:  plog.New(logrus.DebugLevel),
 			Args: args,
-		})
+		}
+		sw := shipwright.NewClient[pipeline.Action](opts, shipwright.NewDefaultCollection(testOpts))
 
 		if reflect.TypeOf(sw.Client) != reflect.TypeOf(&cli.Client{}) {
 			t.Fatalf("shipwright.Client is '%v', not a CLIClient", reflect.TypeOf(sw.Client))
@@ -51,10 +59,12 @@ func TestNew(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		sw := shipwright.NewFromOpts(pipeline.CommonOpts{
+		opts := pipeline.CommonOpts{
 			Log:  plog.New(logrus.DebugLevel),
 			Args: args,
-		})
+		}
+
+		sw := shipwright.NewClient[pipeline.Action](opts, shipwright.NewDefaultCollection(testOpts))
 
 		if reflect.TypeOf(sw.Client) != reflect.TypeOf(&drone.Client{}) {
 			t.Fatalf("shipwright.Client is '%v', not a DroneClient", reflect.TypeOf(sw.Client))
