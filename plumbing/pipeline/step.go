@@ -37,7 +37,7 @@ type (
 const (
 	StepTypeDefault StepType = iota
 	StepTypeBackground
-	StepTypeList
+	StepTypeSubPipeline
 )
 
 // StepContent is used as a type argument to the "Step" type.

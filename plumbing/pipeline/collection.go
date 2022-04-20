@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/grafana/shipwright/plumbing/pipeline/dag"
 )
@@ -86,7 +87,7 @@ func stepListEqual(a, b []Step[Action]) bool {
 	return true
 }
 
-func stepNames(s []Step[Action]) []string {
+func StepNames[T StepContent](s []Step[T]) []string {
 	v := make([]string, len(s))
 	for i := range s {
 		v[i] = s[i].Name
@@ -107,7 +108,17 @@ func withoutBackgroundSteps(steps []Step[Action]) []Step[Action] {
 	return s
 }
 
-func nodeListToSteps[T StepContent](nodes []*dag.Node[Step[T]]) []Step[T] {
+func AdjListToSteps[T StepContent](nodes []*dag.Node[Step[T]]) []Step[T] {
+	steps := make([]Step[T], len(nodes))
+
+	for i, v := range nodes {
+		steps[i] = v.Value
+	}
+
+	return steps
+}
+
+func NodeListToSteps[T StepContent](nodes []dag.Node[Step[T]]) []Step[T] {
 	steps := make([]Step[T], len(nodes))
 
 	for i, v := range nodes {
@@ -190,8 +201,9 @@ func (c *Collection) pipelineVisitFunc(ctx context.Context, wf PipelineWalkFunc)
 	)
 
 	return func(n *dag.Node[Step[Pipeline]]) error {
+		log.Println("Visiting pipeline", n.ID, n.Value.Name, "nodes:", len(n.Value.Content.Nodes))
 		if n.ID == 0 {
-			adj = nodeListToSteps(c.Graph.Adj(0))
+			adj = AdjListToSteps(c.Graph.Adj(0))
 			return nil
 		}
 
@@ -202,7 +214,7 @@ func (c *Collection) pipelineVisitFunc(ctx context.Context, wf PipelineWalkFunc)
 				return err
 			}
 
-			adj = nodeListToSteps(c.Graph.Adj(n.ID))
+			adj = AdjListToSteps(c.Graph.Adj(n.ID))
 			next = []Step[Pipeline]{}
 		}
 

@@ -45,7 +45,7 @@ func (s *Shipwright[T]) New(name string, mf MultiFunc) pipeline.Step[pipeline.Pi
 		"pipeline": name,
 	})
 
-	sw, err := s.clone(name)
+	sw, err := s.newMulti(name)
 	if err != nil {
 		log.WithError(err).Fatalln("Failed to clone pipeline for use in multi-pipeline")
 	}
@@ -72,7 +72,7 @@ func (s *Shipwright[T]) New(name string, mf MultiFunc) pipeline.Step[pipeline.Pi
 	}
 }
 
-func (s *Shipwright[T]) clone(name string) (*Shipwright[pipeline.Action], error) {
+func (s *Shipwright[T]) newMulti(name string) (*Shipwright[pipeline.Action], error) {
 	log := s.Log.WithField("pipeline", name)
 	collection := NewMultiCollection()
 

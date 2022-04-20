@@ -1,11 +1,11 @@
 package shipwright_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/grafana/shipwright"
 	"github.com/grafana/shipwright/plumbing/pipeline"
-	"github.com/grafana/shipwright/plumbing/pipeline/dag"
 )
 
 func TestMulti(t *testing.T) {
@@ -24,8 +24,13 @@ func TestMulti(t *testing.T) {
 	})
 
 	t.Run("Creating a multi-pipeline with steps", func(t *testing.T) {
+		ens := newEnsurer(
+			[]string{"step 1"}, []string{"step 2"}, []string{"step 3"}, []string{"step 4"}, []string{"step 5"},
+			[]string{"step 1"}, []string{"step 2"}, []string{"step 3"}, []string{"step 4"}, []string{"step 5"},
+		)
+
 		// In this test case we're not providing ensurer data because we are not running 'Done'.
-		sw := shipwright.NewMultiWithClient[pipeline.Pipeline](testOpts, newEnsurer())
+		sw := shipwright.NewMultiWithClient[pipeline.Pipeline](testOpts, ens)
 
 		mf := func(sw *shipwright.Shipwright[pipeline.Action]) {
 			sw.Run(pipeline.NoOpStep.WithName("step 1"), pipeline.NoOpStep.WithName("step 2"))
@@ -40,67 +45,19 @@ func TestMulti(t *testing.T) {
 			sw.New("test 2", mf),
 		)
 
-		t.Run("It should have three nodes", func(t *testing.T) {
-			dag.EnsureGraphNodes(t, []int64{0, 23, 24}, sw.Collection.Graph.Nodes)
-		})
-
-		t.Run("It should have two edges", func(t *testing.T) {
-			dag.EnsureGraphEdges(t, map[int64][]int64{
-				0:  {23},
-				23: {24},
-			}, sw.Collection.Graph.Edges)
-		})
-
-		t.Run("The first node should be a graph with 6 nodes", func(t *testing.T) {
-			sub, err := sw.Collection.Graph.Node(23)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			dag.EnsureGraphNodes(t, []int64{0, 3, 4, 6, 9, 10}, sub.Value.Content.Nodes)
-		})
-		t.Run("The first node should be a graph with 5 edges", func(t *testing.T) {
-			sub, err := sw.Collection.Graph.Node(23)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			dag.EnsureGraphEdges(t, map[int64][]int64{
-				0: {3},
-				3: {4},
-				4: {6},
-				6: {9},
-				9: {10},
-			}, sub.Value.Content.Edges)
-		})
-
-		t.Run("The second node should be a graph with 6 nodes", func(t *testing.T) {
-			sub, err := sw.Collection.Graph.Node(24)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			dag.EnsureGraphNodes(t, []int64{0, 14, 15, 17, 20, 21}, sub.Value.Content.Nodes)
-		})
-		t.Run("The second node should be a graph with 5 edges", func(t *testing.T) {
-			sub, err := sw.Collection.Graph.Node(24)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			dag.EnsureGraphEdges(t, map[int64][]int64{
-				0:  {14},
-				14: {15},
-				15: {17},
-				17: {20},
-				20: {21},
-			}, sub.Value.Content.Edges)
-		})
+		if err := sw.Execute(context.Background()); err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	t.Run("Should run pipelines in parallel if they are added with the Parallel function", func(t *testing.T) {
+		ens := newEnsurer(
+			[]string{"step 1", "step 2"}, []string{"step 3", "step 4"},
+			[]string{"step 1", "step 2"}, []string{"step 3", "step 4"},
+		)
+
 		// In this test case we're not providing ensurer data because we are not running 'Done'.
-		sw := shipwright.NewMultiWithClient[pipeline.Pipeline](testOpts, newEnsurer())
+		sw := shipwright.NewMultiWithClient[pipeline.Pipeline](testOpts, ens)
 
 		mf := func(sw *shipwright.Shipwright[pipeline.Action]) {
 			sw.Parallel(pipeline.NoOpStep.WithName("step 1"), pipeline.NoOpStep.WithName("step 2"))
@@ -114,55 +71,8 @@ func TestMulti(t *testing.T) {
 			sw.New("test 2", mf),
 		)
 
-		t.Run("It should have 3 nodes", func(t *testing.T) {
-			dag.EnsureGraphNodes(t, []int64{0, 15, 16}, sw.Collection.Graph.Nodes)
-		})
-
-		t.Run("It should have 2 edges", func(t *testing.T) {
-			dag.EnsureGraphEdges(t, map[int64][]int64{
-				0:  {15},
-				15: {16},
-			}, sw.Collection.Graph.Edges)
-		})
-
-		t.Run("The first node should be a graph with 3 nodes", func(t *testing.T) {
-			sub, err := sw.Collection.Graph.Node(15)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			dag.EnsureGraphNodes(t, []int64{0, 3, 6}, sub.Value.Content.Nodes)
-		})
-		t.Run("The first node should be a graph with 2 edges", func(t *testing.T) {
-			sub, err := sw.Collection.Graph.Node(15)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			dag.EnsureGraphEdges(t, map[int64][]int64{
-				0: {3},
-				3: {6},
-			}, sub.Value.Content.Edges)
-		})
-
-		t.Run("The second node should be a graph with 3 nodes", func(t *testing.T) {
-			sub, err := sw.Collection.Graph.Node(16)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			dag.EnsureGraphNodes(t, []int64{0, 10, 13}, sub.Value.Content.Nodes)
-		})
-		t.Run("The second node should be a graph with 2 edges", func(t *testing.T) {
-			sub, err := sw.Collection.Graph.Node(16)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			dag.EnsureGraphEdges(t, map[int64][]int64{
-				0:  {10},
-				10: {13},
-			}, sub.Value.Content.Edges)
-		})
+		if err := sw.Execute(context.Background()); err != nil {
+			t.Fatal(err)
+		}
 	})
 }

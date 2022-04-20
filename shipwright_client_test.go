@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	shipwright "github.com/grafana/shipwright"
 	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
@@ -15,7 +14,18 @@ type ensurer struct {
 	steps [][]string
 }
 
-func (e *ensurer) Walk(ctx context.Context, steps ...pipeline.Step[pipeline.Action]) error {
+func (e *ensurer) WalkPipelines(w pipeline.Walker) func(context.Context, ...pipeline.Step[pipeline.Pipeline]) error {
+	return func(ctx context.Context, pipelines ...pipeline.Step[pipeline.Pipeline]) error {
+		for _, v := range pipelines {
+			if err := w.WalkSteps(ctx, v.Serial, e.WalkSteps); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func (e *ensurer) WalkSteps(ctx context.Context, steps ...pipeline.Step[pipeline.Action]) error {
 	s := make([]string, len(steps))
 
 	for i, v := range steps {
@@ -52,25 +62,29 @@ func (e *ensurer) Validate(pipeline.Step[pipeline.Action]) error {
 	return nil
 }
 
+func (e *ensurer) Diff() string {
+	return fmt.Sprintf("Seen:     %+v\nExpected: %+v", e.seen, e.steps)
+}
+
 // Done must be ran at the end of the pipeline.
 // This is typically what takes the defined pipeline steps, runs them in the order defined, and produces some kind of output.
 func (e *ensurer) Done(ctx context.Context, w pipeline.Walker) error {
-	if err := w.WalkSteps(ctx, shipwright.DefaultPipelineID, e.Walk); err != nil {
+	if err := w.WalkPipelines(ctx, e.WalkPipelines(w)); err != nil {
 		return err
 	}
 
 	if len(e.seen) != len(e.steps) {
-		return fmt.Errorf("walked unequal amount of steps. expected '%d', walked '%d'", len(e.steps), len(e.seen))
+		return fmt.Errorf("walked unequal amount of steps. expected '%d', walked '%d'\n%s", len(e.steps), len(e.seen), e.Diff())
 	}
 
 	for i, list := range e.steps {
 		if len(list) != len(e.seen[i]) {
-			return fmt.Errorf("unequal amount of steps seen at '%d'; expected '%d' (%+v), found '%d' (%+v)", i, len(list), list, len(e.seen[i]), e.seen[i])
+			return fmt.Errorf("unequal amount of steps seen at '%d'; expected '%d' (%+v), found '%d' (%+v)\n%s", i, len(list), list, len(e.seen[i]), e.seen[i], e.Diff())
 		}
 
 		for n, step := range list {
 			if e.seen[i][n] != step {
-				return fmt.Errorf("step seen at '%d:%d' does not match expected. Expected '%s', found '%s'", i, n, e.seen[i][n], step)
+				return fmt.Errorf("step seen at '%d:%d' does not match expected. Expected '%s', found '%s'\n%s", i, n, e.seen[i][n], step, e.Diff())
 			}
 		}
 	}

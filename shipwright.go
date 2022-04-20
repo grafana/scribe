@@ -85,14 +85,10 @@ func (s *Shipwright[T]) Background(steps ...pipeline.Step[pipeline.Action]) {
 	}
 }
 
-type SubFunc[T pipeline.StepContent] func(*Shipwright[T])
-
-func (s *Shipwright[T]) Sub(sf SubFunc[T]) {
-}
-
 // Run allows users to define steps that are ran sequentially. For example, the second step will not run until the first step has completed.
 // This function blocks the pipeline execution until all of the steps provided (step) have completed sequentially.
 func (s *Shipwright[T]) Run(steps ...pipeline.Step[T]) {
+	s.Log.Debugf("Adding '%d' sequential steps: %+v", len(steps), pipeline.StepNames(steps))
 	steps = s.setup(steps...)
 
 	switch x := any(steps).(type) {
