@@ -35,7 +35,7 @@ type Shipwright[T pipeline.StepContent] struct {
 
 	// n tracks the ID of a step so that the "shipwright -step=" argument will function independently of the client implementation
 	// It ensures that the 11th step in a Drone generated pipeline is also the 11th step in a CLI pipeline
-	n        int64
+	n        *counter
 	pipeline int64
 	Version  string
 
@@ -44,9 +44,7 @@ type Shipwright[T pipeline.StepContent] struct {
 }
 
 func (s *Shipwright[T]) serial() int64 {
-	n := s.n
-	s.n++
-	return n
+	return s.n.Next()
 }
 
 // Pipeline returns the current Pipeline ID used in the collection.
@@ -395,7 +393,7 @@ func NewWithClient[T pipeline.StepContent](opts pipeline.CommonOpts, client pipe
 		Collection: NewDefaultCollection(opts),
 		pipeline:   DefaultPipelineID,
 
-		n: 1,
+		n: &counter{1},
 	}
 }
 
@@ -409,7 +407,7 @@ func NewMultiWithClient[T pipeline.StepContent](opts pipeline.CommonOpts, client
 		Opts:       opts,
 		Log:        opts.Log,
 		Collection: NewMultiCollection(),
-		n:          1,
+		n:          &counter{1},
 	}
 }
 
@@ -417,7 +415,9 @@ func NewMultiWithClient[T pipeline.StepContent](opts pipeline.CommonOpts, client
 // It does not check for a non-nil "Args" field.
 func NewClient[T pipeline.StepContent](c pipeline.CommonOpts, collection *pipeline.Collection) *Shipwright[T] {
 	c.Log.Infof("Initializing Shipwright client with mode '%s'", c.Args.Mode.String())
-	sw := &Shipwright[T]{}
+	sw := &Shipwright[T]{
+		n: &counter{},
+	}
 
 	initializer, ok := ClientInitializers[c.Args.Mode]
 	if !ok {
