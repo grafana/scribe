@@ -93,24 +93,13 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 
 	// Every step needs a compiled version of the pipeline in order to know what to do
 	// without requiring that every image has a copy of the shipwright binary
-	p, err := c.buildPipeline(ctx)
+	_, err := c.buildPipeline(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to compile the pipeline in docker. Error: %w", err)
 	}
 
-	return w.WalkSteps(ctx, 0, func(ctx context.Context, steps ...pipeline.Step[pipeline.Action]) error {
-		s := make([]string, len(steps))
-		for i, v := range steps {
-			s[i] = v.Name
-		}
-		logger.Infof("Running [%d] step(s) %s", len(steps), strings.Join(s, " | "))
-
-		if err := c.runSteps(ctx, p, steps); err != nil {
-			return err
-		}
-
-		return nil
-	})
+	// return w.WalkSteps(ctx, 0, func(ctx context.Context, steps ...pipeline.Step[pipeline.Action]) error {})
+	return nil
 }
 
 // KnownVolumes is a map of default argument to a function used to retrieve the volume the value represents.
