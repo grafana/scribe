@@ -8,45 +8,85 @@ platform:
   arch: amd64
 
 steps:
+- name: builtin-compile-pipeline
+  image: grafana/shipwright:latest-go
+  command:
+  - go
+  - build
+  - -o
+  - /var/shipwright/pipeline
+  - ./demo/sub
+  environment:
+    CGO_ENABLED: 0
+    GOARCH: amd64
+    GOOS: linux
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+
 - name: step-1
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=7 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  - /var/shipwright/pipeline -step=7 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  depends_on:
+  - builtin-compile-pipeline
 
 - name: step-2
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=8 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  - /var/shipwright/pipeline -step=8 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - step-1
 
 - name: step-3
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=9 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  - /var/shipwright/pipeline -step=9 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - step-2
 
 - name: step-4
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=13 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  - /var/shipwright/pipeline -step=13 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - step-3
 
 - name: step-5
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=14 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  - /var/shipwright/pipeline -step=14 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - step-3
 
 - name: step-6
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=15 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  - /var/shipwright/pipeline -step=15 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - step-3
+
+volumes:
+- name: shipwright
+  temp: {}
 
 ---
 kind: pipeline
@@ -58,23 +98,54 @@ platform:
   arch: amd64
 
 steps:
+- name: builtin-compile-pipeline
+  image: grafana/shipwright:latest-go
+  command:
+  - go
+  - build
+  - -o
+  - /var/shipwright/pipeline
+  - ./demo/sub
+  environment:
+    CGO_ENABLED: 0
+    GOARCH: amd64
+    GOOS: linux
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+
 - name: sub-step-1
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=1 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  - /var/shipwright/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  depends_on:
+  - builtin-compile-pipeline
 
 - name: sub-step-2
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=3 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  - /var/shipwright/pipeline -step=3 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - sub-step-1
 
 - name: sub-step-3
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=4 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  - /var/shipwright/pipeline -step=4 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - sub-step-1
+
+volumes:
+- name: shipwright
+  temp: {}
 
 ...

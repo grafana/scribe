@@ -8,31 +8,65 @@ platform:
   arch: amd64
 
 steps:
+- name: builtin-compile-pipeline
+  image: grafana/shipwright:latest-go
+  command:
+  - go
+  - build
+  - -o
+  - /var/shipwright/pipeline
+  - ./demo/multi
+  environment:
+    CGO_ENABLED: 0
+    GOARCH: amd64
+    GOOS: linux
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+
 - name: install-frontend-dependencies
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=0 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  - /var/shipwright/pipeline -step=0 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  depends_on:
+  - builtin-compile-pipeline
 
 - name: install-backend-dependencies
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=1 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  - /var/shipwright/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - install-frontend-dependencies
 
 - name: test-backend
-  image: ghcr.io/grafana/shipwright/go:latest
+  image: grafana/shipwright:latest-go
   commands:
-  - shipwright -step=4 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  - /var/shipwright/pipeline -step=4 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - install-backend-dependencies
 
 - name: test-frontend
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=5 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  - /var/shipwright/pipeline -step=5 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - install-backend-dependencies
+
+volumes:
+- name: shipwright
+  temp: {}
 
 ---
 kind: pipeline
@@ -44,42 +78,79 @@ platform:
   arch: amd64
 
 steps:
+- name: builtin-compile-pipeline
+  image: grafana/shipwright:latest-go
+  command:
+  - go
+  - build
+  - -o
+  - /var/shipwright/pipeline
+  - ./demo/multi
+  environment:
+    CGO_ENABLED: 0
+    GOARCH: amd64
+    GOOS: linux
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+
 - name: install-frontend-dependencies
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=8 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  - /var/shipwright/pipeline -step=8 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  depends_on:
+  - builtin-compile-pipeline
 
 - name: install-backend-dependencies
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=9 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  - /var/shipwright/pipeline -step=9 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - install-frontend-dependencies
 
 - name: compile-backend
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=12 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  - /var/shipwright/pipeline -step=12 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - install-backend-dependencies
 
 - name: compile-frontend
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=13 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  - /var/shipwright/pipeline -step=13 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - install-backend-dependencies
 
 - name: publish
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=15 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
+  - /var/shipwright/pipeline -step=15 -build-id=$DRONE_BUILD_NUMBER ./demo/multi
   environment:
     secret-gcp-publish-key:
       from_secret: gcp-publish-key
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - compile-backend
   - compile-frontend
+
+volumes:
+- name: shipwright
+  temp: {}
 
 trigger:
   branch:

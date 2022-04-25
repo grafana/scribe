@@ -259,12 +259,12 @@ func (s *Shipwright[T]) Execute(ctx context.Context) error {
 	)
 	// If the user has specified a specific step, then cut the "Collection" to only include that step
 	if s.Opts.Args.Step != nil {
-		step, err := collection.BySerial(*s.Opts.Args.Step)
+		step, err := collection.BySerial(ctx, *s.Opts.Args.Step)
 		if err != nil {
 			return fmt.Errorf("could not find step. Error: %w", err)
 		}
 
-		collection = collection.Sub(step)
+		collection = collection.Sub(step...)
 	}
 
 	if err := s.Client.Done(ctx, collection); err != nil {

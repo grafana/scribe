@@ -201,6 +201,8 @@ func (g *Graph[T]) BreadthFirstSearch(id int64, visitFunc VisitFunc[T]) error {
 		return ErrorNoVisitFunc
 	}
 
+	g.resetVisited()
+
 	queue := []int64{id}
 	if err := g.visit(id, visitFunc); err != nil {
 		if errors.Is(err, ErrorBreak) {
