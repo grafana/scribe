@@ -81,7 +81,7 @@ func Run(ctx context.Context, opts *RunOpts) *exec.Cmd {
 	logger.Infoln("Running shipwright pipeline with args", cmdArgs)
 
 	if args.Step != nil {
-		cmdArgs = append(cmdArgs, "-step", strconv.Itoa(*args.Step))
+		cmdArgs = append(cmdArgs, "-step", strconv.FormatInt(*args.Step, 10))
 	}
 
 	cmd := exec.CommandContext(ctx, "go", cmdArgs...)

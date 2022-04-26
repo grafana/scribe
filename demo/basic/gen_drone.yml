@@ -8,48 +8,88 @@ platform:
   arch: amd64
 
 steps:
+- name: builtin-compile-pipeline
+  image: grafana/shipwright:latest-go
+  command:
+  - go
+  - build
+  - -o
+  - /var/shipwright/pipeline
+  - ./demo/basic
+  environment:
+    CGO_ENABLED: 0
+    GOARCH: amd64
+    GOOS: linux
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+
 - name: install-frontend-dependencies
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=0 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  - /var/shipwright/pipeline -step=0 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  depends_on:
+  - builtin-compile-pipeline
 
 - name: install-backend-dependencies
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=1 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  - /var/shipwright/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - install-frontend-dependencies
 
 - name: write-version-file
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=2 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  - /var/shipwright/pipeline -step=2 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - install-backend-dependencies
 
 - name: compile-backend
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=6 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  - /var/shipwright/pipeline -step=6 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - write-version-file
 
 - name: compile-frontend
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=7 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  - /var/shipwright/pipeline -step=7 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - compile-backend
 
 - name: publish
-  image: ghcr.io/grafana/shipwright:latest
+  image: grafana/shipwright:latest
   commands:
-  - shipwright -step=10 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  - /var/shipwright/pipeline -step=10 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
   environment:
     secret-gcs-publish-key:
       from_secret: gcs-publish-key
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - compile-frontend
+
+volumes:
+- name: shipwright
+  temp: {}
 
 trigger:
   branch:

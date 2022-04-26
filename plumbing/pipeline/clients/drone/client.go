@@ -7,6 +7,7 @@ import (
 	"github.com/drone/drone-yaml/yaml/pretty"
 	"github.com/grafana/shipwright/plumbing"
 	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/pipelineutil"
 	"github.com/grafana/shipwright/plumbing/stringutil"
 	"github.com/sirupsen/logrus"
 )
@@ -71,6 +72,69 @@ func (c *Client) StepWalkFunc(log logrus.FieldLogger, s *stepList) func(ctx cont
 	}
 }
 
+type newPipelineOpts struct {
+	Name      string
+	Steps     []*yaml.Container
+	DependsOn []string
+}
+
+var (
+	PipelinePath     = "/var/shipwright/pipeline"
+	ShipwrightVolume = &yaml.Volume{
+		Name:     "shipwright",
+		EmptyDir: &yaml.VolumeEmptyDir{},
+	}
+	ShipwrightVolumeMount = &yaml.VolumeMount{
+		Name:      "shipwright",
+		MountPath: "/var/shipwright",
+	}
+)
+
+func (c *Client) newPipeline(opts newPipelineOpts, pipelineOpts pipeline.CommonOpts) *yaml.Pipeline {
+	command := pipelineutil.GoBuild(context.Background(), pipelineutil.GoBuildOpts{
+		Pipeline: pipelineOpts.Args.Path,
+		Output:   PipelinePath,
+	})
+
+	build := &yaml.Container{
+		Name:    "builtin-compile-pipeline",
+		Image:   plumbing.SubImage("go", c.Opts.Version),
+		Command: command.Args,
+		Environment: map[string]*yaml.Variable{
+			"GOOS": {
+				Value: "linux",
+			},
+			"GOARCH": {
+				Value: "amd64",
+			},
+			"CGO_ENABLED": {
+				Value: "0",
+			},
+		},
+		Volumes: []*yaml.VolumeMount{ShipwrightVolumeMount},
+	}
+
+	for i, v := range opts.Steps {
+		if len(v.DependsOn) == 0 {
+			opts.Steps[i].DependsOn = []string{build.Name}
+		}
+		opts.Steps[i].Volumes = append(opts.Steps[i].Volumes, ShipwrightVolumeMount)
+	}
+
+	p := &yaml.Pipeline{
+		Name:      opts.Name,
+		Kind:      "pipeline",
+		Type:      "docker",
+		DependsOn: opts.DependsOn,
+		Steps:     append([]*yaml.Container{build}, opts.Steps...),
+		Volumes: []*yaml.Volume{
+			ShipwrightVolume,
+		},
+	}
+
+	return p
+}
+
 // Done traverses through the tree and writes a .drone.yml file to the provided writer
 func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 	cfg := []yaml.Resource{}
@@ -84,13 +148,12 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 			if err := w.WalkSteps(ctx, v.Serial, c.StepWalkFunc(log, sl)); err != nil {
 				return err
 			}
-			pipeline := &yaml.Pipeline{
+
+			pipeline := c.newPipeline(newPipelineOpts{
 				Name:      v.Name,
-				Kind:      "pipeline",
-				Type:      "docker",
 				Steps:     sl.steps,
 				DependsOn: stepsToNames(v.Dependencies),
-			}
+			}, c.Opts)
 
 			events := v.Content.Events
 			if len(events) != 0 {

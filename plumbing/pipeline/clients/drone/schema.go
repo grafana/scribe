@@ -54,9 +54,10 @@ func NewStep(c pipeline.Configurer, path string, step pipeline.Step[pipeline.Act
 	}
 
 	cmd, err := cmdutil.StepCommand(c, cmdutil.CommandOpts{
-		Path:    path,
-		Step:    step,
-		BuildID: "$DRONE_BUILD_NUMBER",
+		CompiledPipeline: PipelinePath,
+		Path:             path,
+		Step:             step,
+		BuildID:          "$DRONE_BUILD_NUMBER",
 	})
 
 	if err != nil {
