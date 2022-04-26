@@ -293,13 +293,66 @@ func (c *Collection) AddPipelines(p ...Step[Pipeline]) error {
 }
 
 // BySerial should return the Step that corresponds with a specific Serial
-func (c *Collection) BySerial(int) (Step[Action], error) {
-	return Step[Action]{}, nil
+func (c *Collection) BySerial(ctx context.Context, id int64) ([]Step[Action], error) {
+	steps := []Step[Action]{}
+
+	// Search every pipeline and step for the listed IDs
+	if err := c.WalkPipelines(ctx, func(ctx context.Context, pipelines ...Step[Pipeline]) error {
+		for _, pipeline := range pipelines {
+			if pipeline.Serial == id {
+				// uhhh.. todo
+				continue
+			}
+
+			return c.WalkSteps(ctx, pipeline.Serial, func(ctx context.Context, s ...Step[Action]) error {
+				for i, step := range s {
+					if step.Serial == id {
+						steps = []Step[Action]{s[i]}
+						return dag.ErrorBreak
+					}
+				}
+				return nil
+			})
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return steps, nil
 }
 
 // ByName should return the Step that corresponds with a specific Name
-func (c *Collection) ByName(string) (Step[Action], error) {
-	return Step[Action]{}, nil
+func (c *Collection) ByName(ctx context.Context, name string) ([]Step[Action], error) {
+	steps := []Step[Action]{}
+
+	// Search every pipeline and step for the listed IDs
+	if err := c.WalkPipelines(ctx, func(ctx context.Context, pipelines ...Step[Pipeline]) error {
+		for _, pipeline := range pipelines {
+			if pipeline.Name == name {
+				// uhhh.. todo
+				continue
+			}
+
+			log.Println("walking pipeline", pipeline.Name)
+			return c.WalkSteps(ctx, pipeline.Serial, func(ctx context.Context, s ...Step[Action]) error {
+				for i, step := range s {
+					if step.Name == name {
+						steps = []Step[Action]{s[i]}
+						return dag.ErrorBreak
+					}
+				}
+				return nil
+			})
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return steps, nil
 }
 
 // Pipeline should return the pipeline that corresponds to a specific name

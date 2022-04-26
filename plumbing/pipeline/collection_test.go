@@ -1,6 +1,7 @@
 package pipeline_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/grafana/shipwright"
@@ -161,4 +162,100 @@ func TestCollectionAddSteps(t *testing.T) {
 
 		dag.EnsureGraphEdges(t, expectedEdges, g.Value.Content.Edges)
 	})
+}
+
+func TestCollectionGetters(t *testing.T) {
+	col := shipwright.NewDefaultCollection(pipeline.CommonOpts{
+		Name: "test",
+	})
+	step1 := pipeline.Step[pipeline.StepList]{
+		Serial: 1,
+		Content: pipeline.StepList{
+			{
+				Serial: 2,
+				Name:   "step 1",
+			},
+			{
+				Serial: 3,
+				Name:   "step 2",
+			},
+		},
+	}
+
+	step2 := pipeline.Step[pipeline.StepList]{
+		Serial: 4,
+		Content: pipeline.StepList{
+			{
+				Serial: 5,
+				Name:   "step 3",
+				Type:   pipeline.StepTypeBackground,
+			},
+			{
+				Serial: 6,
+				Name:   "step 4",
+				Type:   pipeline.StepTypeBackground,
+			},
+			{
+				Serial: 7,
+				Name:   "step 5",
+				Type:   pipeline.StepTypeBackground,
+			},
+		},
+	}
+
+	step3 := pipeline.Step[pipeline.StepList]{
+		Serial:       8,
+		Dependencies: []pipeline.Step[pipeline.StepList]{step1},
+		Content: pipeline.StepList{
+			{
+				Serial: 9,
+				Name:   "step 6",
+			},
+		},
+	}
+
+	// Add 1, 2
+	testutil.EnsureError(t, col.AddSteps(shipwright.DefaultPipelineID, step1), nil)
+
+	// Add 3, 4, 5
+	testutil.EnsureError(t, col.AddSteps(shipwright.DefaultPipelineID, step2), nil)
+
+	// Add 6
+	testutil.EnsureError(t, col.AddSteps(shipwright.DefaultPipelineID, step3), nil)
+
+	t.Run("BySerial should return the step that has the provided serial number", func(t *testing.T) {
+		steps, err := col.BySerial(context.Background(), 9)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(steps) != 1 {
+			t.Fatalf("expected 1 step but got '%d'", len(steps))
+		}
+
+		if steps[0].Name != "step 6" {
+			t.Fatalf("expected step to be 'step 6', but got '%v'", steps[0])
+		}
+	})
+
+	t.Run("ByName should return the step that has the provided name", func(t *testing.T) {
+		steps, err := col.ByName(context.Background(), "step 6")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(steps) != 1 {
+			t.Fatalf("expected 1 step but got '%d'", len(steps))
+		}
+
+		if steps[0].Name != "step 6" {
+			t.Fatalf("expected step to be 'step 6', but got '%v'", steps[0])
+		}
+	})
+}
+
+func TestCollectionByName(t *testing.T) {
+}
+
+func TestCollectionSub(t *testing.T) {
 }

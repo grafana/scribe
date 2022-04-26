@@ -25,7 +25,7 @@ type PipelineArgs struct {
 
 	// Step defines a specific step to run. Typically this is used in a generated third-party config
 	// If Step is nil, then all steps are ran
-	Step *int
+	Step *int64
 
 	// BuildID is a unique identifier typically assigned by a CI system.
 	// In Docker / CLI mode, this will likely be populated by a random UUID if not provided.
