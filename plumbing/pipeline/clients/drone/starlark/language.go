@@ -56,8 +56,12 @@ func (s *Starlark) Return() {
 	s.buf.WriteString("return ")
 }
 
-func (s *Starlark) StartDict() {
-	s.index += 2
+func (s *Starlark) StartDict(indent bool) {
+	if indent {
+		s.Indent(2)
+	} else {
+		s.index += 2
+	}
 	s.buf.WriteString("{\n")
 }
 

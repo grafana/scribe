@@ -186,7 +186,7 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 		c.renderStarlark(cfg)
 
 	default:
-		return fmt.Errorf("Unknown Drone language: %d", c.Language)
+		return fmt.Errorf("unknown Drone language: %d", c.Language)
 	}
 
 	return nil

@@ -46,7 +46,7 @@ func (s *Starlark) Marshal(data interface{}) {
 }
 
 func (s *Starlark) MarshalStruct(value reflect.Value, comma bool) {
-	s.StartDict()
+	s.StartDict(comma)
 	for _, field := range reflect.VisibleFields(value.Type()) {
 		v := value.FieldByName(field.Name)
 		if s.IsEmpty(v) {
@@ -68,20 +68,20 @@ func (s *Starlark) IsEmpty(value reflect.Value) bool {
 	case 0:
 		return true
 	case reflect.Slice, reflect.Map:
-		if value.Len() == 0 {
-			return true
-		}
+		return value.Len() == 0
+
 	case reflect.String:
-		if value.String() == "" {
-			return true
-		}
+		return value.String() == ""
+
 	case reflect.Bool:
-		if !value.Bool() {
-			return true
-		}
+		return !value.Bool()
+
 	case reflect.Struct:
-		if value.IsZero() {
-			return true
+		return value.IsZero()
+
+	default:
+		if value.Type().String() == "yaml.BytesSize" {
+			return value.Int() == 0
 		}
 	}
 	return false
@@ -127,7 +127,7 @@ func (s *Starlark) MarshalOther(value reflect.Value) {
 }
 
 func (s *Starlark) MarshalMap(v reflect.Value) {
-	s.StartDict()
+	s.StartDict(true)
 	for _, key := range v.MapKeys() {
 		value := v.MapIndex(key)
 		s.MarshalMapKey(key.String())
