@@ -7,6 +7,14 @@ import (
 	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
+const (
+	// LanguageYAML specifies that the Drone config should be emitted in YAML
+	LanguageYAML = iota
+
+	// LanguageStarlark specifies that the Drone config should be emitted in YAML
+	LanguageStarlark = iota
+)
+
 var argEnvMap = map[pipeline.Argument]string{
 	pipeline.ArgumentCommitSHA:  "$DRONE_COMMIT",
 	pipeline.ArgumentCommitRef:  "$DRONE_COMMIT_REF",

@@ -2,11 +2,13 @@ package drone
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/drone/drone-yaml/yaml"
 	"github.com/drone/drone-yaml/yaml/pretty"
 	"github.com/grafana/shipwright/plumbing"
 	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/pipeline/clients/drone/starlark"
 	"github.com/grafana/shipwright/plumbing/pipelineutil"
 	"github.com/grafana/shipwright/plumbing/stringutil"
 	"github.com/sirupsen/logrus"
@@ -21,6 +23,8 @@ type Client struct {
 	Opts pipeline.CommonOpts
 
 	Log *logrus.Logger
+
+	Language int
 }
 
 func (c *Client) Validate(step pipeline.Step[pipeline.Action]) error {
@@ -171,10 +175,36 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 		return nil
 	})
 
-	manifest := &yaml.Manifest{
-		Resources: cfg,
+	switch c.Language {
+	case LanguageYAML:
+		manifest := &yaml.Manifest{
+			Resources: cfg,
+		}
+		pretty.Print(c.Opts.Output, manifest)
+
+	case LanguageStarlark:
+		c.renderStarlark(cfg)
+
+	default:
+		return fmt.Errorf("Unknown Drone language: %d", c.Language)
 	}
 
-	pretty.Print(c.Opts.Output, manifest)
+	return nil
+}
+
+func (c *Client) renderStarlark(cfg []yaml.Resource) error {
+	sl := starlark.NewStarlark()
+	for _, resource := range cfg {
+		switch t := resource.(type) {
+		case *yaml.Pipeline:
+			pipeline := resource.(*yaml.Pipeline)
+
+			sl.MarshalPipeline(pipeline)
+
+		default:
+			fmt.Printf("%s: resource %v\n", t, resource)
+		}
+	}
+	fmt.Print(sl.String())
 	return nil
 }
