@@ -8,6 +8,7 @@ import (
 
 	"github.com/grafana/shipwright/plumbing/pipeline/dag"
 	"github.com/opentracing/opentracing-go"
+	"github.com/sirupsen/logrus"
 )
 
 // The ActionOpts are provided to every step that is ran.
@@ -16,6 +17,7 @@ type ActionOpts struct {
 	Stdout io.Writer
 	Stderr io.Writer
 	Tracer opentracing.Tracer
+	Logger logrus.FieldLogger
 }
 
 type (

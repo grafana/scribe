@@ -27,3 +27,32 @@ func NewPipelineError(err string, desc string) *PipelineError {
 		Description: desc,
 	}
 }
+
+type ErrorStack struct {
+	Errors []error
+}
+
+func (e *ErrorStack) Push(err error) {
+	e.Errors = append(e.Errors, err)
+}
+
+// Peek returns the error at the end of the stack without removing it.
+func (e *ErrorStack) Peek() error {
+	if len(e.Errors) == 0 {
+		return nil
+	}
+
+	return e.Errors[len(e.Errors)-1]
+}
+
+// Pop returns the error at the end of the stack and removes it.
+func (e *ErrorStack) Pop() error {
+	if len(e.Errors) == 0 {
+		return nil
+	}
+
+	err := e.Errors[len(e.Errors)-1]
+
+	e.Errors = e.Errors[:len(e.Errors)-1]
+	return err
+}

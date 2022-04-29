@@ -1,13 +1,28 @@
 package docker
 
-import "github.com/grafana/shipwright/plumbing/pipeline"
+import (
+	"sync"
 
-type Client struct {
-	CommonOpts *pipeline.CommonOpts
+	"github.com/docker/docker/client"
+)
+
+var cli *client.Client
+
+func initClient() {
+	cli = newClient()
 }
 
-func New(c *pipeline.CommonOpts) Client {
-	return Client{
-		CommonOpts: c,
+func dockerClient() *client.Client {
+	once := &sync.Once{}
+	once.Do(initClient)
+	return cli
+}
+
+func newClient() *client.Client {
+	c, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		panic(err)
 	}
+
+	return c
 }

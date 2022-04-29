@@ -1,7 +1,12 @@
 package docker
 
-import "context"
+import (
+	"context"
 
-func CompilePipelineContainer(ctx context.Context, client ContainerClient) (*Container, error) {
+	"github.com/docker/docker/client"
+)
+
+// NewCompilePipelineContainer creates a new container to compile the Shipwright pipeline.
+func NewCompilePipelineContainer(ctx context.Context, client client.APIClient) (*Container, error) {
 	return nil, nil
 }

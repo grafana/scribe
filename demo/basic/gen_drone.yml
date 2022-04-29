@@ -9,7 +9,7 @@ platform:
 
 steps:
 - name: builtin-compile-pipeline
-  image: grafana/shipwright:latest-go
+  image: grafana/shipwright:go-latest
   command:
   - go
   - build

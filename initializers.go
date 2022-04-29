@@ -1,6 +1,7 @@
 package shipwright
 
 import (
+	"github.com/docker/docker/client"
 	"github.com/grafana/shipwright/plumbing"
 	"github.com/grafana/shipwright/plumbing/pipeline"
 	"github.com/grafana/shipwright/plumbing/pipeline/clients/cli"
@@ -47,8 +48,14 @@ func NewCLIClient(opts pipeline.CommonOpts) pipeline.Client {
 }
 
 func NewDockerClient(opts pipeline.CommonOpts) pipeline.Client {
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		panic(err)
+	}
+
 	return &docker.Client{
-		Opts: opts,
-		Log:  opts.Log,
+		Client: cli,
+		Opts:   opts,
+		Log:    opts.Log,
 	}
 }

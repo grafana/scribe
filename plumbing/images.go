@@ -10,5 +10,9 @@ func DefaultImage(version string) string {
 }
 
 func SubImage(image, version string) string {
-	return fmt.Sprintf("%s:%s-%s", DefaultRepo, version, image)
+	return fmt.Sprintf("%s:%s-%s", DefaultRepo, image, version)
+}
+
+func DefaultRegistry() string {
+	return "https://index.docker.io/v1/"
 }

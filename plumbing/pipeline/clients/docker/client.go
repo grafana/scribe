@@ -8,14 +8,15 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
+	"github.com/docker/docker/client"
 	"github.com/grafana/shipwright/plumbing"
 	"github.com/grafana/shipwright/plumbing/cmdutil"
 	"github.com/grafana/shipwright/plumbing/pipeline"
 	"github.com/grafana/shipwright/plumbing/pipeline/clients/cli"
 	"github.com/grafana/shipwright/plumbing/pipelineutil"
 	"github.com/grafana/shipwright/plumbing/plog"
+	"github.com/grafana/shipwright/plumbing/stringutil"
 	"github.com/grafana/shipwright/plumbing/syncutil"
 	"github.com/sirupsen/logrus"
 )
@@ -24,7 +25,8 @@ import (
 // In order to emulate what happens in a remote environment, the steps are put into a queue before being ran.
 // Each step is ran in its own docker container.
 type Client struct {
-	Opts pipeline.CommonOpts
+	Client client.APIClient
+	Opts   pipeline.CommonOpts
 
 	Log *logrus.Logger
 }
@@ -36,70 +38,174 @@ func (c *Client) Validate(step pipeline.Step[pipeline.Action]) error {
 	return nil
 }
 
-// buildPipeline creates a docker container that compiles the provided pipeline so that the compiled pipeline can be mounted in
+// compilePipeline creates a docker container that compiles the provided pipeline so that the compiled pipeline can be mounted in
 // other containers without requiring that the container has the shipwright command or go installed.
-func (c *Client) buildPipeline(ctx context.Context) (string, error) {
-	p, err := os.MkdirTemp(os.TempDir(), "shipwright-")
-	if err != nil {
-		return "", fmt.Errorf("error creating temporary directory: %w", err)
-	}
+func (c *Client) compilePipeline(ctx context.Context, network *Network) (*Volume, error) {
+	log := c.Log
 
-	c.Log.Warnf("Building pipeline binary '%s' at '%s' for use in docker container...", c.Opts.Args.Path, p)
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("error getting current working directory: %w", err)
-	}
-
-	env := []string{
-		"GOOS=linux",
-		"GOARCH=amd64",
-		"CGO_ENABLED=0",
-	}
-
-	output := filepath.Join(p, "pipeline")
-	cmd := pipelineutil.GoBuild(ctx, pipelineutil.GoBuildOpts{
-		Pipeline: c.Opts.Args.Path,
-		Module:   wd,
-		Output:   output,
+	volume, err := CreateVolume(ctx, c.Client, CreateVolumeOpts{
+		Name: fmt.Sprintf("shipwright-%s", stringutil.Random(8)),
 	})
 
-	opts := RunOpts{
-		Stdout:  c.Log.WithField("stream", "stdout").Writer(),
-		Stderr:  c.Log.WithField("stream", "stderr").Writer(),
+	if err != nil {
+		return nil, fmt.Errorf("error creating docker volume: %w", err)
+	}
+
+	cmd := pipelineutil.GoBuild(ctx, pipelineutil.GoBuildOpts{
+		Pipeline: c.Opts.Args.Path,
+		Module:   "/var/shipwright",
+		Output:   "/opt/shipwright/pipeline",
+	})
+
+	mounts, err := DefaultMounts(volume)
+	if err != nil {
+		return nil, err
+	}
+
+	opts := CreateContainerOpts{
+		Name:    fmt.Sprintf("compile-%s", volume.Name),
 		Image:   plumbing.SubImage("go", c.Opts.Version),
-		Command: cmd.Args[0],
-		Args:    cmd.Args[1:],
-		Env:     env,
-		Volumes: []string{
-			fmt.Sprintf("%s:%s", p, p),
-			fmt.Sprintf("%s:/var/shipwright", wd),
+		Command: cmd.Args,
+		Mounts:  mounts,
+		Env: []string{
+			"GOOS=linux",
+			"GOARCH=amd64",
+			"CGO_ENABLED=0",
 		},
 	}
 
-	c.Log.Infof("Running docker command '%s'", append([]string{"docker"}, RunArgs(opts)...))
-	// This should run a command very similar to this:
-	// docker run --rm -v $TMPDIR:/var/shipwright shipwright/go:{version} go build -o /var/shipwright/pipeline ./{pipeline}
-	if err := Run(ctx, opts); err != nil {
-		return "", err
+	container, err := CreateContainer(ctx, c.Client, opts)
+	if err != nil {
+		return nil, err
 	}
 
-	c.Log.Infof("Successfully compiled pipeline at '%s'", output)
+	log.Warnf("Building pipeline binary '%s' in docker volume...", c.Opts.Args.Path)
+	// This should run a command very similar to this:
+	// docker run --rm -v $TMPDIR:/var/shipwright shipwright/go:{version} go build -o /var/shipwright/pipeline ./{pipeline}
+	if err := RunContainer(ctx, c.Client, RunContainerOpts{
+		Container: container,
+		Stdout:    log.WithField("stream", "stdout").Writer(),
+		Stderr:    log.WithField("stream", "stderr").Writer(),
+	}); err != nil {
+		return nil, err
+	}
 
-	return output, nil
+	c.Log.Infof("Successfully compiled pipeline in volume '%s'", volume.Name)
+
+	return volume, nil
+}
+
+func (c *Client) networkName() string {
+	uid := stringutil.Random(8)
+	return fmt.Sprintf("shipwright-%s-%s", stringutil.Slugify(c.Opts.Name), uid)
+}
+
+type walkOpts struct {
+	walker  pipeline.Walker
+	network *Network
+	volume  *Volume
 }
 
 func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
-	logger := c.Log.WithFields(plog.PipelineFields(c.Opts))
+	network, err := CreateNetwork(ctx, c.Client, CreateNetworkOpts{
+		Name: c.networkName(),
+	})
 
+	logger := c.Log.WithFields(plog.PipelineFields(c.Opts))
 	// Every step needs a compiled version of the pipeline in order to know what to do
 	// without requiring that every image has a copy of the shipwright binary
-	_, err := c.buildPipeline(ctx)
+	volume, err := c.compilePipeline(ctx, network)
 	if err != nil {
 		return fmt.Errorf("failed to compile the pipeline in docker. Error: %w", err)
 	}
 
-	// return w.WalkSteps(ctx, 0, func(ctx context.Context, steps ...pipeline.Step[pipeline.Action]) error {})
-	return nil
+	logger.Infoln("Running steps in docker")
+
+	return c.Walk(ctx, walkOpts{
+		walker:  w,
+		network: network,
+		volume:  volume,
+	})
+}
+
+func (c *Client) stepWalkFunc(opts walkOpts) pipeline.StepWalkFunc {
+	return func(ctx context.Context, steps ...pipeline.Step[pipeline.Action]) error {
+		wg := NewContainerWaitGroup()
+
+		for _, step := range steps {
+			log := c.Log.WithField("step", step.Name)
+
+			container, err := CreateStepContainer(ctx, c.Client, CreateStepContainerOpts{
+				Configurer: c,
+				Step:       step,
+				Network:    opts.network,
+				Binary:     "/opt/shipwright/pipeline",
+				Pipeline:   c.Opts.Args.Path,
+				BuildID:    c.Opts.Args.BuildID,
+				Volume:     opts.volume,
+			})
+			if err != nil {
+				return err
+			}
+
+			var (
+				stdout = log.WithField("stream", "stdout").Writer()
+				stderr = log.WithField("stream", "stderr").Writer()
+			)
+
+			wg.Add(RunContainerOpts{
+				Container: container,
+				Stdout:    stdout,
+				Stderr:    stderr,
+			})
+		}
+
+		return wg.Wait(ctx, c.Client)
+	}
+}
+
+func (c *Client) runPipeline(ctx context.Context, opts walkOpts, p pipeline.Step[pipeline.Pipeline]) error {
+	return opts.walker.WalkSteps(ctx, p.Serial, c.stepWalkFunc(opts))
+}
+
+// walkPipelines returns the walkFunc that runs all of the pipelines in docker in the appropriate order.
+// TODO: Most of this code looks very similar to the syncutil.StepWaitGroup and the ContainerWaitGroup type in this package.
+// There should be a way to reduce it.
+func (c *Client) walkPipelines(opts walkOpts) pipeline.PipelineWalkFunc {
+	return func(ctx context.Context, pipelines ...pipeline.Step[pipeline.Pipeline]) error {
+		var (
+			wg = syncutil.NewPipelineWaitGroup()
+		)
+
+		// These pipelines run in parallel, but must all complete before continuing on to the next set.
+		for i, v := range pipelines {
+			// If this is a sub-pipeline, then run these steps without waiting on other pipeliens to complete.
+			// However, if a sub-pipeline returns an error, then we shoud(?) stop.
+			// TODO: This is probably not true... if a sub-pipeline stops then users will probably want to take note of it, but let the rest of the pipeline continue.
+			// and see a report of the failure towards the end of the execution.
+			if v.Type == pipeline.StepTypeSubPipeline {
+				go func(ctx context.Context, p pipeline.Step[pipeline.Pipeline]) {
+					if err := c.runPipeline(ctx, opts, p); err != nil {
+						c.Log.WithError(err).Errorln("sub-pipeline failed")
+					}
+				}(ctx, pipelines[i])
+				continue
+			}
+
+			// Otherwise, add this pipeline to the set that needs to complete before moving on to the next set of pipelines.
+			wg.Add(pipelines[i], opts.walker, c.stepWalkFunc(opts))
+		}
+
+		if err := wg.Wait(ctx); err != nil {
+			return err
+		}
+
+		return nil
+	}
+}
+
+func (c *Client) Walk(ctx context.Context, opts walkOpts) error {
+	return opts.walker.WalkPipelines(ctx, c.walkPipelines(opts))
 }
 
 // KnownVolumes is a map of default argument to a function used to retrieve the volume the value represents.
@@ -247,35 +353,4 @@ func (c *Client) runAction(ctx context.Context, pipelinePath string, step pipeli
 		c.Log.Debugf("Running command 'docker %v'", RunArgs(runOpts))
 		return Run(ctx, runOpts)
 	}
-}
-
-func (c *Client) wrap(pipelinePath string, step pipeline.Step[pipeline.Action]) pipeline.Step[pipeline.Action] {
-	step.Content = func(ctx context.Context, opts pipeline.ActionOpts) error {
-		opts.Stdout = c.Log.WithField("stream", "stdout").Writer()
-		opts.Stderr = c.Log.WithField("stream", "stderr").Writer()
-
-		if err := c.runAction(ctx, pipelinePath, step)(ctx, opts); err != nil {
-			return err
-		}
-
-		return nil
-	}
-
-	return step
-}
-
-func (c *Client) runSteps(ctx context.Context, pipelinePath string, steps pipeline.StepList) error {
-	c.Log.Debugln("Running steps in parallel:", len(steps))
-
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
-	defer cancel()
-
-	wg := syncutil.NewWaitGroup()
-
-	opts := pipeline.ActionOpts{}
-	for _, v := range steps {
-		wg.Add(c.wrap(pipelinePath, v))
-	}
-
-	return wg.Wait(ctx, opts)
 }
