@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/drone/drone-yaml/yaml"
 )
@@ -16,7 +17,8 @@ func NewStarlark() *Starlark {
 
 func (s *Starlark) MarshalPipeline(pipeline *yaml.Pipeline) {
 
-	s.MethodStart(pipeline.Name, "pipeline")
+	name := s.methodName(pipeline.Name, "pipeline")
+	s.MethodStart(name)
 	s.Return()
 	s.Marshal(pipeline)
 	s.MethodEnd()
@@ -28,10 +30,27 @@ func (s *Starlark) MarshalPipeline(pipeline *yaml.Pipeline) {
 
 func (s *Starlark) MarshalStep(step *yaml.Container) {
 
-	s.MethodStart(step.Name, "step")
+	name := s.methodName(step.Name, "step")
+	s.MethodStart(name)
 	s.Return()
 	s.Marshal(step)
 	s.MethodEnd()
+}
+
+func (s *Starlark) JSONName(data interface{}, fieldName string) string {
+	value := reflect.ValueOf(data)
+	if value.Kind() == reflect.Ptr {
+		value = value.Elem()
+	}
+	t := value.Type()
+	f, found := t.FieldByName(fieldName)
+	if found {
+		tag := f.Tag.Get("json")
+		parts := strings.Split(tag, ",")
+		return parts[0]
+	} else {
+		return fieldName
+	}
 }
 
 func (s *Starlark) Marshal(data interface{}) {
@@ -46,7 +65,7 @@ func (s *Starlark) Marshal(data interface{}) {
 }
 
 func (s *Starlark) MarshalStruct(value reflect.Value, comma bool) {
-	s.StartDict(comma)
+	s.StartDict(false)
 	for _, field := range reflect.VisibleFields(value.Type()) {
 		v := value.FieldByName(field.Name)
 		if s.IsEmpty(v) {
@@ -57,7 +76,8 @@ func (s *Starlark) MarshalStruct(value reflect.Value, comma bool) {
 			v.IsNil() {
 			continue
 		}
-		s.DictFieldName(field.Name)
+		name := s.JSONName(value.Interface(), field.Name)
+		s.DictFieldName(name)
 		s.MarshalField(v, false)
 	}
 	s.EndDict(comma)
@@ -127,7 +147,7 @@ func (s *Starlark) MarshalOther(value reflect.Value) {
 }
 
 func (s *Starlark) MarshalMap(v reflect.Value) {
-	s.StartDict(true)
+	s.StartDict(false)
 	for _, key := range v.MapKeys() {
 		value := v.MapIndex(key)
 		s.MarshalMapKey(key.String())
@@ -157,6 +177,7 @@ func (s *Starlark) MarshalSlice(value reflect.Value) {
 		if v.Type().String() == "*yaml.Container" {
 			stepName := v.Elem().FieldByName("Name").String()
 			s.MethodCall(stepName, "step")
+
 		} else {
 			s.MarshalField(v, true)
 		}

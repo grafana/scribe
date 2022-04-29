@@ -32,7 +32,7 @@ func samplePipeline() (*yaml.Pipeline, string) {
 	expected.Add(`    "type": "docker",`)
 	expected.Add(`    "name": "sample",`)
 	expected.Add(`    "platform": {`)
-	expected.Add(`      "OS": "linux",`)
+	expected.Add(`      "os": "linux",`)
 	expected.Add(`      "arch": "amd64",`)
 	expected.Add(`    },`)
 	expected.Add(`    "steps": [`)

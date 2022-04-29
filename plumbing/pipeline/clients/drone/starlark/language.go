@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
-	"unicode"
 )
 
 type Starlark struct {
@@ -25,18 +24,16 @@ func (s *Starlark) Indent(change int) {
 }
 
 func (s *Starlark) methodName(name, suffix string) string {
-	name = strings.ReplaceAll(strings.ReplaceAll(s.ToLower(name), " ", "_"), "-", "_")
+	name = strings.ReplaceAll(strings.ReplaceAll(name, " ", "_"), "-", "_")
 	if suffix != "" && !strings.HasSuffix(name, "_"+suffix) {
 		name += "_" + suffix
 	}
 	return name
 }
 
-func (s *Starlark) MethodStart(name, suffix string) {
-	methodName := s.methodName(name, suffix)
-
+func (s *Starlark) MethodStart(name string) {
 	s.Indent(2)
-	s.buf.WriteString(fmt.Sprintf("def %s():\n", methodName))
+	s.buf.WriteString(fmt.Sprintf("def %s():\n", name))
 }
 
 func (s *Starlark) MethodEnd() {
@@ -67,7 +64,7 @@ func (s *Starlark) StartDict(indent bool) {
 
 func (s *Starlark) DictFieldName(name string) {
 	s.Indent(0)
-	s.buf.WriteString(fmt.Sprintf(`"%s": `, s.ToLower(name)))
+	s.buf.WriteString(fmt.Sprintf(`"%s": `, name))
 }
 
 func (s *Starlark) EndDict(comma bool) {
@@ -95,13 +92,4 @@ func (s *Starlark) Bytes() []byte {
 
 func (s *Starlark) String() string {
 	return s.buf.String()
-}
-
-func (s *Starlark) ToLower(str string) string {
-	if len(str) > 1 {
-		if unicode.IsUpper(rune(str[1])) {
-			return str
-		}
-	}
-	return strings.ToLower(str)
 }
