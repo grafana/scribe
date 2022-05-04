@@ -37,6 +37,12 @@ func (i Image) Tag() (string, error) {
 }
 
 func version() (string, error) {
+	// git config --global --add safe.directory * is needed to resolve the restriction introduced by CVE-2022-24765.
+	out, err := exec.Command("git", "config", "--global", "--add", "safe.directory", "*").CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("running command 'git config --global --add safe.directory *' resulted in error '%w'. Output: '%s'", err, string(out))
+	}
+
 	version, err := exec.Command("git", "describe", "--tags", "--dirty", "--always").CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("running command 'git describe --tags --dirty --always' resulted in the error '%w'. Output: '%s'", err, string(version))

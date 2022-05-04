@@ -33,18 +33,29 @@ func WriteBody(body io.Reader, out io.Writer) error {
 	return nil
 }
 
-type pushLogs struct {
-	Progress string `json:"progress"`
+type ImageProgressDetail struct {
+	Current int64 `json:"current"`
+	Total   int64 `json:"total"`
 }
 
-func WritePushLogs(r io.Reader, out io.Writer) error {
+type ImageProgress struct {
+	Status         string              `json:"status"`
+	ProgressDetail ImageProgressDetail `json:"progressDetail"`
+	Progress       string              `json:"progress"`
+}
+
+func WriteImageLogs(r io.Reader, out io.Writer) error {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		l := &pushLogs{}
+		l := &ImageProgress{}
 		if err := json.Unmarshal(scanner.Bytes(), l); err != nil {
 			return err
 		}
-		io.WriteString(out, fmt.Sprintf("%s\n", l.Progress))
+		if l.Status == "Downloading" {
+			io.WriteString(out, fmt.Sprintf("%20s | [%5dmb / %5dmb] %s\n", l.Status, l.ProgressDetail.Current/1024/1024, l.ProgressDetail.Total/1024/1024, l.Progress))
+		} else {
+			io.WriteString(out, fmt.Sprintf("%s\n", l.Status))
+		}
 	}
 
 	return nil

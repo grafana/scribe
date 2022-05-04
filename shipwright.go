@@ -52,6 +52,14 @@ func (s *Shipwright[T]) Pipeline() int64 {
 	return s.pipeline
 }
 
+func (s *Shipwright[T]) NameOrDefault() string {
+	if s.Opts.Name != "" {
+		return s.Opts.Name
+	}
+
+	return "default"
+}
+
 // When allows users to define when this pipeline is executed, especially in the remote environment.
 func (s *Shipwright[T]) When(events ...pipeline.Event) {
 	if err := s.Collection.AddEvents(s.pipeline, events...); err != nil {
@@ -261,10 +269,15 @@ func (s *Shipwright[T]) Execute(ctx context.Context) error {
 	if s.Opts.Args.Step != nil {
 		step, err := collection.BySerial(ctx, *s.Opts.Args.Step)
 		if err != nil {
-			return fmt.Errorf("could not find step. Error: %w", err)
+			return fmt.Errorf("could not find step with id '%d'. Error: %w", s.Opts.Args.Step, err)
 		}
-
-		collection = collection.Sub(step...)
+		l := s.newList(step...)
+		c, err := pipeline.NewCollectinoWithSteps(s.NameOrDefault(), l)
+		if err != nil {
+			return err
+		}
+		s.Log.Debugln("'-step' argument provided. Found matching step(s)", pipeline.StepNames(step))
+		collection = c
 	}
 
 	if err := s.Client.Done(ctx, collection); err != nil {

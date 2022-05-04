@@ -34,5 +34,5 @@ func Push(ctx context.Context, opts PushOpts) error {
 	}
 	defer res.Close()
 
-	return WritePushLogs(res, opts.Stdout)
+	return WriteImageLogs(res, opts.Stdout)
 }

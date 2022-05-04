@@ -18,6 +18,9 @@ var (
 // PipelineWalkFunc walks through the pipelines that the collection provides. Each pipeline is a pipeline of steps, so each will walk through the list of steps using the StepWalkFunc.
 func (c *Client) PipelineWalkFunc(w pipeline.Walker, wf pipeline.StepWalkFunc) func(context.Context, ...pipeline.Step[pipeline.Pipeline]) error {
 	return func(ctx context.Context, pipelines ...pipeline.Step[pipeline.Pipeline]) error {
+		log := c.Log
+		log.Debugln("Running pipeline(s)", pipeline.StepNames(pipelines))
+
 		var (
 			wg = syncutil.NewPipelineWaitGroup()
 		)

@@ -1,95 +1,36 @@
 package docker
 
 import (
-	"bytes"
 	"context"
-	"fmt"
+	"errors"
 	"io"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
+	"github.com/grafana/shipwright/docker"
 	"github.com/grafana/shipwright/plumbing/cmdutil"
 	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/pipeline/clients/cli"
+	"github.com/grafana/shipwright/plumbing/stringutil"
 )
-
-type Container struct {
-	ID string
-}
-
-type CreateContainerOpts struct {
-	Name    string
-	Image   string
-	Command []string
-	Network *Network
-	Mounts  []mount.Mount
-	Env     []string
-}
-
-// CreateContainer creates a new container using the ContainerClient.
-// In order for a container to be created, the image has to exist on the machine, so this function will also attempt to pull the provided image.
-func CreateContainer(ctx context.Context, cli client.APIClient, opts CreateContainerOpts) (*Container, error) {
-	buf := bytes.NewBuffer(nil)
-	r, err := cli.ImagePull(ctx, opts.Image, types.ImagePullOptions{})
-	if err != nil {
-		if r != nil {
-			io.Copy(buf, r)
-			err = fmt.Errorf("Output: %s. Error: %w", buf.String(), err)
-		}
-
-		return nil, err
-	}
-
-	containerConfig := &container.Config{
-		Image: opts.Image,
-		Cmd:   opts.Command,
-		Env:   opts.Env,
-	}
-
-	hostConfig := &container.HostConfig{
-		Mounts: opts.Mounts,
-	}
-
-	netConfig := &network.NetworkingConfig{
-		EndpointsConfig: map[string]*network.EndpointSettings{},
-	}
-
-	if opts.Network != nil {
-		hostConfig.NetworkMode = container.NetworkMode(opts.Network.ID)
-		netConfig.EndpointsConfig[opts.Network.ID] = &network.EndpointSettings{}
-	}
-
-	// ContainerCreate(ctx context.Context, config *containertypes.Config, hostConfig *containertypes.HostConfig, networkingConfig *networktypes.NetworkingConfig, platform *specs.Platform, containerName string) (containertypes.ContainerCreateCreatedBody, error)
-	res, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, netConfig, nil, "")
-	if err != nil {
-		return nil, err
-	}
-
-	return &Container{
-		ID: res.ID,
-	}, nil
-}
-
-func DeleteContainer(ctx context.Context, cli client.APIClient, container *Container) error {
-	return cli.ContainerRemove(ctx, container.ID, types.ContainerRemoveOptions{
-		RemoveVolumes: true,
-		RemoveLinks:   true,
-	})
-}
 
 type CreateStepContainerOpts struct {
 	Configurer pipeline.Configurer
 	Step       pipeline.Step[pipeline.Action]
-	Network    *Network
-	Volume     *Volume
+	Env        []string
+	Network    *docker.Network
+	Volume     *docker.Volume
 	Binary     string
 	Pipeline   string
 	BuildID    string
+	Out        io.Writer
 }
 
-func CreateStepContainer(ctx context.Context, cli client.APIClient, opts CreateStepContainerOpts) (*Container, error) {
+func CreateStepContainer(ctx context.Context, cli client.APIClient, opts CreateStepContainerOpts) (*docker.Container, error) {
 	cmd, err := cmdutil.StepCommand(opts.Configurer, cmdutil.CommandOpts{
 		CompiledPipeline: opts.Binary,
 		Path:             opts.Pipeline,
@@ -106,10 +47,100 @@ func CreateStepContainer(ctx context.Context, cli client.APIClient, opts CreateS
 		return nil, err
 	}
 
-	return CreateContainer(ctx, cli, CreateContainerOpts{
-		Name:    opts.Step.Name,
+	createOpts, err := applyArguments(opts.Configurer, docker.CreateContainerOpts{
+		Name:    strings.Join([]string{"shipwright", stringutil.Slugify(opts.Step.Name), stringutil.Random(8)}, "-"),
+		Image:   opts.Step.Image,
 		Network: opts.Network,
 		Mounts:  mounts,
 		Command: cmd,
-	})
+		Out:     opts.Out,
+		Env:     append(opts.Env, "GIT_CEILING_DIRECTORIES=/var/shipwright"),
+	}, opts.Step.Arguments)
+
+	return docker.CreateContainer(ctx, cli, createOpts)
+}
+
+// Value retrieves the configuration item the same way the CLI does; by looking in the argmap or by asking via stdin.
+func (c *Client) Value(arg pipeline.Argument) (string, error) {
+	switch arg.Type {
+	case pipeline.ArgumentTypeString:
+		return cli.GetArgValue(c.Opts.Args, arg)
+	case pipeline.ArgumentTypeFS:
+		return GetVolumeValue(c.Opts.Args, arg)
+	}
+
+	return "", nil
+}
+
+const ShipwrightContainerPath = "/var/shipwright"
+
+func formatVolume(dir, mountPath string) string {
+	return strings.Join([]string{dir, mountPath}, ":")
+}
+
+func fsArgument(dir string) (mount.Mount, error) {
+	// If they've provided a directory and a separate mountpath, then we can safely not set one
+	if strings.Contains(dir, ":") {
+		s := strings.Split(dir, ":")
+		if len(s) != 2 {
+			return mount.Mount{}, errors.New("invalid format. filesystem paths should be formatted: '<source>:<target>'")
+		}
+
+		return mount.Mount{
+			Source: s[0],
+			Target: s[1],
+		}, nil
+	}
+
+	// Relative paths should be mounted relative to /var/shipwright in the container,
+	// and have an absolute path for mounting (because docker).
+	wd, err := os.Getwd()
+	if err != nil {
+		return mount.Mount{}, err
+	}
+
+	d, err := filepath.Abs(dir)
+	if err != nil {
+		return mount.Mount{}, err
+	}
+
+	rel, err := filepath.Rel(wd, d)
+	if err != nil {
+		return mount.Mount{}, err
+	}
+
+	return mount.Mount{
+		Type:   mount.TypeBind,
+		Source: d,
+		Target: path.Join(ShipwrightContainerPath, rel),
+	}, nil
+}
+
+// applyArguments applies a slice of arguments, typically from the requirements in a Step, onto the options
+// used to run the docker container for a step.
+// For example, if the step supplied requires the project (by default all of them do), then the argument type
+// ArgumentTypeFS is required and is added to the RunOpts volume.
+func applyArguments(configurer pipeline.Configurer, opts docker.CreateContainerOpts, args []pipeline.Argument) (docker.CreateContainerOpts, error) {
+	for _, arg := range args {
+		value, err := configurer.Value(arg)
+		if err != nil {
+			return opts, err
+		}
+
+		switch arg.Type {
+		case pipeline.ArgumentTypeFS:
+			mount, err := fsArgument(value)
+			if err != nil {
+				return opts, err
+			}
+
+			// Prefering path.Join here over filepath.Join in case any silly Windows users try to use this thing
+			opts.Mounts = append(opts.Mounts, mount)
+		case pipeline.ArgumentTypeString:
+			// String arguments are already appended to the command and have already been placed in RunOpts; we don't need to re-implement that.
+			continue
+		}
+	}
+
+	return opts, nil
 }
