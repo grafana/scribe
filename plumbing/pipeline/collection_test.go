@@ -256,6 +256,3 @@ func TestCollectionGetters(t *testing.T) {
 
 func TestCollectionByName(t *testing.T) {
 }
-
-func TestCollectionSub(t *testing.T) {
-}

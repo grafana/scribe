@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/grafana/shipwright/plumbing/pipeline/dag"
 )
@@ -201,7 +200,6 @@ func (c *Collection) pipelineVisitFunc(ctx context.Context, wf PipelineWalkFunc)
 	)
 
 	return func(n *dag.Node[Step[Pipeline]]) error {
-		log.Println("Visiting pipeline", n.ID, n.Value.Name, "nodes:", len(n.Value.Content.Nodes))
 		if n.ID == 0 {
 			adj = AdjListToSteps(c.Graph.Adj(0))
 			return nil
@@ -320,6 +318,10 @@ func (c *Collection) BySerial(ctx context.Context, id int64) ([]Step[Action], er
 		return nil, err
 	}
 
+	if len(steps) == 0 {
+		return nil, errors.New("no step found")
+	}
+
 	return steps, nil
 }
 
@@ -335,7 +337,6 @@ func (c *Collection) ByName(ctx context.Context, name string) ([]Step[Action], e
 				continue
 			}
 
-			log.Println("walking pipeline", pipeline.Name)
 			return c.WalkSteps(ctx, pipeline.Serial, func(ctx context.Context, s ...Step[Action]) error {
 				for i, step := range s {
 					if step.Name == name {
@@ -360,9 +361,23 @@ func (c *Collection) Pipeline(string) (Step[StepList], error) {
 	return Step[StepList]{}, nil
 }
 
-// Sub creates a new Collection of the same type from a list of Steps
-func (c *Collection) Sub(...Step[Action]) *Collection {
-	return nil
+// NewCollectinoWithSteps creates a new Collection with a single pipeline from a list of Steps.
+func NewCollectinoWithSteps(pipelineName string, steps ...Step[StepList]) (*Collection, error) {
+	var (
+		col       = NewCollection()
+		id  int64 = 1
+	)
+	if err := col.AddPipelines(NewPipelineNode(pipelineName, id)); err != nil {
+		return nil, err
+	}
+
+	for i := range steps {
+		if err := col.AddSteps(id, steps[i]); err != nil {
+			return nil, err
+		}
+	}
+
+	return col, nil
 }
 
 func NewCollection() *Collection {

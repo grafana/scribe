@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/grafana/shipwright/plumbing/pipeline"
 	"github.com/grafana/shipwright/plumbing/syncutil"
@@ -16,8 +15,45 @@ var (
 	ErrorCLIStepHasImage = errors.New("step has a docker image specified. This may cause unexpected results if ran in CLI mode. The `-mode=docker` flag is likely more suitable")
 )
 
-// WalkFunc walks through the steps that the collector provides
-func (c *Client) WalkFunc(ctx context.Context, step ...pipeline.Step[pipeline.Action]) error {
+// PipelineWalkFunc walks through the pipelines that the collection provides. Each pipeline is a pipeline of steps, so each will walk through the list of steps using the StepWalkFunc.
+func (c *Client) PipelineWalkFunc(w pipeline.Walker, wf pipeline.StepWalkFunc) func(context.Context, ...pipeline.Step[pipeline.Pipeline]) error {
+	return func(ctx context.Context, pipelines ...pipeline.Step[pipeline.Pipeline]) error {
+		log := c.Log
+		log.Debugln("Running pipeline(s)", pipeline.StepNames(pipelines))
+
+		var (
+			wg = syncutil.NewPipelineWaitGroup()
+		)
+
+		// These pipelines run in parallel, but must all complete before continuing on to the next set.
+		for i, v := range pipelines {
+			// If this is a sub-pipeline, then run these steps without waiting on other pipeliens to complete.
+			// However, if a sub-pipeline returns an error, then we shoud(?) stop.
+			// TODO: This is probably not true... if a sub-pipeline stops then users will probably want to take note of it, but let the rest of the pipeline continue.
+			// and see a report of the failure towards the end of the execution.
+			if v.Type == pipeline.StepTypeSubPipeline {
+				go func(ctx context.Context, p pipeline.Step[pipeline.Pipeline]) {
+					if err := c.runPipeline(ctx, w, wf, p); err != nil {
+						c.Log.WithError(err).Errorln("sub-pipeline failed")
+					}
+				}(ctx, pipelines[i])
+				continue
+			}
+
+			// Otherwise, add this pipeline to the set that needs to complete before moving on to the next set of pipelines.
+			wg.Add(pipelines[i], w, wf)
+		}
+
+		if err := wg.Wait(ctx); err != nil {
+			return err
+		}
+
+		return nil
+	}
+}
+
+// StepWalkFunc walks through the steps that the collection provides.
+func (c *Client) StepWalkFunc(ctx context.Context, step ...pipeline.Step[pipeline.Action]) error {
 	if err := c.runSteps(ctx, step); err != nil {
 		return err
 	}
@@ -60,28 +96,35 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 	}
 
 	// Because these wrappers wrap the actions of each step, the first wrapper typically runs first.
-	walkFunc := traceWrapper.Wrap(c.WalkFunc)
-	walkFunc = logWrapper.Wrap(walkFunc)
+	stepWalkFunc := traceWrapper.Wrap(c.StepWalkFunc)
+	stepWalkFunc = logWrapper.Wrap(stepWalkFunc)
 
-	return w.WalkSteps(ctx, 0, walkFunc)
+	pipelineWalkFunc := c.PipelineWalkFunc(w, stepWalkFunc)
+
+	return w.WalkPipelines(ctx, pipelineWalkFunc)
+}
+
+func (c *Client) runPipeline(ctx context.Context, w pipeline.Walker, wf pipeline.StepWalkFunc, p pipeline.Step[pipeline.Pipeline]) error {
+	return w.WalkSteps(ctx, p.Serial, wf)
 }
 
 func (c *Client) runSteps(ctx context.Context, steps pipeline.StepList) error {
 	c.Log.Debugln("Running steps in parallel:", len(steps))
 
 	var (
-		wg   = syncutil.NewWaitGroup()
-		opts = pipeline.ActionOpts{
-			Tracer: c.Opts.Tracer,
-		}
+		wg = syncutil.NewStepWaitGroup()
 	)
 
 	for _, v := range steps {
-		wg.Add(v)
+		log := c.Log.WithField("step", v.Name)
+		wg.Add(v, pipeline.ActionOpts{
+			Tracer: c.Opts.Tracer,
+			Logger: log,
+		})
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
-	defer cancel()
+	// ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
+	// defer cancel()
 
-	return wg.Wait(ctx, opts)
+	return wg.Wait(ctx)
 }
