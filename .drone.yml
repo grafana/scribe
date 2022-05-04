@@ -1,41 +1,131 @@
+---
 kind: pipeline
 type: docker
-name: basic pipeline
-clone:
-  disable: true
+name: groan
+
+platform:
+  os: linux
+  arch: amd64
+
 steps:
-- name: clone
-  image: ghcr.io/grafana/shipwright/git:828dcab-dirty
-  commands:
-  - shipwright -step=0 -arg=git-commit-ref=$DRONE_COMMIT_REF -arg=remote-url=$DRONE_GIT_SSH_URL
-    -arg=workdir=$DRONE_REPO_NAME ./ci
+- name: builtin-compile-pipeline
+  image: grafana/shipwright:go-v0.8.0
+  command:
+  - go
+  - build
+  - -o
+  - /var/shipwright/pipeline
+  - ./ci
+  environment:
+    CGO_ENABLED: 0
+    GOARCH: amd64
+    GOOS: linux
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+
 - name: test
-  image: ghcr.io/grafana/shipwright:828dcab-dirty
+  image: grafana/shipwright:go-v0.8.0
   commands:
-  - shipwright -step=1 ./ci
+  - /var/shipwright/pipeline -step=0 -build-id=$DRONE_BUILD_NUMBER ./ci
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
-  - clone
+  - builtin-compile-pipeline
+
 - name: build-shipwright-docker-image
-  image: ghcr.io/grafana/shipwright:828dcab-dirty
+  image: grafana/shipwright:docker-v0.8.0
   commands:
-  - shipwright -step=2 ./ci
+  - /var/shipwright/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER ./ci
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - test
-- name: build-shipwright/git-image
-  image: ghcr.io/grafana/shipwright:828dcab-dirty
+
+- name: build-git-image
+  image: grafana/shipwright:docker-v0.8.0
   commands:
-  - shipwright -step=3 ./ci
+  - /var/shipwright/pipeline -step=4 -build-id=$DRONE_BUILD_NUMBER ./ci
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
   - build-shipwright-docker-image
-- name: build-shipwright/go-image
-  image: ghcr.io/grafana/shipwright:828dcab-dirty
+
+- name: build-go-image
+  image: grafana/shipwright:docker-v0.8.0
   commands:
-  - shipwright -step=4 ./ci
+  - /var/shipwright/pipeline -step=5 -build-id=$DRONE_BUILD_NUMBER ./ci
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
-  - build-shipwright-docker-image
-- name: build-shipwright/node-image
-  image: ghcr.io/grafana/shipwright:828dcab-dirty
+  - build-git-image
+
+- name: build-node-image
+  image: grafana/shipwright:docker-v0.8.0
   commands:
-  - shipwright -step=5 ./ci
+  - /var/shipwright/pipeline -step=6 -build-id=$DRONE_BUILD_NUMBER ./ci
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
   depends_on:
-  - build-shipwright-docker-image
+  - build-go-image
+
+- name: build-docker-image
+  image: grafana/shipwright:docker-v0.8.0
+  commands:
+  - /var/shipwright/pipeline -step=7 -build-id=$DRONE_BUILD_NUMBER ./ci
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  depends_on:
+  - build-node-image
+
+- name: push-git
+  image: grafana/shipwright:docker-v0.8.0
+  commands:
+  - /var/shipwright/pipeline -step=12 -build-id=$DRONE_BUILD_NUMBER ./ci
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  depends_on:
+  - build-docker-image
+
+- name: push-go
+  image: grafana/shipwright:docker-v0.8.0
+  commands:
+  - /var/shipwright/pipeline -step=13 -build-id=$DRONE_BUILD_NUMBER ./ci
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  depends_on:
+  - push-git
+
+- name: push-node
+  image: grafana/shipwright:docker-v0.8.0
+  commands:
+  - /var/shipwright/pipeline -step=14 -build-id=$DRONE_BUILD_NUMBER ./ci
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  depends_on:
+  - push-go
+
+- name: push-docker
+  image: grafana/shipwright:docker-v0.8.0
+  commands:
+  - /var/shipwright/pipeline -step=15 -build-id=$DRONE_BUILD_NUMBER ./ci
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  depends_on:
+  - push-node
+
+volumes:
+- name: shipwright
+  temp: {}
+
+...
