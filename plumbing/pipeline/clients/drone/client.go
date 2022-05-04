@@ -24,7 +24,14 @@ type Client struct {
 
 	Log *logrus.Logger
 
-	Language int
+	// Language defines the language of the pipeline that will be generated.
+	// For example, if Language is LanguageYAML, then the generated pipeline
+	// will be the yaml that will tell drone to run the pipeline as it is written.
+	//
+	// Other languages will be generated using functions that you can use within
+	// your own pipelines in those other languages. They are intended to facilitate
+	// transitions between other systems and Shipwright.
+	Language DroneLanguage
 }
 
 func (c *Client) Validate(step pipeline.Step[pipeline.Action]) error {
@@ -197,9 +204,7 @@ func (c *Client) renderStarlark(cfg []yaml.Resource) error {
 	for _, resource := range cfg {
 		switch t := resource.(type) {
 		case *yaml.Pipeline:
-			pipeline := resource.(*yaml.Pipeline)
-
-			sl.MarshalPipeline(pipeline)
+			sl.MarshalPipeline(t)
 
 		default:
 			fmt.Printf("%s: resource %v\n", t, resource)

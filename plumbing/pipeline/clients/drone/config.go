@@ -7,12 +7,12 @@ import (
 	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
-const (
-	// LanguageYAML specifies that the Drone config should be emitted in YAML
-	LanguageYAML = iota
+type DroneLanguage int
 
-	// LanguageStarlark specifies that the Drone config should be emitted in YAML
-	LanguageStarlark = iota
+const (
+	// The languages that are available when generating a Drone config.
+	LanguageYAML DroneLanguage = iota
+	LanguageStarlark
 )
 
 var argEnvMap = map[pipeline.Argument]string{

@@ -85,7 +85,6 @@ func sampleStep() (*yaml.Container, string) {
 	}, expected.String()
 }
 
-// TestMarshalString
 func TestMarshalString(t *testing.T) {
 	p, _ := samplePipeline()
 	v := reflect.ValueOf(p.Kind)
@@ -96,7 +95,6 @@ func TestMarshalString(t *testing.T) {
 	assertString(t, sl.String(), `"pipeline",`+"\n")
 }
 
-// TestMarshalStep
 func TestMarshalStep(t *testing.T) {
 	step, expectedStep := sampleStep()
 
@@ -105,7 +103,6 @@ func TestMarshalStep(t *testing.T) {
 	assertString(t, s.String(), expectedStep)
 }
 
-// TestMarshalPipeline
 func TestMarshalPipeline(t *testing.T) {
 	pipeline, expectedPipeline := samplePipeline()
 
