@@ -24,7 +24,8 @@ func (s *Starlark) Indent(change int) {
 }
 
 func (s *Starlark) methodName(name, suffix string) string {
-	name = strings.ReplaceAll(strings.ReplaceAll(name, " ", "_"), "-", "_")
+	r := strings.NewReplacer("-", "_", " ", "_", ":", "")
+	name = r.Replace(name)
 	if suffix != "" && !strings.HasSuffix(name, "_"+suffix) {
 		name += "_" + suffix
 	}
