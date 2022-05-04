@@ -22,6 +22,5 @@ func main() {
 	// Build all of the shipwright docker images in parallel
 	// With unbound parallelism this could cause some very poor performance
 	sw.Run(docker.BuildSteps(sw, docker.Images)...)
-
-	// sw.Run(docker.PushSteps(sw, docker.Images)...)
+	sw.Run(docker.PushSteps(sw, docker.Images)...)
 }
