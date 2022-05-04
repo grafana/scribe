@@ -12,6 +12,7 @@ import (
 func NewStarlark() *Starlark {
 	s := Starlark{}
 	s.buf = &bytes.Buffer{}
+	s.isNewline = true
 	return &s
 }
 
@@ -65,7 +66,7 @@ func (s *Starlark) Marshal(data interface{}) {
 }
 
 func (s *Starlark) MarshalStruct(value reflect.Value, comma bool) {
-	s.StartDict(false)
+	s.StartDict()
 	for _, field := range reflect.VisibleFields(value.Type()) {
 		v := value.FieldByName(field.Name)
 		if s.IsEmpty(v) {
@@ -78,7 +79,7 @@ func (s *Starlark) MarshalStruct(value reflect.Value, comma bool) {
 		}
 		name := s.JSONName(value.Interface(), field.Name)
 		s.DictFieldName(name)
-		s.MarshalField(v, false)
+		s.MarshalField(v)
 	}
 	s.EndDict(comma)
 }
@@ -107,7 +108,7 @@ func (s *Starlark) IsEmpty(value reflect.Value) bool {
 	return false
 }
 
-func (s *Starlark) MarshalField(value reflect.Value, indent bool) {
+func (s *Starlark) MarshalField(value reflect.Value) {
 
 	if value.Kind() == reflect.Ptr {
 		value = value.Elem()
@@ -127,44 +128,39 @@ func (s *Starlark) MarshalField(value reflect.Value, indent bool) {
 		s.MarshalStruct(value, true)
 
 	case reflect.String:
-		s.MarshalString(value, indent)
+		s.MarshalString(value)
 
 	default:
 		s.MarshalOther(value)
 	}
 }
 
-func (s *Starlark) MarshalString(value reflect.Value, indent bool) {
-	if indent {
-		s.Indent(0)
-	}
-	s.buf.WriteString(fmt.Sprintf("\"%s\",\n", value))
+func (s *Starlark) MarshalString(value reflect.Value) {
+	s.Write(fmt.Sprintf("\"%s\",\n", value))
 }
 
 func (s *Starlark) MarshalOther(value reflect.Value) {
-	s.Indent(0)
-	s.buf.WriteString(fmt.Sprintf("%s,\n", value))
+	s.Write(fmt.Sprintf("%s,\n", value))
 }
 
 func (s *Starlark) MarshalMap(v reflect.Value) {
-	s.StartDict(false)
+	s.StartDict()
 	for _, key := range v.MapKeys() {
 		value := v.MapIndex(key)
 		s.MarshalMapKey(key.String())
 		if value.Type().String() == "*yaml.Variable" {
 			v2 := value.Elem().FieldByName("Value")
-			s.MarshalString(v2, false)
+			s.MarshalString(v2)
 
 		} else {
-			s.MarshalField(value, false)
+			s.MarshalField(value)
 		}
 	}
 	s.EndDict(true)
 }
 
 func (s *Starlark) MarshalMapKey(key string) {
-	s.Indent(0)
-	s.buf.WriteString(fmt.Sprintf(`"%s": `, key))
+	s.Write(fmt.Sprintf(`"%s": `, key))
 }
 
 func (s *Starlark) MarshalSlice(value reflect.Value) {
@@ -179,7 +175,7 @@ func (s *Starlark) MarshalSlice(value reflect.Value) {
 			s.MethodCall(stepName, "step")
 
 		} else {
-			s.MarshalField(v, true)
+			s.MarshalField(v)
 		}
 	}
 	s.EndArray()
