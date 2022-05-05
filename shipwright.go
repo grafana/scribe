@@ -316,7 +316,7 @@ func (s *Shipwright[T]) Done() {
 		logger.WithFields(logrus.Fields{
 			"status":       "error",
 			"completed_at": time.Now().Unix(),
-		}).WithError(err).Error("execution completed")
+		}).WithError(err).Fatalln("execution completed")
 		return
 	}
 
@@ -357,12 +357,18 @@ func parseOpts() (pipeline.CommonOpts, error) {
 		}
 	}
 
+	s, err := GetState(args.State)
+	if err != nil {
+		return pipeline.CommonOpts{}, err
+	}
+
 	return pipeline.CommonOpts{
 		Version: args.Version,
 		Output:  os.Stdout,
 		Args:    args,
 		Log:     logger,
 		Tracer:  tracer,
+		State:   s,
 	}, nil
 }
 

@@ -93,16 +93,22 @@ func (i Image) PushStep(sw *shipwright.Shipwright[pipeline.Action]) pipeline.Ste
 			return err
 		}
 
+		auth, err := opts.State.Get(ArgumentDockerAuthToken.Key)
+		if err != nil {
+			return err
+		}
+
 		opts.Logger.Infoln("Pushing", tag)
 		return docker.Push(ctx, docker.PushOpts{
-			Name:     tag,
-			Registry: plumbing.DefaultRegistry(),
-			Stdout:   opts.Stdout,
+			Name:      tag,
+			Registry:  plumbing.DefaultRegistry(),
+			AuthToken: auth,
+			Stdout:    opts.Stdout,
 		})
 	}
 
 	return pipeline.NewStep(action).
-		WithArguments(pipeline.ArgumentSourceFS, pipeline.ArgumentDockerSocketFS).
+		WithArguments(pipeline.ArgumentSourceFS, pipeline.ArgumentDockerSocketFS, ArgumentDockerAuthToken).
 		WithImage(plumbing.SubImage("docker", sw.Version))
 }
 

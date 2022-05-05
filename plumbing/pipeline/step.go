@@ -14,6 +14,7 @@ import (
 // The ActionOpts are provided to every step that is ran.
 // Each step can choose to use these options.
 type ActionOpts struct {
+	State  State
 	Stdout io.Writer
 	Stderr io.Writer
 	Tracer opentracing.Tracer
@@ -45,7 +46,7 @@ const (
 // StepContent is used as a type argument to the "Step" type.
 // * Step[Action] is a Step that performs a single action. This type mostly exists for use by pipeline developers to define a single step that performs a single action.
 // * Step[StepList] is a Step that stores multiple Steps that have actions. This is used for storage purposes in the internal data DAG structure.
-// * Step[Pipeline] is a Step that stores
+// * Step[Pipeline] is a Step that stores a graph of steps.
 type StepContent interface {
 	Action | StepList | Pipeline
 }

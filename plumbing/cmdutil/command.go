@@ -18,6 +18,8 @@ type CommandOpts struct {
 	Path string
 	// BuildID is an optional argument that will be supplied to the 'shipwright' command as '-build-id'.
 	BuildID string
+	// State is an optional argument that is supplied as '-state'. It is a path to the JSON state file which allows steps to share data.
+	State string
 }
 
 // StepCommand returns the command string for running a single step.
@@ -40,6 +42,10 @@ func StepCommand(c pipeline.Configurer, opts CommandOpts) ([]string, error) {
 
 	if opts.BuildID != "" {
 		args = append(args, fmt.Sprintf("-build-id=%s", opts.BuildID))
+	}
+
+	if opts.State != "" {
+		args = append(args, fmt.Sprintf("-state=%s", opts.State))
 	}
 
 	name := "shipwright"

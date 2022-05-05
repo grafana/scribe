@@ -38,10 +38,11 @@ func (c *Client) networkName() string {
 }
 
 type walkOpts struct {
-	walker  pipeline.Walker
-	network *docker.Network
-	volume  *docker.Volume
-	log     logrus.FieldLogger
+	walker      pipeline.Walker
+	network     *docker.Network
+	volume      *docker.Volume
+	stateVolume *docker.Volume
+	log         logrus.FieldLogger
 }
 
 func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
@@ -63,10 +64,11 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 
 	logger.Infoln("Running steps in docker")
 	return c.Walk(ctx, walkOpts{
-		walker:  w,
-		network: network,
-		volume:  volume,
-		log:     logger,
+		walker:      w,
+		network:     network,
+		volume:      volume,
+		stateVolume: &docker.Volume{},
+		log:         logger,
 	})
 }
 

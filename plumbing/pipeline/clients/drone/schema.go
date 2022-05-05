@@ -41,7 +41,7 @@ func HandleSecrets(c pipeline.Configurer, step pipeline.Step[pipeline.Action]) m
 	return env
 }
 
-func NewStep(c pipeline.Configurer, path string, step pipeline.Step[pipeline.Action]) (*yaml.Container, error) {
+func NewStep(c pipeline.Configurer, path, state string, step pipeline.Step[pipeline.Action]) (*yaml.Container, error) {
 	var (
 		name  = stringutil.Slugify(step.Name)
 		deps  = make([]string, len(step.Dependencies))
@@ -58,6 +58,7 @@ func NewStep(c pipeline.Configurer, path string, step pipeline.Step[pipeline.Act
 		Path:             path,
 		Step:             step,
 		BuildID:          "$DRONE_BUILD_NUMBER",
+		State:            state,
 	})
 
 	if err != nil {
