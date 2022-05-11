@@ -17,5 +17,5 @@ type CommonOpts struct {
 	Args    *plumbing.PipelineArgs
 	Log     *logrus.Logger
 	Tracer  opentracing.Tracer
-	State   State
+	State   *State
 }

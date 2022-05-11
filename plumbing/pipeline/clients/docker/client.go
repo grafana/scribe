@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/grafana/shipwright/docker"
 	"github.com/grafana/shipwright/plumbing"
@@ -32,9 +34,8 @@ func (c *Client) Validate(step pipeline.Step[pipeline.Action]) error {
 	return nil
 }
 
-func (c *Client) networkName() string {
-	uid := stringutil.Random(8)
-	return fmt.Sprintf("shipwright-%s-%s", stringutil.Slugify(c.Opts.Name), uid)
+func (c *Client) networkName(id string) string {
+	return fmt.Sprintf("shipwright-%s-%s", stringutil.Slugify(c.Opts.Name), id)
 }
 
 type walkOpts struct {
@@ -46,8 +47,10 @@ type walkOpts struct {
 }
 
 func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
+	id := stringutil.Random(8)
+
 	network, err := docker.CreateNetwork(ctx, c.Client, docker.CreateNetworkOpts{
-		Name: c.networkName(),
+		Name: c.networkName(id),
 	})
 
 	logger := c.Log.WithFields(plog.PipelineFields(c.Opts))
@@ -55,19 +58,25 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 	logger.Infoln("Compiling pipeline in docker volume...")
 	// Every step needs a compiled version of the pipeline in order to know what to do
 	// without requiring that every image has a copy of the shipwright binary
-	volume, err := c.compilePipeline(ctx, network)
+	volume, err := c.compilePipeline(ctx, id, network)
 	if err != nil {
 		return fmt.Errorf("failed to compile the pipeline in docker. Error: %w", err)
 	}
-
 	logger.Infof("Successfully compiled pipeline in volume '%s'", volume.Name)
+
+	logger.Infoln("Creating volume for state sharing...")
+	stateVolume, err := c.stateVolume(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to create state volume: %w", err)
+	}
+	logger.Infof("State volume '%s' created successfully", stateVolume.Name)
 
 	logger.Infoln("Running steps in docker")
 	return c.Walk(ctx, walkOpts{
 		walker:      w,
 		network:     network,
 		volume:      volume,
-		stateVolume: &docker.Volume{},
+		stateVolume: stateVolume,
 		log:         logger,
 	})
 }
@@ -90,8 +99,15 @@ func (c *Client) stepWalkFunc(opts walkOpts) pipeline.StepWalkFunc {
 				Binary:     "/opt/shipwright/pipeline",
 				Pipeline:   c.Opts.Args.Path,
 				BuildID:    c.Opts.Args.BuildID,
-				Volume:     opts.volume,
-				Out:        log.Writer(),
+				Volumes: []*docker.Volume{
+					opts.volume,
+					opts.stateVolume,
+				},
+				Mounts: []mount.Mount{
+					opts.volume.MountAt("/var/shipwright", os.FileMode(0777)),
+					opts.stateVolume.MountAt("/var/shipwright-state", os.FileMode(0666)),
+				},
+				Out: log.Writer(),
 			})
 			if err != nil {
 				return err

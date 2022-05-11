@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -66,23 +65,24 @@ func GetArgValue(args *plumbing.PipelineArgs, arg pipeline.Argument) (string, er
 		}
 	}
 
-	errMissingArgument := fmt.Errorf("%w: Requested argument '%s'", plumbing.ErrorMissingArgument, arg.Key)
-	if !args.CanStdinPrompt {
-		return "", errMissingArgument
-	}
+	return "", fmt.Errorf("%w: Requested argument '%s'", plumbing.ErrorMissingArgument, arg.Key)
+	// errMissingArgument := fmt.Errorf("%w: Requested argument '%s'", plumbing.ErrorMissingArgument, arg.Key)
+	// if !args.CanStdinPrompt {
+	// 	return "", errMissingArgument
+	// }
 
-	fmt.Fprintf(os.Stdout, "Argument '%[1]s' requested but not found. Please provide a value for '%[1]s': ", arg.Key)
-	// Prompt for the value via stdin since it was not found
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Scan()
+	// fmt.Fprintf(os.Stdout, "Argument '%[1]s' requested but not found. Please provide a value for '%[1]s': ", arg.Key)
+	// // Prompt for the value via stdin since it was not found
+	// scanner := bufio.NewScanner(os.Stdin)
+	// scanner.Scan()
 
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
+	// if err := scanner.Err(); err != nil {
+	// 	return "", err
+	// }
 
-	value := scanner.Text()
-	fmt.Fprintf(os.Stdout, "In the future, you can provide this value with the '-arg=%s=%s' argument\n", arg.Key, value)
-	return value, nil
+	// value := scanner.Text()
+	// fmt.Fprintf(os.Stdout, "In the future, you can provide this value with the '-arg=%s=%s' argument\n", arg.Key, value)
+	// return value, nil
 }
 
 // Retrieving a config value when using the CLI client will look for arguments to be provided in the `-arg={key}={value}`.

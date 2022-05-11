@@ -357,7 +357,7 @@ func parseOpts() (pipeline.CommonOpts, error) {
 		}
 	}
 
-	s, err := GetState(args.State)
+	s, err := GetState(args.State, logger, args)
 	if err != nil {
 		return pipeline.CommonOpts{}, err
 	}

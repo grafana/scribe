@@ -14,7 +14,13 @@ var argEnvMap = map[pipeline.Argument]string{
 	pipeline.ArgumentWorkingDir: "$DRONE_REPO_NAME",
 }
 
+// The configurer for the Drone client returns equivalent environment variables for different arguments.
 func (c *Client) Value(arg pipeline.Argument) (string, error) {
+	switch arg.Type {
+	case pipeline.ArgumentTypeSecret:
+		return secretEnv(arg.Key), nil
+	}
+
 	if val, ok := argEnvMap[arg]; ok {
 		return val, nil
 	}

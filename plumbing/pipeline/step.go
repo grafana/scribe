@@ -14,7 +14,7 @@ import (
 // The ActionOpts are provided to every step that is ran.
 // Each step can choose to use these options.
 type ActionOpts struct {
-	State  State
+	State  *State
 	Stdout io.Writer
 	Stderr io.Writer
 	Tracer opentracing.Tracer

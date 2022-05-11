@@ -2,9 +2,9 @@ package docker
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
 
-	"github.com/docker/docker/api/types"
-	swdocker "github.com/grafana/shipwright/docker"
 	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
@@ -12,7 +12,7 @@ var (
 	ArgumentDockerAuthToken = pipeline.NewFSArgument("docker-auth-token")
 )
 
-func Login(username, password, registry pipeline.Argument) pipeline.Step[pipeline.Action] {
+func Login(username, password pipeline.Argument) pipeline.Step[pipeline.Action] {
 	return pipeline.NewStep(func(ctx context.Context, opts pipeline.ActionOpts) error {
 		u, err := opts.State.Get(username.Key)
 		if err != nil {
@@ -24,19 +24,20 @@ func Login(username, password, registry pipeline.Argument) pipeline.Step[pipelin
 			return err
 		}
 
-		r, err := opts.State.Get(registry.Key)
-		if err != nil {
-			return err
-		}
+		auth := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf(`{"username": "%s", "password": "%s"}`, u, p)))
 
-		token, err := swdocker.Login(ctx, types.AuthConfig{
-			Username:      u,
-			Password:      p,
-			ServerAddress: r,
-		})
+		// Bro this function (more specifically the one in 'github.com/docker/docker' literally doesn't do ANYTHING.
+		// res, err := swdocker.Login(ctx, types.AuthConfig{
+		// 	Auth:          auth,
+		// 	ServerAddress: r,
+		// })
 
-		return opts.State.Set(ArgumentDockerAuthToken.Key, token)
+		// if err != nil {
+		// 	return err
+		// }
+
+		return opts.State.Set(ArgumentDockerAuthToken.Key, auth)
 	}).
-		WithArguments(username, password, registry, pipeline.ArgumentDockerSocketFS).
+		WithArguments(username, password, pipeline.ArgumentDockerSocketFS).
 		Provides(ArgumentDockerAuthToken)
 }

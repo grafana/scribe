@@ -1,73 +1,58 @@
 package pipeline
 
 import (
-	"encoding/json"
 	"errors"
-	"os"
-	"sync"
+
+	"github.com/sirupsen/logrus"
 )
 
 var (
 	ErrorEmptyState = errors.New("state is empty")
 	ErrorNotFound   = errors.New("key not found in state")
 	ErrorKeyExists  = errors.New("key already exists in state")
+	ErrorReadOnly   = errors.New("state is read-only")
 )
 
-// State should be thread safe.
-type State interface {
+type StateReader interface {
 	Get(string) (string, error)
+}
+
+type StateWriter interface {
 	Set(string, string) error
 }
 
-type FilesystemState struct {
-	File *os.File
-	mtx  *sync.Mutex
+type StateHandler interface {
+	StateReader
+	StateWriter
 }
 
-func NewFilesystemState(path string) (*FilesystemState, error) {
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, os.FileMode(0666))
-	if err != nil {
-		return nil, err
-	}
-
-	return &FilesystemState{
-		File: f,
-		mtx:  &sync.Mutex{},
-	}, nil
+type State struct {
+	Handler  StateHandler
+	Fallback []StateReader
+	Log      logrus.FieldLogger
 }
 
-func (f *FilesystemState) Get(key string) (string, error) {
-	f.mtx.Lock()
-	defer f.mtx.Unlock()
-	state := map[string]string{}
+func (s *State) Get(key string) (string, error) {
+	value, err := s.Handler.Get(key)
+	if err == nil {
+		return value, nil
+	}
+	for _, v := range s.Fallback {
+		val, err := v.Get(key)
+		if err == nil {
+			return val, nil
+		}
 
-	if err := json.NewDecoder(f.File).Decode(&state); err != nil {
-		return "", ErrorEmptyState
+		s.Log.WithError(err).Debugln("fallback state reader returned an error")
 	}
 
-	v, ok := state[key]
-	if !ok {
-		return "", ErrorNotFound
-	}
-
-	return v, nil
+	return "", err
 }
 
-func (f *FilesystemState) Set(key, value string) error {
-	f.mtx.Lock()
-	defer f.mtx.Unlock()
-
-	state := map[string]string{}
-
-	if err := json.NewDecoder(f.File).Decode(&state); err != nil {
-		// Do nothing, it's likely that the file is empty. We'll overwrite it.
-	}
-
-	if _, ok := state[key]; ok {
-		return ErrorKeyExists
-	}
-
-	state[key] = value
-
-	return json.NewEncoder(f.File).Encode(state)
+func (s *State) Set(key, value string) error {
+	s.Log.Infof("Set key: %s, value: %s in state", key, value)
+	s.Log.Infof("Set key: %s, value: %s in state", key, value)
+	s.Log.Infof("Set key: %s, value: %s in state", key, value)
+	s.Log.Infof("Set key: %s, value: %s in state", key, value)
+	return s.Handler.Set(key, value)
 }
