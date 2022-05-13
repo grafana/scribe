@@ -190,7 +190,9 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 		pretty.Print(c.Opts.Output, manifest)
 
 	case LanguageStarlark:
-		c.renderStarlark(cfg)
+		if err := c.renderStarlark(cfg); err != nil {
+			c.Log.WithError(err).Warn("error rendering starlark")
+		}
 
 	default:
 		return fmt.Errorf("unknown Drone language: %d", c.Language)
