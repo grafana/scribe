@@ -209,9 +209,10 @@ func (c *Client) renderStarlark(cfg []yaml.Resource) error {
 			sl.MarshalPipeline(t)
 
 		default:
-			fmt.Printf("%s: resource %v\n", t, resource)
+			return fmt.Errorf("unrecognized type: %s: resource %v", t, resource)
 		}
 	}
-	fmt.Print(sl.String())
+	
+	fmt.Fprint(c.Opts.Output, sl.String())
 	return nil
 }
