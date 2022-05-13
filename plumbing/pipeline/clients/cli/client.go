@@ -124,8 +124,10 @@ func (c *Client) runSteps(ctx context.Context, steps pipeline.StepList) error {
 		})
 	}
 
-	// ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
-	// defer cancel()
+	// If we wanted to allow users to configure a timeout, here would be the place. To configure a time out for the list of steps, use context.WithTimeout.
+	if err := wg.Wait(ctx); err != nil {
+		return fmt.Errorf("Error waiting for steps (%s) to complete: %w", pipeline.StepNames(steps), err)
+	}
 
-	return wg.Wait(ctx)
+	return nil
 }

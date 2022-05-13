@@ -50,9 +50,5 @@ func (s *State) Get(key string) (string, error) {
 }
 
 func (s *State) Set(key, value string) error {
-	s.Log.Infof("Set key: %s, value: %s in state", key, value)
-	s.Log.Infof("Set key: %s, value: %s in state", key, value)
-	s.Log.Infof("Set key: %s, value: %s in state", key, value)
-	s.Log.Infof("Set key: %s, value: %s in state", key, value)
 	return s.Handler.Set(key, value)
 }

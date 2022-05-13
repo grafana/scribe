@@ -2,11 +2,21 @@ package shipwright
 
 import (
 	"github.com/docker/docker/client"
-	"github.com/grafana/shipwright/plumbing"
 	"github.com/grafana/shipwright/plumbing/pipeline"
 	"github.com/grafana/shipwright/plumbing/pipeline/clients/cli"
 	"github.com/grafana/shipwright/plumbing/pipeline/clients/docker"
 	"github.com/grafana/shipwright/plumbing/pipeline/clients/drone"
+)
+
+var (
+	// ClientCLI is set when a pipeline is ran from the Shipwright CLI, typically for local development, but can also be set when running Shipwright within a third-party service like CircleCI or Drone
+	ClientCLI string = "cli"
+
+	// ClientDrone is set when a pipeline is ran in Drone mode, which is used to generate a Drone config from a Shipwright pipeline
+	ClientDrone = "drone"
+
+	// RunModeDocker runs the pipeline using the Docker CLI for each step
+	ClientDocker = "docker"
 )
 
 func NewDefaultCollection(opts pipeline.CommonOpts) *pipeline.Collection {
@@ -25,12 +35,10 @@ func NewMultiCollection() *pipeline.Collection {
 type InitializerFunc func(pipeline.CommonOpts) pipeline.Client
 
 // The ClientInitializers define how different RunModes initialize the Shipwright client
-var ClientInitializers = map[plumbing.RunModeOption]InitializerFunc{
-	plumbing.RunModeCLI:    NewCLIClient,
-	plumbing.RunModeDrone:  NewDroneClient,
-	plumbing.RunModeConfig: NewCLIClient,
-	plumbing.RunModeServer: NewCLIClient,
-	plumbing.RunModeDocker: NewDockerClient,
+var ClientInitializers = map[string]InitializerFunc{
+	ClientCLI:    NewCLIClient,
+	ClientDrone:  NewDroneClient,
+	ClientDocker: NewDockerClient,
 }
 
 func NewDroneClient(opts pipeline.CommonOpts) pipeline.Client {
@@ -58,4 +66,8 @@ func NewDockerClient(opts pipeline.CommonOpts) pipeline.Client {
 		Opts:   opts,
 		Log:    opts.Log,
 	}
+}
+
+func RegisterClient(name string, initializer InitializerFunc) {
+	ClientInitializers[name] = initializer
 }

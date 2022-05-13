@@ -76,7 +76,7 @@ func (c *Client) StepWalkFunc(log logrus.FieldLogger, s *stepList, state string)
 
 var (
 	PipelinePath     = "/var/shipwright/pipeline"
-	StatePath        = "/var/shipwright/state"
+	StatePath        = "/var/shipwright-state"
 	ShipwrightVolume = &yaml.Volume{
 		Name:     "shipwright",
 		EmptyDir: &yaml.VolumeEmptyDir{},

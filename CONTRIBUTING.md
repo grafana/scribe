@@ -2,6 +2,13 @@
 
 ## Layout
 
+This project is designed with two main elements in mind:
+
+- The library that pipeline developers interact with, typically located in the root package of the project.
+- The internal packages that do all of the real work. This is often refered to as the "plumbing"
+
+It is important that the "pipeline-developer-facing" stays as readable and minimal as possible and doesn't contain excessive implementation details.
+
 ```
 .
 |─./shipwright.go

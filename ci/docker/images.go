@@ -98,7 +98,7 @@ func (i Image) PushStep(sw *shipwright.Shipwright[pipeline.Action]) pipeline.Ste
 			return err
 		}
 
-		opts.Logger.Infoln("Pushing", tag)
+		opts.Logger.Infoln("Pushing", tag, "with creds", auth)
 		return docker.Push(ctx, docker.PushOpts{
 			Name:      tag,
 			Registry:  plumbing.DefaultRegistry(),

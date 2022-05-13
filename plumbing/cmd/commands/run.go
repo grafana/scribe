@@ -77,7 +77,7 @@ func Run(ctx context.Context, opts *RunOpts) *exec.Cmd {
 	// But it's important to note that a lot happens before it actually reaches the pipeline code and produces a command like this:
 	//   /tmp/random-string -mode drone -path ./demo/basic
 	// So the path to the pipeline is not preserved, which is why we have to provide the path as an argument
-	cmdArgs := []string{"run", path, "-mode", args.Mode.String(), "-log-level", args.LogLevel.String(), "-path", args.Path, "-version", version, "-build-id", args.BuildID}
+	cmdArgs := []string{"run", path, "-mode", args.Client, "-log-level", args.LogLevel.String(), "-path", args.Path, "-version", version, "-build-id", args.BuildID}
 
 	for k, v := range args.ArgMap {
 		cmdArgs = append(cmdArgs, "-arg", fmt.Sprintf("%s=%s", k, v))

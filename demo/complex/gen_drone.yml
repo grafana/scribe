@@ -27,72 +27,72 @@ steps:
 - name: redis
   image: redis:6
   commands:
-  - /var/shipwright/pipeline -step=0 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright/state/state.json ./demo/complex
+  - /var/shipwright/pipeline -step=0 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/complex
   volumes:
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
-    path: /var/shipwright/state
+    path: /var/shipwright-state
   depends_on:
   - builtin-compile-pipeline
 
 - name: initalize
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=2 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright/state/state.json ./demo/complex
+  - /var/shipwright/pipeline -step=2 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/complex
   volumes:
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
-    path: /var/shipwright/state
+    path: /var/shipwright-state
   depends_on:
   - builtin-compile-pipeline
 
 - name: build-backend
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=4 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright/state/state.json ./demo/complex
+  - /var/shipwright/pipeline -step=4 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/complex
   volumes:
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
-    path: /var/shipwright/state
+    path: /var/shipwright-state
   depends_on:
   - initalize
 
 - name: build-frontend
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=5 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright/state/state.json ./demo/complex
+  - /var/shipwright/pipeline -step=5 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/complex
   volumes:
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
-    path: /var/shipwright/state
+    path: /var/shipwright-state
   depends_on:
   - initalize
 
 - name: build-documentation
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=6 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright/state/state.json ./demo/complex
+  - /var/shipwright/pipeline -step=6 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/complex
   volumes:
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
-    path: /var/shipwright/state
+    path: /var/shipwright-state
   depends_on:
   - initalize
 
 - name: test-backend
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=8 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright/state/state.json ./demo/complex
+  - /var/shipwright/pipeline -step=8 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/complex
   volumes:
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
-    path: /var/shipwright/state
+    path: /var/shipwright-state
   depends_on:
   - build-backend
   - build-frontend
@@ -101,12 +101,12 @@ steps:
 - name: test-frontend
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=9 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright/state/state.json ./demo/complex
+  - /var/shipwright/pipeline -step=9 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/complex
   volumes:
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
-    path: /var/shipwright/state
+    path: /var/shipwright-state
   depends_on:
   - build-backend
   - build-frontend
@@ -115,12 +115,12 @@ steps:
 - name: integration-tests:-sqlite
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=11 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright/state/state.json ./demo/complex
+  - /var/shipwright/pipeline -step=11 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/complex
   volumes:
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
-    path: /var/shipwright/state
+    path: /var/shipwright-state
   depends_on:
   - test-backend
   - test-frontend
@@ -128,108 +128,108 @@ steps:
 - name: integration-tests:-postgres
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=12 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright/state/state.json ./demo/complex
+  - /var/shipwright/pipeline -step=12 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/complex
   volumes:
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
-    path: /var/shipwright/state
+    path: /var/shipwright-state
   depends_on:
   - integration-tests:-sqlite
 
 - name: integration-tests:-mysql
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=13 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright/state/state.json ./demo/complex
+  - /var/shipwright/pipeline -step=13 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/complex
   volumes:
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
-    path: /var/shipwright/state
+    path: /var/shipwright-state
   depends_on:
   - integration-tests:-postgres
 
 - name: integration-tests:-mssql
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=14 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright/state/state.json ./demo/complex
+  - /var/shipwright/pipeline -step=14 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/complex
   volumes:
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
-    path: /var/shipwright/state
+    path: /var/shipwright-state
   depends_on:
   - integration-tests:-mysql
 
 - name: package
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=19 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright/state/state.json ./demo/complex
+  - /var/shipwright/pipeline -step=19 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/complex
   volumes:
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
-    path: /var/shipwright/state
+    path: /var/shipwright-state
   depends_on:
   - integration-tests:-mssql
 
 - name: build-docker-image
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=20 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright/state/state.json ./demo/complex
+  - /var/shipwright/pipeline -step=20 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/complex
   volumes:
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
-    path: /var/shipwright/state
+    path: /var/shipwright-state
   depends_on:
   - package
 
 - name: publish-documentation
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=23 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright/state/state.json ./demo/complex
+  - /var/shipwright/pipeline -step=23 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/complex
   volumes:
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
-    path: /var/shipwright/state
+    path: /var/shipwright-state
   depends_on:
   - build-docker-image
 
 - name: publish-package
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=24 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright/state/state.json ./demo/complex
+  - /var/shipwright/pipeline -step=24 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/complex
   volumes:
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
-    path: /var/shipwright/state
+    path: /var/shipwright-state
   depends_on:
   - build-docker-image
 
 - name: publish-docker-image
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=25 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright/state/state.json ./demo/complex
+  - /var/shipwright/pipeline -step=25 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/complex
   volumes:
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
-    path: /var/shipwright/state
+    path: /var/shipwright-state
   depends_on:
   - build-docker-image
 
 - name: notify-slack
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=27 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright/state/state.json ./demo/complex
+  - /var/shipwright/pipeline -step=27 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/complex
   volumes:
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
-    path: /var/shipwright/state
+    path: /var/shipwright-state
   depends_on:
   - publish-documentation
   - publish-package
