@@ -2,11 +2,13 @@ package drone
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/drone/drone-yaml/yaml"
 	"github.com/drone/drone-yaml/yaml/pretty"
 	"github.com/grafana/shipwright/plumbing"
 	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/pipeline/clients/drone/starlark"
 	"github.com/grafana/shipwright/plumbing/pipelineutil"
 	"github.com/grafana/shipwright/plumbing/stringutil"
 	"github.com/sirupsen/logrus"
@@ -21,6 +23,15 @@ type Client struct {
 	Opts pipeline.CommonOpts
 
 	Log *logrus.Logger
+
+	// Language defines the language of the pipeline that will be generated.
+	// For example, if Language is LanguageYAML, then the generated pipeline
+	// will be the yaml that will tell drone to run the pipeline as it is written.
+	//
+	// Other languages will be generated using functions that you can use within
+	// your own pipelines in those other languages. They are intended to facilitate
+	// transitions between other systems and Shipwright.
+	Language DroneLanguage
 }
 
 func (c *Client) Validate(step pipeline.Step[pipeline.Action]) error {
@@ -171,10 +182,37 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 		return nil
 	})
 
-	manifest := &yaml.Manifest{
-		Resources: cfg,
+	switch c.Language {
+	case LanguageYAML:
+		manifest := &yaml.Manifest{
+			Resources: cfg,
+		}
+		pretty.Print(c.Opts.Output, manifest)
+
+	case LanguageStarlark:
+		if err := c.renderStarlark(cfg); err != nil {
+			c.Log.WithError(err).Warn("error rendering starlark")
+		}
+
+	default:
+		return fmt.Errorf("unknown Drone language: %d", c.Language)
 	}
 
-	pretty.Print(c.Opts.Output, manifest)
+	return nil
+}
+
+func (c *Client) renderStarlark(cfg []yaml.Resource) error {
+	sl := starlark.NewStarlark()
+	for _, resource := range cfg {
+		switch t := resource.(type) {
+		case *yaml.Pipeline:
+			sl.MarshalPipeline(t)
+
+		default:
+			return fmt.Errorf("unrecognized type: %s: resource %v", t, resource)
+		}
+	}
+	
+	fmt.Fprint(c.Opts.Output, sl.String())
 	return nil
 }

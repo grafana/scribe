@@ -26,17 +26,27 @@ type InitializerFunc func(pipeline.CommonOpts) pipeline.Client
 
 // The ClientInitializers define how different RunModes initialize the Shipwright client
 var ClientInitializers = map[plumbing.RunModeOption]InitializerFunc{
-	plumbing.RunModeCLI:    NewCLIClient,
-	plumbing.RunModeDrone:  NewDroneClient,
-	plumbing.RunModeConfig: NewCLIClient,
-	plumbing.RunModeServer: NewCLIClient,
-	plumbing.RunModeDocker: NewDockerClient,
+	plumbing.RunModeCLI:           NewCLIClient,
+	plumbing.RunModeDrone:         NewDroneClient,
+	plumbing.RunModeConfig:        NewCLIClient,
+	plumbing.RunModeServer:        NewCLIClient,
+	plumbing.RunModeDocker:        NewDockerClient,
+	plumbing.RunModeDroneStarlark: NewDroneStarlarkClient,
 }
 
 func NewDroneClient(opts pipeline.CommonOpts) pipeline.Client {
 	return &drone.Client{
-		Opts: opts,
-		Log:  opts.Log,
+		Opts:     opts,
+		Log:      opts.Log,
+		Language: drone.LanguageYAML,
+	}
+}
+
+func NewDroneStarlarkClient(opts pipeline.CommonOpts) pipeline.Client {
+	return &drone.Client{
+		Opts:     opts,
+		Log:      opts.Log,
+		Language: drone.LanguageStarlark,
 	}
 }
 

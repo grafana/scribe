@@ -7,6 +7,14 @@ import (
 	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
+type DroneLanguage int
+
+const (
+	// The languages that are available when generating a Drone config.
+	LanguageYAML DroneLanguage = iota
+	LanguageStarlark
+)
+
 var argEnvMap = map[pipeline.Argument]string{
 	pipeline.ArgumentCommitSHA:  "$DRONE_COMMIT",
 	pipeline.ArgumentCommitRef:  "$DRONE_COMMIT_REF",

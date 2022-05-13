@@ -20,11 +20,14 @@ const (
 	// RunModeDrone is set when a pipeline is ran in Drone mode, which is used to generate a Drone config from a Shipwright pipeline
 	RunModeDrone
 
+	// RunModeDroneStarlark is set when a pipeline is run un Drone mode, with the Drone config rendered as Starlark
+	RunModeDroneStarlark
+
 	// RunModeDocker runs the pipeline using the Docker CLI for each step
 	RunModeDocker
 )
 
-var runModeStr = []string{"cli", "server", "config", "drone", "docker"}
+var runModeStr = []string{"cli", "server", "config", "drone", "drone-starlark", "docker"}
 
 // String outputs the string equivelant of what mode is selected.
 func (r *RunModeOption) String() string {
