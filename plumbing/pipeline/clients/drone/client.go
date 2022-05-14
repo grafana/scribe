@@ -158,7 +158,7 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 		Path:   path.Join(StatePath, "state.json"),
 	}
 
-	w.WalkPipelines(ctx, func(ctx context.Context, pipelines ...pipeline.Step[pipeline.Pipeline]) error {
+	err := w.WalkPipelines(ctx, func(ctx context.Context, pipelines ...pipeline.Step[pipeline.Pipeline]) error {
 		log.Debugf("Walking '%d' pipelines...", len(pipelines))
 		for _, v := range pipelines {
 			log.Debugf("Processing pipeline '%s'...", v.Name)
@@ -188,6 +188,10 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 		}
 		return nil
 	})
+
+	if err != nil {
+		return err
+	}
 
 	manifest := &yaml.Manifest{
 		Resources: cfg,

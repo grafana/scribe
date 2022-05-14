@@ -1,8 +1,10 @@
 package cmdutil
 
 import (
+	"errors"
 	"fmt"
 
+	"github.com/grafana/shipwright/plumbing"
 	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
@@ -36,6 +38,11 @@ func StepCommand(c pipeline.Configurer, opts CommandOpts) ([]string, error) {
 
 		value, err := c.Value(arg)
 		if err != nil {
+			// If it wasn't found by the Configurer, then it's likely going to be provided in the state by another step.
+			// TODO: we could actually check this by searching the pipeline.
+			if errors.Is(err, plumbing.ErrorMissingArgument) {
+				continue
+			}
 			return nil, err
 		}
 

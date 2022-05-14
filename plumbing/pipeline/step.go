@@ -112,8 +112,8 @@ func (s Step[T]) WithInput(artifact Artifact) Step[T] {
 	return s
 }
 
-func (s Step[T]) WithArguments(arg ...Argument) Step[T] {
-	s.Arguments = arg
+func (s Step[T]) WithArguments(args ...Argument) Step[T] {
+	s.Arguments = args
 	return s
 }
 

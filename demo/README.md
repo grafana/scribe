@@ -39,7 +39,7 @@ This basic pipeline creates a single pipeline which runs many common steps that 
 
 ## [`./complex`](./complex)
 
-This more complex pipeline creates a single pipeline which runs many steps with logs and timeouts. It has many steps and demonstrates a maintainable approach to writing large pipelines.
+This more complex pipeline creates a single pipeline which runs many steps with logs and timeouts. It has many steps and demonstrates a maintainable approach to writing large pipelines and steps that use structured logging and traces.
 
 ### Features
 
@@ -59,7 +59,7 @@ This more complex pipeline creates a single pipeline which runs many steps with 
 - [ ] Sub-pipelines
 - [x] Step Arguments
 - [ ] State Management / Sharing data between steps
-- [ ] Tracing
+- [x] Tracing
 
 ## [`./multi`](./multi)
 
