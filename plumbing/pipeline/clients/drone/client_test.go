@@ -32,7 +32,7 @@ func testDemoPipeline(t *testing.T, path string) {
 
 	testutil.RunPipeline(ctx, t, pipelinePath, io.MultiWriter(buf, os.Stdout), stderr, &plumbing.PipelineArgs{
 		BuildID:  "test",
-		Mode:     plumbing.RunModeDrone,
+		Client:   shipwright.ClientDrone,
 		Path:     fmt.Sprintf("./demo/%s", path), // Note that we're intentionally using ./demo/ instead of filepath because this path is used in a Go command.
 		LogLevel: logrus.DebugLevel,
 	})
