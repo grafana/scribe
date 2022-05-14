@@ -1,29 +1,29 @@
 # shipwright
 
-## About
+Shipwright is a framework to write flexible CI pipelines in Go that have consistent behavior when ran locally or in a CI server.
 
-I've had the idea in my head for several years now that continuous integration and delivery are built on incredibly flaky foundations.
+## Why?
 
-Since the inception of Travis CI, configuration-based pipeline tooling has been prevalent all over open source software, and with good reason. It works in all languages, it's mostly platform agnostic, and it's flexible. However, in my experience, it does not scale with several people, and its problems are seen quickly.
+Continuous integration and delivery are built on flaky foundations.
 
-- Development and testing strictly involves trial and error
-- Automated testing is non-existent
+Configuration-based pipeline tooling has been prevalent all over open source software. It works in all languages, it's mostly platform agnostic, and offers flexibility with `bash`. However, it does not scale with several people, and its problems are seen quickly.
+
+- Development and testing strictly involves trial and error.
+- Automated testing is non-existent.
 - Development tools are limited to defining configuration schemas, which provide a shallow understanding of what each key and value will do.
 - Configuration languages have nuanced syntax which is typically a lot different than standard programming languages.
 - Dependencies / dependency management is often not supported as it's just not a typical configuration language (yaml, json) construct.
 - Lack of debugging means large / extensive pipelines are flaky and make it difficult to diagnose issues.
   - Problems like these are demoralizing and often lead to neglect; no one wants to address issues like these because they're so difficult to debug.
-- Providers are incentivized to keep their YAML from being ran on other platforms. CircleCI would probably not like it if I could run a CircleCI pipeline inside Drone or Azure DevOps.
+- Providers are incentivized to keep their YAML from being ran on other platforms. Many providers probably not like it if I could run a pipeline made for their platform inside a competitor's.
 
-These problems lead to the development of this tool, **shipwright**. A **shipwright** is a person who builds boats. Since everything in the Kubernetes world, from Helm to Harbor follows a boat theme, I thought it appropriate to thematically follow.
+These problems lead to the development of this framework, **shipwright**.
 
-Though, the name is not particularly original, I think there are several build-adjacent tools out there that call themselves `shipwright`.
-
-The idea behind `shipwright` is that it is not an application, but a library. There is no server. Users should, instead of defining this amalgamation of `yaml/json/toml/whatever` and `bash`, define their build, package, and release processes programmatically. This opens up a whole world of possibilities, like:
+The idea behind `shipwright` is that it is not an application, but a library. There is no server. Users should, instead of defining an amalgamation of `yaml/json/toml/whatever` and `bash`, define their build, package, and release processes programmatically. This opens up a whole world of possibilities, like:
 
 - Writing unit and integration tests for your build pipeline.
 - Reusing and sharing build, package, and deployment definitions.
-- Leveraging existing tooling to make it easier to develop and debug pipelines.
+- Creating reasonable packages and libraries for developing new pipelines.
 - Improved visualization by allowing pipelines to define metrics and traces.
 - Improved validation by having steps define what they expect in order to run, and what they provide to other steps.
 
@@ -38,9 +38,11 @@ The idea behind `shipwright` is that it is not an application, but a library. Th
 
 ## Running Locally / testing
 
-- Compile it: `mage build`
-- Run the local pipeline: `./bin/shipwright -log-level=debug -mode=cli ./ci`
+- Compile the Shipwright utility: `mage build`
+- Run the local pipeline in the current shell: `./bin/shipwright-mode=cli ./ci`
+- Run the local pipeline in docker: `./bin/shipwright -mode=docker ./ci`
 - Generate the drone: `./bin/shipwright -mode=drone ./ci`
+- Generate the drone and write it to a file: `./bin/shipwright -mode=drone ./ci > .drone.yml`
 
 ## How does it work?
 
@@ -64,56 +66,41 @@ Each step defined must have an image. For steps without defined images, the ship
 
 When running in docker mode, the pipeline is compiled and then mounted as volume in the docker container. The compiled pipeline is used as the docker command for that step.
 
-### Writing a Pipeline
+## Writing a Pipeline
 
-Generally a pipeline is whatever you want it to be. There are some helpful tools in the to improve your visualization / pipeline tracing, accept arguments, define outputs.
+1. Every pipeline is a program and should have a `package main` and a `func main`.
+2. Every pipeline must have a form of `sw.New(...)` or `sw.NewMulti(...)` to produce the shipwright object.
 
-Some guiding pricinples will help you write effective pipelines:
+   - Steps are then added to that object to create a pipeline.
 
-1. Each step defined should be able to run individually, without the previous steps running first in the current shell or environment.
+3. It is recommended to create a Go workspace for your CI pipeline with `go work init {directory}`.
 
-#### Example
+   - This will keep the larger and irrelevant modules like `docker` out of your project.
 
-```
-TODO: write example
-```
-
-Once committed, this script can be treated like any other pipeline script and can be automatically ran when a new commit is made.
-
-More interestingly though, you can run this pipeline by running:
-
-```bash
-shipwright ./ci
-```
-
-If your pipeline defines any inputs it will prompt you for them, or optionally you can provide them as arguments by using the `-arg-{argument}` flag.
-
-## Design
-
-This project is designed with two main elements in mind:
-
-- The library that pipeline developers interact with. Some people refer to this as the "porcelain"
-- The internal packages that do all of the real work. This is often refered to as the "plumbing"
-
-It is important that the "porcelain" stays as readable and minimal as possible and doesn't contain excessive implementation details.
-
-## Caveats
-
-### Supported languages
-
-- [ ] Go
-
-## Package Design Principles
-
-There are a few main principles behind designing the client library / packages. These princples should encourage writing libraries that make it easy to write pipelines that are not excessively verbose and work on all supported platforms.
-
-## Examples
+### Examples
 
 To view examples of pipelines, visit the [demo](./demo) folder. These demos are used in our automated tests.
 
----
+## FAQ
 
-## Questions
+- **Why use Go and not `JavaScript/TypeScript/Python/Java`?**
 
-- Transitionary phases
-  - If I'm using [Starlark | Drone yaml] how can I transition step-by-step from that to Shipwright without fully committing?
+We use Go pretty ubiquitously at Grafana, especially in our server code. Go also allows you to easily compile a static binary for Linux from any platform which helps a lot with the portability of Shipwright, especially in Docker mode.
+
+- **Will there be support for any other languages?**
+
+Given the current design, it would be very difficult and there are no concrete plans to do that yet.
+
+- **What clients are available?**
+
+- `cli`, which runs the pipeline in the current shell.
+- `docker`, which runs the pipeline using the docker daemon (configured via the Docker environment variables).
+- `drone`, which produces a .drone.yml file in the standard output stream (`stdout`) that will run the pipeline in Drone.
+
+The current list of clients can always be obtained using the `shipwright -help` command.
+
+- **How can I use unsupported clients or make my own?**
+
+Because Shipwright is simply a package and your pipeline is a program, you can add a client you have made yourself in your pipeline.
+
+In the `init` function of the pipeline, simply register your client and it should be available for use. For a demonstration, see [`./demo/custom-client`](./demo/custom-client).

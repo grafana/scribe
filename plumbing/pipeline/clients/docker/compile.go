@@ -8,16 +8,15 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	"github.com/grafana/shipwright/docker"
 	"github.com/grafana/shipwright/plumbing/pipelineutil"
-	"github.com/grafana/shipwright/plumbing/stringutil"
 )
 
 // compilePipeline creates a docker container that compiles the provided pipeline so that the compiled pipeline can be mounted in
 // other containers without requiring that the container has the shipwright command or go installed.
-func (c *Client) compilePipeline(ctx context.Context, network *docker.Network) (*docker.Volume, error) {
+func (c *Client) compilePipeline(ctx context.Context, id string, network *docker.Network) (*docker.Volume, error) {
 	log := c.Log
 
 	volume, err := docker.CreateVolume(ctx, c.Client, docker.CreateVolumeOpts{
-		Name: fmt.Sprintf("shipwright-%s", stringutil.Random(8)),
+		Name: fmt.Sprintf("shipwright-%s", id),
 	})
 
 	if err != nil {

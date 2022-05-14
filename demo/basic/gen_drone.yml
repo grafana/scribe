@@ -27,68 +27,82 @@ steps:
 - name: install-frontend-dependencies
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=0 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  - /var/shipwright/pipeline -step=0 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/basic
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - builtin-compile-pipeline
 
 - name: install-backend-dependencies
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  - /var/shipwright/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/basic
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - install-frontend-dependencies
 
 - name: write-version-file
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=2 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  - /var/shipwright/pipeline -step=2 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/basic
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - install-backend-dependencies
 
 - name: compile-backend
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=6 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  - /var/shipwright/pipeline -step=6 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/basic
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - write-version-file
 
 - name: compile-frontend
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=7 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  - /var/shipwright/pipeline -step=7 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/basic
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - compile-backend
 
 - name: publish
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=10 -build-id=$DRONE_BUILD_NUMBER ./demo/basic
+  - /var/shipwright/pipeline -step=10 -arg=gcs-publish-key=secret-gcs-publish-key -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/basic
   environment:
     secret-gcs-publish-key:
       from_secret: gcs-publish-key
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - compile-frontend
 
 volumes:
 - name: shipwright
+  temp: {}
+- name: shipwright-state
   temp: {}
 
 trigger:

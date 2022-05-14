@@ -3,6 +3,8 @@ package drone
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"path"
 
 	"github.com/drone/drone-yaml/yaml"
 	"github.com/drone/drone-yaml/yaml/pretty"
@@ -63,13 +65,13 @@ func (s *stepList) AddStep(step *yaml.Container) {
 	s.steps = append(s.steps, step)
 }
 
-func (c *Client) StepWalkFunc(log logrus.FieldLogger, s *stepList) func(ctx context.Context, steps ...pipeline.Step[pipeline.Action]) error {
+func (c *Client) StepWalkFunc(log logrus.FieldLogger, s *stepList, state string) func(ctx context.Context, steps ...pipeline.Step[pipeline.Action]) error {
 	return func(ctx context.Context, steps ...pipeline.Step[pipeline.Action]) error {
 		log.Debugf("Processing '%d' steps...", len(steps))
 		for _, v := range steps {
 			log := log.WithField("dependencies", stepsToNames(v.Dependencies))
 			log.Debugf("Processing step '%s'...", v.Name)
-			step, err := NewStep(c, c.Opts.Args.Path, v)
+			step, err := NewStep(c, c.Opts.Args.Path, state, v)
 			if err != nil {
 				return err
 			}
@@ -83,23 +85,32 @@ func (c *Client) StepWalkFunc(log logrus.FieldLogger, s *stepList) func(ctx cont
 	}
 }
 
-type newPipelineOpts struct {
-	Name      string
-	Steps     []*yaml.Container
-	DependsOn []string
-}
-
 var (
 	PipelinePath     = "/var/shipwright/pipeline"
+	StatePath        = "/var/shipwright-state"
 	ShipwrightVolume = &yaml.Volume{
 		Name:     "shipwright",
+		EmptyDir: &yaml.VolumeEmptyDir{},
+	}
+	ShipwrightStateVolume = &yaml.Volume{
+		Name:     "shipwright-state",
 		EmptyDir: &yaml.VolumeEmptyDir{},
 	}
 	ShipwrightVolumeMount = &yaml.VolumeMount{
 		Name:      "shipwright",
 		MountPath: "/var/shipwright",
 	}
+	ShipwrightStateVolumeMount = &yaml.VolumeMount{
+		Name:      "shipwright-state",
+		MountPath: StatePath,
+	}
 )
+
+type newPipelineOpts struct {
+	Name      string
+	Steps     []*yaml.Container
+	DependsOn []string
+}
 
 func (c *Client) newPipeline(opts newPipelineOpts, pipelineOpts pipeline.CommonOpts) *yaml.Pipeline {
 	command := pipelineutil.GoBuild(context.Background(), pipelineutil.GoBuildOpts{
@@ -129,7 +140,7 @@ func (c *Client) newPipeline(opts newPipelineOpts, pipelineOpts pipeline.CommonO
 		if len(v.DependsOn) == 0 {
 			opts.Steps[i].DependsOn = []string{build.Name}
 		}
-		opts.Steps[i].Volumes = append(opts.Steps[i].Volumes, ShipwrightVolumeMount)
+		opts.Steps[i].Volumes = append(opts.Steps[i].Volumes, ShipwrightVolumeMount, ShipwrightStateVolumeMount)
 	}
 
 	p := &yaml.Pipeline{
@@ -140,6 +151,7 @@ func (c *Client) newPipeline(opts newPipelineOpts, pipelineOpts pipeline.CommonO
 		Steps:     append([]*yaml.Container{build}, opts.Steps...),
 		Volumes: []*yaml.Volume{
 			ShipwrightVolume,
+			ShipwrightStateVolume,
 		},
 	}
 
@@ -151,12 +163,18 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 	cfg := []yaml.Resource{}
 	log := c.Log.WithField("client", "drone")
 
-	w.WalkPipelines(ctx, func(ctx context.Context, pipelines ...pipeline.Step[pipeline.Pipeline]) error {
+	// StatePath is an aboslute path and already has a '/'.
+	state := &url.URL{
+		Scheme: "file",
+		Path:   path.Join(StatePath, "state.json"),
+	}
+
+	err := w.WalkPipelines(ctx, func(ctx context.Context, pipelines ...pipeline.Step[pipeline.Pipeline]) error {
 		log.Debugf("Walking '%d' pipelines...", len(pipelines))
 		for _, v := range pipelines {
 			log.Debugf("Processing pipeline '%s'...", v.Name)
 			sl := &stepList{}
-			if err := w.WalkSteps(ctx, v.Serial, c.StepWalkFunc(log, sl)); err != nil {
+			if err := w.WalkSteps(ctx, v.Serial, c.StepWalkFunc(log, sl, state.String())); err != nil {
 				return err
 			}
 
@@ -181,6 +199,10 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 		}
 		return nil
 	})
+
+	if err != nil {
+		return err
+	}
 
 	switch c.Language {
 	case LanguageYAML:
@@ -212,7 +234,7 @@ func (c *Client) renderStarlark(cfg []yaml.Resource) error {
 			return fmt.Errorf("unrecognized type: %s: resource %v", t, resource)
 		}
 	}
-	
+
 	fmt.Fprint(c.Opts.Output, sl.String())
 	return nil
 }

@@ -310,13 +310,13 @@ func (s *Shipwright[T]) Done() {
 		}
 	}(logger)
 
-	logger.WithField("mode", s.Opts.Args.Mode).Info("execution started")
+	logger.WithField("mode", s.Opts.Args.Client).Info("execution started")
 
 	if err := s.Execute(ctx); err != nil {
 		logger.WithFields(logrus.Fields{
 			"status":       "error",
 			"completed_at": time.Now().Unix(),
-		}).WithError(err).Error("execution completed")
+		}).WithError(err).Fatalln("execution completed")
 		return
 	}
 
@@ -357,12 +357,18 @@ func parseOpts() (pipeline.CommonOpts, error) {
 		}
 	}
 
+	s, err := GetState(args.State, logger, args)
+	if err != nil {
+		return pipeline.CommonOpts{}, err
+	}
+
 	return pipeline.CommonOpts{
 		Version: args.Version,
 		Output:  os.Stdout,
 		Args:    args,
 		Log:     logger,
 		Tracer:  tracer,
+		State:   s,
 	}, nil
 }
 
@@ -427,14 +433,14 @@ func NewMultiWithClient[T pipeline.StepContent](opts pipeline.CommonOpts, client
 // NewClient creates a new Shipwright client based on the commonopts (mostly the mode).
 // It does not check for a non-nil "Args" field.
 func NewClient[T pipeline.StepContent](c pipeline.CommonOpts, collection *pipeline.Collection) *Shipwright[T] {
-	c.Log.Infof("Initializing Shipwright client with mode '%s'", c.Args.Mode.String())
+	c.Log.Infof("Initializing Shipwright client with mode '%s'", c.Args.Client)
 	sw := &Shipwright[T]{
 		n: &counter{},
 	}
 
-	initializer, ok := ClientInitializers[c.Args.Mode]
+	initializer, ok := ClientInitializers[c.Args.Client]
 	if !ok {
-		c.Log.Fatalln("Could not initialize shipwright. Could not find initializer for mode", c.Args.Mode)
+		c.Log.Fatalln("Could not initialize shipwright. Could not find initializer for mode", c.Args.Client)
 		return nil
 	}
 

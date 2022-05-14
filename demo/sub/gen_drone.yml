@@ -27,65 +27,79 @@ steps:
 - name: step-1
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=7 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  - /var/shipwright/pipeline -step=7 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/sub
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - builtin-compile-pipeline
 
 - name: step-2
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=8 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  - /var/shipwright/pipeline -step=8 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/sub
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - step-1
 
 - name: step-3
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=9 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  - /var/shipwright/pipeline -step=9 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/sub
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - step-2
 
 - name: step-4
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=13 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  - /var/shipwright/pipeline -step=13 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/sub
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - step-3
 
 - name: step-5
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=14 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  - /var/shipwright/pipeline -step=14 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/sub
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - step-3
 
 - name: step-6
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=15 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  - /var/shipwright/pipeline -step=15 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/sub
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - step-3
 
 volumes:
 - name: shipwright
+  temp: {}
+- name: shipwright-state
   temp: {}
 
 ---
@@ -117,35 +131,43 @@ steps:
 - name: sub-step-1
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  - /var/shipwright/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/sub
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - builtin-compile-pipeline
 
 - name: sub-step-2
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=3 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  - /var/shipwright/pipeline -step=3 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/sub
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - sub-step-1
 
 - name: sub-step-3
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=4 -build-id=$DRONE_BUILD_NUMBER ./demo/sub
+  - /var/shipwright/pipeline -step=4 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/sub
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - sub-step-1
 
 volumes:
 - name: shipwright
+  temp: {}
+- name: shipwright-state
   temp: {}
 
 ...

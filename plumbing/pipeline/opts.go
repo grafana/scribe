@@ -3,9 +3,9 @@ package pipeline
 import (
 	"io"
 
+	"github.com/grafana/shipwright/plumbing"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
-	"github.com/grafana/shipwright/plumbing"
 )
 
 // CommonOpts are provided in the Client's Init function, which includes options that are common to all clients, like
@@ -17,4 +17,5 @@ type CommonOpts struct {
 	Args    *plumbing.PipelineArgs
 	Log     *logrus.Logger
 	Tracer  opentracing.Tracer
+	State   *State
 }

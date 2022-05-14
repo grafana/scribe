@@ -2,7 +2,6 @@ package syncutil
 
 import (
 	"context"
-	"fmt"
 	"sync"
 )
 
@@ -47,7 +46,7 @@ func (w *WaitGroup) Wait(ctx context.Context) error {
 	case <-doneChan:
 		return nil
 	case err := <-errChan:
-		return fmt.Errorf("error encountered in execution: %w", err)
+		return err
 	}
 
 }

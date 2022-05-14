@@ -23,7 +23,8 @@ type CreateStepContainerOpts struct {
 	Step       pipeline.Step[pipeline.Action]
 	Env        []string
 	Network    *docker.Network
-	Volume     *docker.Volume
+	Volumes    []*docker.Volume
+	Mounts     []mount.Mount
 	Binary     string
 	Pipeline   string
 	BuildID    string
@@ -36,13 +37,9 @@ func CreateStepContainer(ctx context.Context, cli client.APIClient, opts CreateS
 		Path:             opts.Pipeline,
 		Step:             opts.Step,
 		BuildID:          opts.BuildID,
+		State:            "/var/shipwright-state/state.json",
 	})
 
-	if err != nil {
-		return nil, err
-	}
-
-	mounts, err := DefaultMounts(opts.Volume)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +48,7 @@ func CreateStepContainer(ctx context.Context, cli client.APIClient, opts CreateS
 		Name:    strings.Join([]string{"shipwright", stringutil.Slugify(opts.Step.Name), stringutil.Random(8)}, "-"),
 		Image:   opts.Step.Image,
 		Network: opts.Network,
-		Mounts:  mounts,
+		Mounts:  opts.Mounts,
 		Command: cmd,
 		Out:     opts.Out,
 		Env:     append(opts.Env, "GIT_CEILING_DIRECTORIES=/var/shipwright"),

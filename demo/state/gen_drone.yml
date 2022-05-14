@@ -1,0 +1,57 @@
+---
+kind: pipeline
+type: docker
+name: state-example
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: builtin-compile-pipeline
+  image: grafana/shipwright:go-latest
+  command:
+  - go
+  - build
+  - -o
+  - /var/shipwright/pipeline
+  - ./demo/state
+  environment:
+    CGO_ENABLED: 0
+    GOARCH: amd64
+    GOOS: linux
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+
+- name: test-1
+  image: grafana/shipwright:latest
+  commands:
+  - /var/shipwright/pipeline -step=0 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/state
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
+  depends_on:
+  - builtin-compile-pipeline
+
+- name: test-2
+  image: test
+  commands:
+  - /var/shipwright/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/state
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
+  depends_on:
+  - test-1
+
+volumes:
+- name: shipwright
+  temp: {}
+- name: shipwright-state
+  temp: {}
+
+...

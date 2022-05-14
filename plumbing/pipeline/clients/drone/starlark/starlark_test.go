@@ -91,7 +91,7 @@ func TestMarshalString(t *testing.T) {
 	//ty := reflect.TypeOf(v)
 
 	sl := NewStarlark()
-	sl.MarshalString(v, false)
+	sl.MarshalString(v)
 	assertString(t, sl.String(), `"pipeline",`+"\n")
 }
 

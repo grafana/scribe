@@ -1,0 +1,81 @@
+---
+kind: pipeline
+type: docker
+name: custom-client
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: builtin-compile-pipeline
+  image: grafana/shipwright:go-latest
+  command:
+  - go
+  - build
+  - -o
+  - /var/shipwright/pipeline
+  - ./demo/custom-client
+  environment:
+    CGO_ENABLED: 0
+    GOARCH: amd64
+    GOOS: linux
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+
+- name: step-1
+  image: grafana/shipwright:latest
+  commands:
+  - /var/shipwright/pipeline -step=0 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/custom-client
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
+  depends_on:
+  - builtin-compile-pipeline
+
+- name: step-2
+  image: grafana/shipwright:latest
+  commands:
+  - /var/shipwright/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/custom-client
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
+  depends_on:
+  - step-1
+
+- name: step-3
+  image: grafana/shipwright:latest
+  commands:
+  - /var/shipwright/pipeline -step=4 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/custom-client
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
+  depends_on:
+  - step-2
+
+- name: step-4
+  image: grafana/shipwright:latest
+  commands:
+  - /var/shipwright/pipeline -step=5 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/custom-client
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
+  depends_on:
+  - step-2
+
+volumes:
+- name: shipwright
+  temp: {}
+- name: shipwright-state
+  temp: {}
+
+...
