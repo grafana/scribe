@@ -7,6 +7,37 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type ShipwrightMulti struct {
+	Client     pipeline.Client
+	Collection *pipeline.Collection
+
+	// Opts are the options that are provided to the pipeline from outside sources. This includes mostly command-line arguments and environment variables
+	Opts pipeline.CommonOpts
+	Log  logrus.FieldLogger
+
+	n        *counter
+	version  string
+	pipeline int64
+
+	prev []pipeline.Step[pipeline.Pipeline]
+}
+
+func (s *ShipwrightMulti) serial() int64 {
+	return s.n.Next()
+}
+
+func (s *ShipwrightMulti) Run(step ...pipeline.Step[pipeline.Pipeline])      {}
+func (s *ShipwrightMulti) Parallel(step ...pipeline.Step[pipeline.Pipeline]) {}
+func (s *ShipwrightMulti) Sub(step ...pipeline.Step[pipeline.Pipeline])      {}
+func (s *ShipwrightMulti) Done()                                             {}
+
+// When allows users to define when this pipeline is executed, especially in the remote environment.
+func (s *ShipwrightMulti) When(events ...pipeline.Event) {
+	if err := s.Collection.AddEvents(s.pipeline, events...); err != nil {
+		s.Log.WithError(err).Fatalln("Failed to add events to graph")
+	}
+}
+
 // NewMulti is the equivalent of `shipwright.New`, but for building a pipeline made of multiple pipelines.
 // Pipelines can behave in the same way that a step does. They can be ran in parallel using the Parallel function, or ran in a series using the Run function.
 // To add new pipelines to execution, use the `(*shipwright[pipeline.Pipeline].New(...)` function.

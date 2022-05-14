@@ -27,8 +27,6 @@ type Shipwright[T pipeline.StepContent] struct {
 	Client     pipeline.Client
 	Collection *pipeline.Collection
 
-	pipeline.Configurer
-
 	// Opts are the options that are provided to the pipeline from outside sources. This includes mostly command-line arguments and environment variables
 	Opts pipeline.CommonOpts
 	Log  logrus.FieldLogger
