@@ -87,9 +87,9 @@ steps:
 - name: publish
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=10 -arg=gcs-publish-key=secret-gcs-publish-key -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/basic
+  - /var/shipwright/pipeline -step=10 -arg=gcs-publish-key=$secret-gcs-publish-key -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/basic
   environment:
-    secret-gcs-publish-key:
+    $secret-gcs-publish-key:
       from_secret: gcs-publish-key
   volumes:
   - name: shipwright

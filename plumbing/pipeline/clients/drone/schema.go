@@ -21,7 +21,7 @@ func combineVariables(a map[string]*yaml.Variable, b map[string]*yaml.Variable) 
 }
 
 func secretEnv(key string) string {
-	return stringutil.Slugify(fmt.Sprintf("secret-%s", key))
+	return "$" + stringutil.Slugify(fmt.Sprintf("secret-%s", key))
 }
 
 // HandleSecrets handles the different 'Secret' arguments that are defined in the pipeline step.
