@@ -179,7 +179,7 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 			}
 
 			pipeline := c.newPipeline(newPipelineOpts{
-				Name:      v.Name,
+				Name:      stringutil.Slugify(v.Name),
 				Steps:     sl.steps,
 				DependsOn: stepsToNames(v.Dependencies),
 			}, c.Opts)

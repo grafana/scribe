@@ -1,7 +1,7 @@
 ---
 kind: pipeline
 type: docker
-name: basic pipeline
+name: basic-pipeline
 
 platform:
   os: linux
