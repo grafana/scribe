@@ -16,7 +16,7 @@ const (
 )
 
 var argVolumeMap = map[pipeline.Argument]string{
-	pipeline.ArgumentDockerSocketFS: "/var/run/docker.sock:/var/run/docker.sock",
+	pipeline.ArgumentDockerSocketFS: "/var/run/docker.sock",
 }
 
 var argEnvMap = map[pipeline.Argument]string{

@@ -156,7 +156,7 @@ func PushSteps(sw *shipwright.Shipwright[pipeline.Action], images []Image) []pip
 	steps := make([]pipeline.Step[pipeline.Action], len(images))
 
 	for i, image := range images {
-		steps[i] = image.PushStep(sw).WithName(fmt.Sprintf("push %s", image.Name))
+		steps[i] = image.PushStep(sw).WithName(fmt.Sprintf("push %s", image.Name)).WithArguments(pipeline.ArgumentDockerSocketFS)
 	}
 
 	return steps

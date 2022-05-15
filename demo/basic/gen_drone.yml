@@ -90,7 +90,7 @@ steps:
   - /var/shipwright/pipeline -step=8 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/basic
   volumes:
   - name: docker-socket
-    path: /var/run/docker.sock:/var/run/docker.sock
+    path: /var/run/docker.sock
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
@@ -118,6 +118,9 @@ volumes:
   temp: {}
 - name: shipwright-state
   temp: {}
+- name: docker-socket
+  host:
+    path: /var/run/docker.sock
 
 trigger:
   branch:

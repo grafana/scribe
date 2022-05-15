@@ -221,6 +221,8 @@ steps:
   - name: docker-socket
     path: /var/run/docker.sock:/var/run/docker.sock
   - name: docker-auth-token
+  - name: docker-socket
+    path: /var/run/docker.sock:/var/run/docker.sock
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
@@ -236,6 +238,8 @@ steps:
   - name: docker-socket
     path: /var/run/docker.sock:/var/run/docker.sock
   - name: docker-auth-token
+  - name: docker-socket
+    path: /var/run/docker.sock:/var/run/docker.sock
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
@@ -251,6 +255,8 @@ steps:
   - name: docker-socket
     path: /var/run/docker.sock:/var/run/docker.sock
   - name: docker-auth-token
+  - name: docker-socket
+    path: /var/run/docker.sock:/var/run/docker.sock
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
@@ -266,6 +272,8 @@ steps:
   - name: docker-socket
     path: /var/run/docker.sock:/var/run/docker.sock
   - name: docker-auth-token
+  - name: docker-socket
+    path: /var/run/docker.sock:/var/run/docker.sock
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state

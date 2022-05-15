@@ -53,5 +53,8 @@ volumes:
   temp: {}
 - name: shipwright-state
   temp: {}
+- name: docker-socket
+  host:
+    path: /var/run/docker.sock
 
 ...

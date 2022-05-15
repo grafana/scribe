@@ -37,6 +37,7 @@ func main() {
 				pipeline.NewSecretArgument("docker_username"),
 				pipeline.NewSecretArgument("docker_password"),
 			).WithName("docker login"))
+
 			sw.Run(docker.BuildSteps(sw, docker.Images)...)
 			sw.Run(docker.PushSteps(sw, docker.Images)...)
 		}),

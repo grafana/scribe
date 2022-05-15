@@ -111,9 +111,13 @@ func (s Step[T]) WithOutput(artifact Artifact) Step[T] {
 func (s Step[T]) WithInput(artifact Artifact) Step[T] {
 	return s
 }
+func (s Step[T]) ResetArguments() Step[T] {
+	s.Arguments = []Argument{}
+	return s
+}
 
 func (s Step[T]) WithArguments(args ...Argument) Step[T] {
-	s.Arguments = args
+	s.Arguments = append(s.Arguments, args...)
 	return s
 }
 

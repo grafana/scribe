@@ -92,6 +92,12 @@ var (
 		Name:     "shipwright",
 		EmptyDir: &yaml.VolumeEmptyDir{},
 	}
+	HostDockerVolume = &yaml.Volume{
+		Name: stringutil.Slugify(pipeline.ArgumentDockerSocketFS.Key),
+		HostPath: &yaml.VolumeHostPath{
+			Path: "/var/run/docker.sock",
+		},
+	}
 	ShipwrightStateVolume = &yaml.Volume{
 		Name:     "shipwright-state",
 		EmptyDir: &yaml.VolumeEmptyDir{},
@@ -153,6 +159,7 @@ func (c *Client) newPipeline(opts newPipelineOpts, pipelineOpts pipeline.CommonO
 		Volumes: []*yaml.Volume{
 			ShipwrightVolume,
 			ShipwrightStateVolume,
+			HostDockerVolume,
 		},
 	}
 
