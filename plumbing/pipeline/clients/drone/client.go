@@ -136,6 +136,7 @@ func (c *Client) newPipeline(opts newPipelineOpts, pipelineOpts pipeline.CommonO
 		Volumes: []*yaml.VolumeMount{ShipwrightVolumeMount},
 	}
 
+	// Add the approprirate steps and "DependsOn" to each step.
 	for i, v := range opts.Steps {
 		if len(v.DependsOn) == 0 {
 			opts.Steps[i].DependsOn = []string{build.Name}

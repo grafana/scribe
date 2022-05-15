@@ -41,12 +41,43 @@ func HandleSecrets(c pipeline.Configurer, step pipeline.Step[pipeline.Action]) m
 	return env
 }
 
+func stepVolumes(c pipeline.Configurer, step pipeline.Step[pipeline.Action]) []*yaml.VolumeMount {
+	volumes := []*yaml.VolumeMount{}
+	// TODO: It's unlikely that we want to actually associate volume mounts with "FS" type arguments.
+	// We will probably want to zip those up and place them in the state volume or something...
+	for _, v := range step.Arguments {
+		if v.Type != pipeline.ArgumentTypeFS {
+			continue
+		}
+
+		// Explicitely skip ArgumentSouceFS because it's available in every pipeline.
+		if v == pipeline.ArgumentSourceFS {
+			continue
+		}
+
+		// If it's a known argument...
+		value, err := c.Value(v)
+		if err != nil {
+			// Skip this then because it's not known. It should be provided by a different step ran previously.
+			// TODO: handle FS type arguments here?
+		}
+
+		volumes = append(volumes, &yaml.VolumeMount{
+			Name:      stringutil.Slugify(v.Key),
+			MountPath: value,
+		})
+	}
+
+	return volumes
+}
+
 func NewStep(c pipeline.Configurer, path, state string, step pipeline.Step[pipeline.Action]) (*yaml.Container, error) {
 	var (
-		name  = stringutil.Slugify(step.Name)
-		deps  = make([]string, len(step.Dependencies))
-		image = step.Image
-		env   = map[string]*yaml.Variable{}
+		name    = stringutil.Slugify(step.Name)
+		deps    = make([]string, len(step.Dependencies))
+		image   = step.Image
+		env     = map[string]*yaml.Variable{}
+		volumes = stepVolumes(c, step)
 	)
 
 	for i, v := range step.Dependencies {
@@ -75,5 +106,6 @@ func NewStep(c pipeline.Configurer, path, state string, step pipeline.Step[pipel
 		},
 		DependsOn:   deps,
 		Environment: env,
+		Volumes:     volumes,
 	}, nil
 }

@@ -62,6 +62,7 @@ func main() {
 	sw.Run(
 		pipeline.NamedStep("compile backend", makefile.Target("build")),
 		pipeline.NamedStep("compile frontend", makefile.Target("package")),
+		pipeline.NamedStep("build docker image", makefile.Target("build")).WithArguments(pipeline.ArgumentDockerSocketFS),
 	)
 
 	sw.Run(

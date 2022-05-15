@@ -15,6 +15,10 @@ const (
 	LanguageStarlark
 )
 
+var argVolumeMap = map[pipeline.Argument]string{
+	pipeline.ArgumentDockerSocketFS: "/var/run/docker.sock:/var/run/docker.sock",
+}
+
 var argEnvMap = map[pipeline.Argument]string{
 	pipeline.ArgumentCommitSHA:  "$DRONE_COMMIT",
 	pipeline.ArgumentCommitRef:  "$DRONE_COMMIT_REF",
@@ -27,6 +31,11 @@ func (c *Client) Value(arg pipeline.Argument) (string, error) {
 	switch arg.Type {
 	case pipeline.ArgumentTypeSecret:
 		return secretEnv(arg.Key), nil
+	case pipeline.ArgumentTypeFS:
+		if val, ok := argVolumeMap[arg]; ok {
+			return val, nil
+		}
+		return "", plumbing.ErrorMissingArgument
 	}
 
 	if val, ok := argEnvMap[arg]; ok {
