@@ -1,7 +1,7 @@
 ---
 kind: pipeline
 type: docker
-name: groan
+name: test and build
 
 platform:
   os: linux
@@ -9,7 +9,7 @@ platform:
 
 steps:
 - name: builtin-compile-pipeline
-  image: grafana/shipwright:go-v0.8.0
+  image: grafana/shipwright:go-v0.8.0-16-g86ee2cb
   command:
   - go
   - build
@@ -25,107 +25,229 @@ steps:
     path: /var/shipwright
 
 - name: test
-  image: grafana/shipwright:go-v0.8.0
+  image: grafana/shipwright:go-v0.8.0-16-g86ee2cb
   commands:
-  - /var/shipwright/pipeline -step=0 -build-id=$DRONE_BUILD_NUMBER ./ci
+  - /var/shipwright/pipeline -step=0 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - builtin-compile-pipeline
 
 - name: build-shipwright-docker-image
-  image: grafana/shipwright:docker-v0.8.0
+  image: grafana/shipwright:docker-v0.8.0-16-g86ee2cb
   commands:
-  - /var/shipwright/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER ./ci
+  - /var/shipwright/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - test
 
 - name: build-git-image
-  image: grafana/shipwright:docker-v0.8.0
+  image: grafana/shipwright:docker-v0.8.0-16-g86ee2cb
   commands:
-  - /var/shipwright/pipeline -step=4 -build-id=$DRONE_BUILD_NUMBER ./ci
+  - /var/shipwright/pipeline -step=4 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - build-shipwright-docker-image
 
 - name: build-go-image
-  image: grafana/shipwright:docker-v0.8.0
+  image: grafana/shipwright:docker-v0.8.0-16-g86ee2cb
   commands:
-  - /var/shipwright/pipeline -step=5 -build-id=$DRONE_BUILD_NUMBER ./ci
+  - /var/shipwright/pipeline -step=5 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - build-git-image
 
 - name: build-node-image
-  image: grafana/shipwright:docker-v0.8.0
+  image: grafana/shipwright:docker-v0.8.0-16-g86ee2cb
   commands:
-  - /var/shipwright/pipeline -step=6 -build-id=$DRONE_BUILD_NUMBER ./ci
+  - /var/shipwright/pipeline -step=6 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - build-go-image
 
 - name: build-docker-image
-  image: grafana/shipwright:docker-v0.8.0
+  image: grafana/shipwright:docker-v0.8.0-16-g86ee2cb
   commands:
-  - /var/shipwright/pipeline -step=7 -build-id=$DRONE_BUILD_NUMBER ./ci
+  - /var/shipwright/pipeline -step=7 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
+  depends_on:
+  - build-node-image
+
+volumes:
+- name: shipwright
+  temp: {}
+- name: shipwright-state
+  temp: {}
+
+---
+kind: pipeline
+type: docker
+name: publish docker images
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: builtin-compile-pipeline
+  image: grafana/shipwright:go-v0.8.0-16-g86ee2cb
+  command:
+  - go
+  - build
+  - -o
+  - /var/shipwright/pipeline
+  - ./ci
+  environment:
+    CGO_ENABLED: 0
+    GOARCH: amd64
+    GOOS: linux
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+
+- name: docker-login
+  image: grafana/shipwright:v0.8.0-16-g86ee2cb
+  commands:
+  - /var/shipwright/pipeline -step=14 -arg=docker_username=$secret-docker_username -arg=docker_password=$secret-docker_password -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
+  environment:
+    $secret-docker_password:
+      from_secret: docker_password
+    $secret-docker_username:
+      from_secret: docker_username
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
+  depends_on:
+  - builtin-compile-pipeline
+
+- name: build-git-image
+  image: grafana/shipwright:docker-v0.8.0-16-g86ee2cb
+  commands:
+  - /var/shipwright/pipeline -step=16 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
+  depends_on:
+  - docker-login
+
+- name: build-go-image
+  image: grafana/shipwright:docker-v0.8.0-16-g86ee2cb
+  commands:
+  - /var/shipwright/pipeline -step=17 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
+  depends_on:
+  - build-git-image
+
+- name: build-node-image
+  image: grafana/shipwright:docker-v0.8.0-16-g86ee2cb
+  commands:
+  - /var/shipwright/pipeline -step=18 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
+  depends_on:
+  - build-go-image
+
+- name: build-docker-image
+  image: grafana/shipwright:docker-v0.8.0-16-g86ee2cb
+  commands:
+  - /var/shipwright/pipeline -step=19 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - build-node-image
 
 - name: push-git
-  image: grafana/shipwright:docker-v0.8.0
+  image: grafana/shipwright:docker-v0.8.0-16-g86ee2cb
   commands:
-  - /var/shipwright/pipeline -step=12 -build-id=$DRONE_BUILD_NUMBER ./ci
+  - /var/shipwright/pipeline -step=24 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - build-docker-image
 
 - name: push-go
-  image: grafana/shipwright:docker-v0.8.0
+  image: grafana/shipwright:docker-v0.8.0-16-g86ee2cb
   commands:
-  - /var/shipwright/pipeline -step=13 -build-id=$DRONE_BUILD_NUMBER ./ci
+  - /var/shipwright/pipeline -step=25 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - push-git
 
 - name: push-node
-  image: grafana/shipwright:docker-v0.8.0
+  image: grafana/shipwright:docker-v0.8.0-16-g86ee2cb
   commands:
-  - /var/shipwright/pipeline -step=14 -build-id=$DRONE_BUILD_NUMBER ./ci
+  - /var/shipwright/pipeline -step=26 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - push-go
 
 - name: push-docker
-  image: grafana/shipwright:docker-v0.8.0
+  image: grafana/shipwright:docker-v0.8.0-16-g86ee2cb
   commands:
-  - /var/shipwright/pipeline -step=15 -build-id=$DRONE_BUILD_NUMBER ./ci
+  - /var/shipwright/pipeline -step=27 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
   volumes:
   - name: shipwright
     path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
   depends_on:
   - push-node
 
 volumes:
 - name: shipwright
   temp: {}
+- name: shipwright-state
+  temp: {}
+
+depends_on:
+- test-and-build
 
 ...
