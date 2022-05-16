@@ -142,7 +142,7 @@ steps:
     path: /var/shipwright
 
 - name: docker-login
-  image: grafana/shipwright:v0.8.0-31-g562b233
+  image: grafana/shipwright:docker-v0.8.0-31-g562b233
   commands:
   - /var/shipwright/pipeline -step=14 -arg=docker_username=$secret-docker_username -arg=docker_password=$secret-docker_password -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
   environment:
@@ -216,7 +216,7 @@ steps:
   depends_on:
   - build-node-image
 
-- name: push-git
+- name: push-shipwright-docker-image
   image: grafana/shipwright:docker-v0.8.0-31-g562b233
   commands:
   - /var/shipwright/pipeline -step=24 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
@@ -230,10 +230,24 @@ steps:
   depends_on:
   - build-docker-image
 
+- name: push-git
+  image: grafana/shipwright:docker-v0.8.0-31-g562b233
+  commands:
+  - /var/shipwright/pipeline -step=26 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
+  volumes:
+  - name: docker-socket
+    path: /var/run/docker.sock
+  - name: shipwright
+    path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
+  depends_on:
+  - push-shipwright-docker-image
+
 - name: push-go
   image: grafana/shipwright:docker-v0.8.0-31-g562b233
   commands:
-  - /var/shipwright/pipeline -step=25 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
+  - /var/shipwright/pipeline -step=27 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
   volumes:
   - name: docker-socket
     path: /var/run/docker.sock
@@ -247,7 +261,7 @@ steps:
 - name: push-node
   image: grafana/shipwright:docker-v0.8.0-31-g562b233
   commands:
-  - /var/shipwright/pipeline -step=26 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
+  - /var/shipwright/pipeline -step=28 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
   volumes:
   - name: docker-socket
     path: /var/run/docker.sock
@@ -261,7 +275,7 @@ steps:
 - name: push-docker
   image: grafana/shipwright:docker-v0.8.0-31-g562b233
   commands:
-  - /var/shipwright/pipeline -step=27 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
+  - /var/shipwright/pipeline -step=29 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./ci
   volumes:
   - name: docker-socket
     path: /var/run/docker.sock
@@ -287,9 +301,5 @@ trigger:
 
 depends_on:
 - test-and-build
-
----
-kind: signature
-hmac: e4070f45b0fe84c44d096c9f7b1acf78f5d4defae7a8bba500816ec413562fdb
 
 ...
