@@ -116,6 +116,7 @@ func (i Image) PushStep(sw *shipwright.Shipwright[pipeline.Action]) pipeline.Ste
 
 // ShipwrightImage has to be built before its derivitive images.
 var ShipwrightImage = Image{
+	Name:       "shipwright",
 	Dockerfile: "./ci/docker/shipwright.Dockerfile",
 	Context:    ".",
 }
