@@ -194,6 +194,7 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 
 			events := v.Content.Events
 			if len(events) != 0 {
+				log.Debugf("Generating with %d event filters...", len(events))
 				cond, err := c.Events(events)
 				if err != nil {
 					return err

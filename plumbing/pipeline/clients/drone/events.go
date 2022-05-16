@@ -16,7 +16,9 @@ func addEvent(c yaml.Conditions, e pipeline.Event) (yaml.Conditions, error) {
 
 	if tag, ok := e.Filters["tag"]; ok {
 		c.Event.Include = append(c.Event.Include, "tag")
-		c.Ref.Include = append(c.Ref.Include, fmt.Sprintf("refs/tags/%s", tag.String()))
+		if tag != nil {
+			c.Ref.Include = append(c.Ref.Include, fmt.Sprintf("refs/tags/%s", tag.String()))
+		}
 	}
 
 	return c, nil

@@ -223,7 +223,6 @@ steps:
   volumes:
   - name: docker-socket
     path: /var/run/docker.sock
-  - name: docker-auth-token
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
@@ -238,7 +237,6 @@ steps:
   volumes:
   - name: docker-socket
     path: /var/run/docker.sock
-  - name: docker-auth-token
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
@@ -253,7 +251,6 @@ steps:
   volumes:
   - name: docker-socket
     path: /var/run/docker.sock
-  - name: docker-auth-token
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
@@ -268,7 +265,6 @@ steps:
   volumes:
   - name: docker-socket
     path: /var/run/docker.sock
-  - name: docker-auth-token
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
@@ -285,11 +281,11 @@ volumes:
   host:
     path: /var/run/docker.sock
 
+trigger:
+  event:
+  - tag
+
 depends_on:
 - test-and-build
-
----
-kind: signature
-hmac: 0a7f49d963b2081e64d5875061e5bb4dacb01164124acc22101fec47703fc105
 
 ...

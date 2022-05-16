@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ArgumentDockerAuthToken = pipeline.NewFSArgument("docker-auth-token")
+	ArgumentDockerAuthToken = pipeline.NewStringArgument("docker-auth-token")
 )
 
 func Login(username, password pipeline.Argument) pipeline.Step[pipeline.Action] {
