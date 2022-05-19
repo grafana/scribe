@@ -92,9 +92,7 @@ type GitTagFilters struct {
 
 func GitTagEvent(filters GitTagFilters) Event {
 	f := map[string]*FilterValue{}
-	if filters.Name != nil {
-		f["tag"] = filters.Name
-	}
+	f["tag"] = filters.Name
 
 	return Event{
 		Filters: f,

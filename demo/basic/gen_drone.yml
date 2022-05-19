@@ -1,7 +1,7 @@
 ---
 kind: pipeline
 type: docker
-name: basic pipeline
+name: basic-pipeline
 
 platform:
   os: linux
@@ -84,14 +84,13 @@ steps:
   depends_on:
   - compile-backend
 
-- name: publish
+- name: build-docker-image
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=10 -arg=gcs-publish-key=secret-gcs-publish-key -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/basic
-  environment:
-    secret-gcs-publish-key:
-      from_secret: gcs-publish-key
+  - /var/shipwright/pipeline -step=8 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/basic
   volumes:
+  - name: docker-socket
+    path: /var/run/docker.sock
   - name: shipwright
     path: /var/shipwright
   - name: shipwright-state
@@ -99,11 +98,29 @@ steps:
   depends_on:
   - compile-frontend
 
+- name: publish
+  image: grafana/shipwright:latest
+  commands:
+  - /var/shipwright/pipeline -step=12 -arg=gcs-publish-key=$secret-gcs-publish-key -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/basic
+  environment:
+    $secret-gcs-publish-key:
+      from_secret: gcs-publish-key
+  volumes:
+  - name: shipwright
+    path: /var/shipwright
+  - name: shipwright-state
+    path: /var/shipwright-state
+  depends_on:
+  - build-docker-image
+
 volumes:
 - name: shipwright
   temp: {}
 - name: shipwright-state
   temp: {}
+- name: docker-socket
+  host:
+    path: /var/run/docker.sock
 
 trigger:
   branch:

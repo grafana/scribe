@@ -2,6 +2,7 @@ package drone
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"path"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/drone/drone-yaml/yaml/pretty"
 	"github.com/grafana/shipwright/plumbing"
 	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/shipwright/plumbing/pipeline/clients/drone/starlark"
 	"github.com/grafana/shipwright/plumbing/pipelineutil"
 	"github.com/grafana/shipwright/plumbing/stringutil"
 	"github.com/sirupsen/logrus"
@@ -23,6 +25,15 @@ type Client struct {
 	Opts pipeline.CommonOpts
 
 	Log *logrus.Logger
+
+	// Language defines the language of the pipeline that will be generated.
+	// For example, if Language is LanguageYAML, then the generated pipeline
+	// will be the yaml that will tell drone to run the pipeline as it is written.
+	//
+	// Other languages will be generated using functions that you can use within
+	// your own pipelines in those other languages. They are intended to facilitate
+	// transitions between other systems and Shipwright.
+	Language DroneLanguage
 }
 
 func (c *Client) Validate(step pipeline.Step[pipeline.Action]) error {
@@ -81,6 +92,12 @@ var (
 		Name:     "shipwright",
 		EmptyDir: &yaml.VolumeEmptyDir{},
 	}
+	HostDockerVolume = &yaml.Volume{
+		Name: stringutil.Slugify(pipeline.ArgumentDockerSocketFS.Key),
+		HostPath: &yaml.VolumeHostPath{
+			Path: "/var/run/docker.sock",
+		},
+	}
 	ShipwrightStateVolume = &yaml.Volume{
 		Name:     "shipwright-state",
 		EmptyDir: &yaml.VolumeEmptyDir{},
@@ -125,6 +142,7 @@ func (c *Client) newPipeline(opts newPipelineOpts, pipelineOpts pipeline.CommonO
 		Volumes: []*yaml.VolumeMount{ShipwrightVolumeMount},
 	}
 
+	// Add the approprirate steps and "DependsOn" to each step.
 	for i, v := range opts.Steps {
 		if len(v.DependsOn) == 0 {
 			opts.Steps[i].DependsOn = []string{build.Name}
@@ -141,6 +159,7 @@ func (c *Client) newPipeline(opts newPipelineOpts, pipelineOpts pipeline.CommonO
 		Volumes: []*yaml.Volume{
 			ShipwrightVolume,
 			ShipwrightStateVolume,
+			HostDockerVolume,
 		},
 	}
 
@@ -158,7 +177,7 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 		Path:   path.Join(StatePath, "state.json"),
 	}
 
-	w.WalkPipelines(ctx, func(ctx context.Context, pipelines ...pipeline.Step[pipeline.Pipeline]) error {
+	err := w.WalkPipelines(ctx, func(ctx context.Context, pipelines ...pipeline.Step[pipeline.Pipeline]) error {
 		log.Debugf("Walking '%d' pipelines...", len(pipelines))
 		for _, v := range pipelines {
 			log.Debugf("Processing pipeline '%s'...", v.Name)
@@ -168,13 +187,14 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 			}
 
 			pipeline := c.newPipeline(newPipelineOpts{
-				Name:      v.Name,
+				Name:      stringutil.Slugify(v.Name),
 				Steps:     sl.steps,
 				DependsOn: stepsToNames(v.Dependencies),
 			}, c.Opts)
 
 			events := v.Content.Events
 			if len(events) != 0 {
+				log.Debugf("Generating with %d event filters...", len(events))
 				cond, err := c.Events(events)
 				if err != nil {
 					return err
@@ -189,10 +209,41 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 		return nil
 	})
 
-	manifest := &yaml.Manifest{
-		Resources: cfg,
+	if err != nil {
+		return err
 	}
 
-	pretty.Print(c.Opts.Output, manifest)
+	switch c.Language {
+	case LanguageYAML:
+		manifest := &yaml.Manifest{
+			Resources: cfg,
+		}
+		pretty.Print(c.Opts.Output, manifest)
+
+	case LanguageStarlark:
+		if err := c.renderStarlark(cfg); err != nil {
+			c.Log.WithError(err).Warn("error rendering starlark")
+		}
+
+	default:
+		return fmt.Errorf("unknown Drone language: %d", c.Language)
+	}
+
+	return nil
+}
+
+func (c *Client) renderStarlark(cfg []yaml.Resource) error {
+	sl := starlark.NewStarlark()
+	for _, resource := range cfg {
+		switch t := resource.(type) {
+		case *yaml.Pipeline:
+			sl.MarshalPipeline(t)
+
+		default:
+			return fmt.Errorf("unrecognized type: %s: resource %v", t, resource)
+		}
+	}
+
+	fmt.Fprint(c.Opts.Output, sl.String())
 	return nil
 }

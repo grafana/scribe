@@ -10,6 +10,7 @@ import (
 	"github.com/grafana/shipwright/docker"
 	"github.com/grafana/shipwright/plumbing"
 	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/sirupsen/logrus"
 )
 
 func str(val string) *string {
@@ -103,7 +104,8 @@ func (i Image) PushStep(sw *shipwright.Shipwright[pipeline.Action]) pipeline.Ste
 			Name:      tag,
 			Registry:  plumbing.DefaultRegistry(),
 			AuthToken: auth,
-			Stdout:    opts.Stdout,
+			InfoOut:   opts.Stdout,
+			DebugOut:  opts.Logger.WithField("action", "push").WriterLevel(logrus.DebugLevel),
 		})
 	}
 
@@ -114,6 +116,7 @@ func (i Image) PushStep(sw *shipwright.Shipwright[pipeline.Action]) pipeline.Ste
 
 // ShipwrightImage has to be built before its derivitive images.
 var ShipwrightImage = Image{
+	Name:       "shipwright",
 	Dockerfile: "./ci/docker/shipwright.Dockerfile",
 	Context:    ".",
 }

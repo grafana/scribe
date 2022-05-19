@@ -4,7 +4,6 @@ import (
 	"context"
 	"math/rand"
 	"strconv"
-	"time"
 
 	"github.com/grafana/shipwright"
 	"github.com/grafana/shipwright/plumbing/pipeline"
@@ -14,19 +13,21 @@ var (
 	ArgumentRandomInt = pipeline.NewStringArgument("random_int")
 )
 
-func StepProduceRandom(sw *shipwright.Shipwright[pipeline.Action]) pipeline.Step[pipeline.Action] {
+func StepProduceRandom() pipeline.Step[pipeline.Action] {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		r := rand.Int63n(10000)
-		sw.Opts.State.Set(ArgumentRandomInt.Key, strconv.FormatInt(r, 10))
+		opts.State.Set(ArgumentRandomInt.Key, strconv.FormatInt(r, 10))
 		return nil
 	}
 
-	return pipeline.NewStep(action).Provides(ArgumentRandomInt)
+	step := pipeline.NewStep(action)
+
+	return step.Provides(ArgumentRandomInt)
 }
 
-func StepPrintRandom(sw *shipwright.Shipwright[pipeline.Action]) pipeline.Step[pipeline.Action] {
+func StepPrintRandom() pipeline.Step[pipeline.Action] {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
-		strVal, err := sw.Opts.State.Get(ArgumentRandomInt.Key)
+		strVal, err := opts.State.Get(ArgumentRandomInt.Key)
 		if err != nil {
 			return err
 		}
@@ -40,18 +41,27 @@ func StepPrintRandom(sw *shipwright.Shipwright[pipeline.Action]) pipeline.Step[p
 		return nil
 	}
 
-	return pipeline.NewStep(action).WithArguments(ArgumentRandomInt)
+	step := pipeline.Step[pipeline.Action]{
+		Content: action,
+		Arguments: []pipeline.Argument{
+			ArgumentRandomInt,
+		},
+		Image: "test",
+	}
+
+	return step.WithArguments(ArgumentRandomInt)
 }
-func init() {
-	rand.Seed(time.Now().Unix())
-}
+
+// func init() {
+// 	rand.Seed(time.Now().Unix())
+// }
 
 func main() {
 	sw := shipwright.New("state-example")
 	defer sw.Done()
 
 	sw.Run(
-		StepProduceRandom(sw).WithName("create-random-number"),
-		StepPrintRandom(sw).WithName("log-random-number"),
+		StepProduceRandom().WithName("test 1"),
+		StepPrintRandom().WithName("test 2"),
 	)
 }

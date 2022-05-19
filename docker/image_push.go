@@ -12,7 +12,8 @@ type PushOpts struct {
 	Name      string
 	Registry  string
 	AuthToken string
-	Stdout    io.Writer
+	InfoOut   io.Writer
+	DebugOut  io.Writer
 }
 
 func Push(ctx context.Context, opts PushOpts) error {
@@ -44,5 +45,10 @@ func Push(ctx context.Context, opts PushOpts) error {
 
 	defer res.Close()
 
-	return WriteImageLogs(res, opts.Stdout)
+	if opts.DebugOut != nil {
+		// When reading from `res`, also write to DebugOut.
+		return WriteImageLogs(io.NopCloser(io.TeeReader(res, opts.DebugOut)), opts.InfoOut)
+	}
+
+	return WriteImageLogs(res, opts.InfoOut)
 }

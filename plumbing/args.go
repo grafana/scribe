@@ -78,7 +78,7 @@ func ParseArguments(args []string) (*PipelineArgs, error) {
 
 	flagSet.Usage = usage(flagSet)
 
-	flagSet.StringVar(&client, "mode", "cli", "cli|docker|drone. Default: cli")
+	flagSet.StringVar(&client, "mode", "cli", "cli|docker|drone|drone-starlark. Default: cli")
 	flagSet.Var(&step, "step", "A number that defines what specific step to run")
 	flagSet.StringVar(&logLevel, "log-level", "info", "The level of detail in the pipeline's log output. Default: 'warn'. Options: [trace, debug, info, warn, error]")
 	flagSet.Var(&argMap, "arg", "Provide pre-available arguments for use in pipeline steps. This argument can be provided multiple times. Format: '-arg={key}={value}")

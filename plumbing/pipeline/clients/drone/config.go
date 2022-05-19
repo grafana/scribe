@@ -7,6 +7,18 @@ import (
 	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
+type DroneLanguage int
+
+const (
+	// The languages that are available when generating a Drone config.
+	LanguageYAML DroneLanguage = iota
+	LanguageStarlark
+)
+
+var argVolumeMap = map[pipeline.Argument]string{
+	pipeline.ArgumentDockerSocketFS: "/var/run/docker.sock",
+}
+
 var argEnvMap = map[pipeline.Argument]string{
 	pipeline.ArgumentCommitSHA:  "$DRONE_COMMIT",
 	pipeline.ArgumentCommitRef:  "$DRONE_COMMIT_REF",
@@ -19,6 +31,11 @@ func (c *Client) Value(arg pipeline.Argument) (string, error) {
 	switch arg.Type {
 	case pipeline.ArgumentTypeSecret:
 		return secretEnv(arg.Key), nil
+	case pipeline.ArgumentTypeFS:
+		if val, ok := argVolumeMap[arg]; ok {
+			return val, nil
+		}
+		return "", plumbing.ErrorMissingArgument
 	}
 
 	if val, ok := argEnvMap[arg]; ok {

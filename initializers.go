@@ -13,7 +13,8 @@ var (
 	ClientCLI string = "cli"
 
 	// ClientDrone is set when a pipeline is ran in Drone mode, which is used to generate a Drone config from a Shipwright pipeline
-	ClientDrone = "drone"
+	ClientDrone         = "drone"
+	ClientDroneStarlark = "drone-starlark"
 
 	// RunModeDocker runs the pipeline using the Docker CLI for each step
 	ClientDocker = "docker"
@@ -36,15 +37,25 @@ type InitializerFunc func(pipeline.CommonOpts) pipeline.Client
 
 // The ClientInitializers define how different RunModes initialize the Shipwright client
 var ClientInitializers = map[string]InitializerFunc{
-	ClientCLI:    NewCLIClient,
-	ClientDrone:  NewDroneClient,
-	ClientDocker: NewDockerClient,
+	ClientCLI:           NewCLIClient,
+	ClientDrone:         NewDroneClient,
+	ClientDroneStarlark: NewDroneStarlarkClient,
+	ClientDocker:        NewDockerClient,
 }
 
 func NewDroneClient(opts pipeline.CommonOpts) pipeline.Client {
 	return &drone.Client{
-		Opts: opts,
-		Log:  opts.Log,
+		Opts:     opts,
+		Log:      opts.Log,
+		Language: drone.LanguageYAML,
+	}
+}
+
+func NewDroneStarlarkClient(opts pipeline.CommonOpts) pipeline.Client {
+	return &drone.Client{
+		Opts:     opts,
+		Log:      opts.Log,
+		Language: drone.LanguageStarlark,
 	}
 }
 

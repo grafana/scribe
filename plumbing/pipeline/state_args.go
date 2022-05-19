@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"errors"
-	"log"
 
 	"github.com/grafana/shipwright/plumbing"
 )
@@ -18,11 +17,6 @@ func NewArgMapReader(defaults plumbing.ArgMap) *ArgMapReader {
 }
 
 func (s *ArgMapReader) Get(key string) (string, error) {
-	log.Println("Getting key", key, "from arg map", s.defaults)
-	log.Println("Getting key", key, "from arg map", s.defaults)
-	log.Println("Getting key", key, "from arg map", s.defaults)
-	log.Println("Getting key", key, "from arg map", s.defaults)
-
 	val, err := s.defaults.Get(key)
 	if err == nil {
 		return val, nil

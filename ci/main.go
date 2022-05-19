@@ -4,6 +4,7 @@ import (
 	"github.com/grafana/shipwright"
 	"github.com/grafana/shipwright/ci/docker"
 	"github.com/grafana/shipwright/golang"
+	"github.com/grafana/shipwright/plumbing"
 	"github.com/grafana/shipwright/plumbing/pipeline"
 )
 
@@ -33,11 +34,17 @@ func main() {
 				pipeline.GitTagEvent(pipeline.GitTagFilters{}),
 			)
 
-			sw.Run(docker.Login(
+			login := docker.Login(
 				pipeline.NewSecretArgument("docker_username"),
 				pipeline.NewSecretArgument("docker_password"),
-			).WithName("docker login"))
+			).
+				WithName("docker login").
+				WithImage(plumbing.SubImage("docker", sw.Version))
+
+			sw.Run(login)
+
 			sw.Run(docker.BuildSteps(sw, docker.Images)...)
+			sw.Run(docker.ShipwrightImage.PushStep(sw).WithName("push shipwright docker image"))
 			sw.Run(docker.PushSteps(sw, docker.Images)...)
 		}),
 	)
