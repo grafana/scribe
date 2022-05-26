@@ -12,9 +12,9 @@ type StepWaitGroup struct {
 }
 
 // Add adds a new Action to the waitgroup. The provided function will be run in parallel with all other added functions.
-func (w *StepWaitGroup) Add(f pipeline.Step[pipeline.Action], opts pipeline.ActionOpts) {
+func (w *StepWaitGroup) Add(f pipeline.Step, opts pipeline.ActionOpts) {
 	w.wg.Add(func(ctx context.Context) error {
-		return f.Content(ctx, opts)
+		return f.Action(ctx, opts)
 	})
 }
 

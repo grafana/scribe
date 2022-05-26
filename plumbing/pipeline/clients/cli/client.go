@@ -16,10 +16,10 @@ var (
 )
 
 // PipelineWalkFunc walks through the pipelines that the collection provides. Each pipeline is a pipeline of steps, so each will walk through the list of steps using the StepWalkFunc.
-func (c *Client) PipelineWalkFunc(w pipeline.Walker, wf pipeline.StepWalkFunc) func(context.Context, ...pipeline.Step[pipeline.Pipeline]) error {
-	return func(ctx context.Context, pipelines ...pipeline.Step[pipeline.Pipeline]) error {
+func (c *Client) PipelineWalkFunc(w pipeline.Walker, wf pipeline.StepWalkFunc) func(context.Context, ...pipeline.Pipeline) error {
+	return func(ctx context.Context, pipelines ...pipeline.Pipeline) error {
 		log := c.Log
-		log.Debugln("Running pipeline(s)", pipeline.StepNames(pipelines))
+		log.Debugln("Running pipeline(s)", pipeline.PipelineNames(pipelines))
 
 		var (
 			wg = syncutil.NewPipelineWaitGroup()
@@ -31,8 +31,8 @@ func (c *Client) PipelineWalkFunc(w pipeline.Walker, wf pipeline.StepWalkFunc) f
 			// However, if a sub-pipeline returns an error, then we shoud(?) stop.
 			// TODO: This is probably not true... if a sub-pipeline stops then users will probably want to take note of it, but let the rest of the pipeline continue.
 			// and see a report of the failure towards the end of the execution.
-			if v.Type == pipeline.StepTypeSubPipeline {
-				go func(ctx context.Context, p pipeline.Step[pipeline.Pipeline]) {
+			if v.Type == pipeline.PipelineTypeSub {
+				go func(ctx context.Context, p pipeline.Pipeline) {
 					if err := c.runPipeline(ctx, w, wf, p); err != nil {
 						c.Log.WithError(err).Errorln("sub-pipeline failed")
 					}
@@ -53,8 +53,8 @@ func (c *Client) PipelineWalkFunc(w pipeline.Walker, wf pipeline.StepWalkFunc) f
 }
 
 // StepWalkFunc walks through the steps that the collection provides.
-func (c *Client) StepWalkFunc(ctx context.Context, step ...pipeline.Step[pipeline.Action]) error {
-	if err := c.runSteps(ctx, step); err != nil {
+func (c *Client) StepWalkFunc(ctx context.Context, steps ...pipeline.Step) error {
+	if err := c.runSteps(ctx, steps); err != nil {
 		return err
 	}
 
@@ -68,7 +68,7 @@ type Client struct {
 	Log  *logrus.Logger
 }
 
-func (c *Client) Validate(step pipeline.Step[pipeline.Action]) error {
+func (c *Client) Validate(step pipeline.Step) error {
 	if step.Image != "" {
 		c.Log.Debugln(fmt.Sprintf("[%s]", step.Name), ErrorCLIStepHasImage.Error())
 	}
@@ -104,11 +104,11 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 	return w.WalkPipelines(ctx, pipelineWalkFunc)
 }
 
-func (c *Client) runPipeline(ctx context.Context, w pipeline.Walker, wf pipeline.StepWalkFunc, p pipeline.Step[pipeline.Pipeline]) error {
-	return w.WalkSteps(ctx, p.Serial, wf)
+func (c *Client) runPipeline(ctx context.Context, w pipeline.Walker, wf pipeline.StepWalkFunc, p pipeline.Pipeline) error {
+	return w.WalkSteps(ctx, p.ID, wf)
 }
 
-func (c *Client) runSteps(ctx context.Context, steps pipeline.StepList) error {
+func (c *Client) runSteps(ctx context.Context, steps []pipeline.Step) error {
 	c.Log.Debugln("Running steps in parallel:", len(steps))
 
 	var (

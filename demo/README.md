@@ -31,6 +31,7 @@ This basic pipeline creates a single pipeline which runs many common steps that 
 - [ ] Running pipelines in parallel
 - [x] Running steps in sequence
 - [ ] Running steps in parallel
+- [ ] Running steps with the default `ENTRYPOINT` / `CMD`
 - [x] Secrets
 - [ ] Sub-pipelines
 - [x] Step Arguments
@@ -43,7 +44,7 @@ This more complex pipeline creates a single pipeline which runs many steps with 
 
 ### Features
 
-- [ ] Background steps
+- [x] Background steps
 - [ ] Caching
 - [ ] Registering a new client
 - [ ] Environment Variables
@@ -55,6 +56,7 @@ This more complex pipeline creates a single pipeline which runs many steps with 
 - [ ] Running pipelines in parallel
 - [x] Running steps in sequence
 - [x] Running steps in parallel
+- [x] Running steps with the default `ENTRYPOINT` / `CMD`
 - [ ] Secrets
 - [ ] Sub-pipelines
 - [x] Step Arguments
@@ -79,6 +81,7 @@ This program creates multiple pipelines which run in sequence; one of which will
 - [ ] Running pipelines in parallel
 - [x] Running steps in sequence
 - [x] Running steps in parallel
+- [ ] Running steps with the default `ENTRYPOINT` / `CMD`
 - [x] Secrets
 - [ ] Sub-pipelines
 - [x] Step Arguments
@@ -103,6 +106,7 @@ This program creates multiple pipelines which run in sequence, and one pipeline 
 - [ ] Running pipelines in parallel
 - [x] Running steps in sequence
 - [x] Running steps in parallel
+- [ ] Running steps with the default `ENTRYPOINT` / `CMD`
 - [x] Secrets
 - [x] Sub-pipelines
 - [x] Step Arguments
@@ -127,6 +131,7 @@ This program creates a very simple pipeline which demostrates setting and gettin
 - [ ] Running pipelines in parallel
 - [x] Running steps in sequence
 - [ ] Running steps in parallel
+- [ ] Running steps with the default `ENTRYPOINT` / `CMD`
 - [ ] Secrets
 - [ ] Sub-pipelines
 - [x] Step Arguments
@@ -153,6 +158,7 @@ Use the `-client=my-custom-client` to run the pipeline with the custom client.
 - [ ] Running pipelines in parallel
 - [ ] Running steps in sequence
 - [ ] Running steps in parallel
+- [ ] Running steps with the default `ENTRYPOINT` / `CMD`
 - [ ] Secrets
 - [ ] Sub-pipelines
 - [ ] Step Arguments

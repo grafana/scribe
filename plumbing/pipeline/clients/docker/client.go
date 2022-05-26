@@ -27,7 +27,7 @@ type Client struct {
 	Log *logrus.Logger
 }
 
-func (c *Client) Validate(step pipeline.Step[pipeline.Action]) error {
+func (c *Client) Validate(step pipeline.Step) error {
 	if step.Image == "" {
 		return errors.New("no image provided")
 	}
@@ -82,13 +82,13 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 }
 
 func (c *Client) stepWalkFunc(opts walkOpts) pipeline.StepWalkFunc {
-	return func(ctx context.Context, steps ...pipeline.Step[pipeline.Action]) error {
+	return func(ctx context.Context, steps ...pipeline.Step) error {
 		wg := syncutil.NewWaitGroup()
 
 		for _, step := range steps {
 			log := opts.log.WithFields(logrus.Fields{
 				"step":    step.Name,
-				"step_id": step.Serial,
+				"step_id": step.ID,
 			})
 
 			log.Infoln("Creating container for step. Image:", step.Image)
@@ -135,15 +135,15 @@ func (c *Client) stepWalkFunc(opts walkOpts) pipeline.StepWalkFunc {
 	}
 }
 
-func (c *Client) runPipeline(ctx context.Context, opts walkOpts, p pipeline.Step[pipeline.Pipeline]) error {
-	return opts.walker.WalkSteps(ctx, p.Serial, c.stepWalkFunc(opts))
+func (c *Client) runPipeline(ctx context.Context, opts walkOpts, p pipeline.Pipeline) error {
+	return opts.walker.WalkSteps(ctx, p.ID, c.stepWalkFunc(opts))
 }
 
 // walkPipelines returns the walkFunc that runs all of the pipelines in docker in the appropriate order.
 // TODO: Most of this code looks very similar to the syncutil.StepWaitGroup and the ContainerWaitGroup type in this package.
 // There should be a way to reduce it.
 func (c *Client) walkPipelines(opts walkOpts) pipeline.PipelineWalkFunc {
-	return func(ctx context.Context, pipelines ...pipeline.Step[pipeline.Pipeline]) error {
+	return func(ctx context.Context, pipelines ...pipeline.Pipeline) error {
 		var (
 			wg = syncutil.NewPipelineWaitGroup()
 		)
@@ -155,9 +155,9 @@ func (c *Client) walkPipelines(opts walkOpts) pipeline.PipelineWalkFunc {
 			// However, if a sub-pipeline returns an error, then we shoud(?) stop.
 			// TODO: This is probably not true... if a sub-pipeline stops then users will probably want to take note of it, but let the rest of the pipeline continue.
 			// and see a report of the failure towards the end of the execution.
-			if v.Type == pipeline.StepTypeSubPipeline {
+			if v.Type == pipeline.PipelineTypeSub {
 				log.Debugln("Found sub-pipeline, running in new goroutine")
-				go func(ctx context.Context, p pipeline.Step[pipeline.Pipeline]) {
+				go func(ctx context.Context, p pipeline.Pipeline) {
 					if err := c.runPipeline(ctx, opts, p); err != nil {
 						c.Log.WithError(err).Errorln("sub-pipeline failed")
 					} else {
@@ -212,42 +212,3 @@ func GetVolumeValue(args *plumbing.PipelineArgs, arg pipeline.Argument) (string,
 	// TODO: Should we request via stdin?
 	return "", nil
 }
-
-// func (c *Client) runAction(ctx context.Context, pipelinePath string, step pipeline.Step[pipeline.Action]) pipeline.Action {
-// 	cmd, err := cmdutil.StepCommand(c, cmdutil.CommandOpts{
-// 		Step:    step,
-// 		BuildID: c.Opts.Args.BuildID,
-// 	})
-// 	if err != nil {
-// 		c.Log.Fatalln(err)
-// 		return nil
-// 	}
-//
-// 	args := []string{}
-// 	if len(cmd) > 1 {
-// 		args = cmd[1:]
-// 	}
-//
-// 	runOpts := RunOpts{
-// 		Image:   step.Image,
-// 		Command: PipelineVolumePath,
-// 		Volumes: []string{},
-// 		Args:    args,
-// 	}
-//
-// 	runOpts = runOpts.WithPipelinePath(pipelinePath)
-//
-// 	runOpts, err = c.applyArguments(runOpts, step.Arguments)
-// 	if err != nil {
-// 		c.Log.Fatalln(err)
-// 		return nil
-// 	}
-//
-// 	return func(ctx context.Context, opts pipeline.ActionOpts) error {
-// 		runOpts.Stdout = opts.Stdout
-// 		runOpts.Stderr = opts.Stderr
-//
-// 		c.Log.Debugf("Running command 'docker %v'", RunArgs(runOpts))
-// 		return Run(ctx, runOpts)
-// 	}
-// }

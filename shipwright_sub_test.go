@@ -18,11 +18,11 @@ func TestSub(t *testing.T) {
 		)
 
 		// In this test case we're not providing ensurer data because we are not running 'Done'.
-		sw := shipwright.NewWithClient[pipeline.Action](testOpts, ens)
+		sw := shipwright.NewWithClient(testOpts, ens)
 
 		sw.Run(pipeline.NoOpStep.WithName("step 1"), pipeline.NoOpStep.WithName("step 2"))
 
-		sf := func(sw *shipwright.Shipwright[pipeline.Action]) {
+		sf := func(sw *shipwright.Shipwright) {
 			sw.Run(pipeline.NoOpStep.WithName("step 3"))
 			sw.Run(pipeline.NoOpStep.WithName("step 4"), pipeline.NoOpStep.WithName("step 5"))
 		}
@@ -31,7 +31,7 @@ func TestSub(t *testing.T) {
 
 		sw.Run(pipeline.NoOpStep.WithName("step 6"), pipeline.NoOpStep.WithName("step 7"))
 
-		if err := sw.Execute(context.Background()); err != nil {
+		if err := sw.Execute(context.Background(), sw.Collection); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -44,11 +44,11 @@ func TestSub(t *testing.T) {
 		)
 
 		// In this test case we're not providing ensurer data because we are not running 'Done'.
-		sw := shipwright.NewWithClient[pipeline.Action](testOpts, ens)
+		sw := shipwright.NewWithClient(testOpts, ens)
 
 		sw.Run(pipeline.NoOpStep.WithName("step 1"), pipeline.NoOpStep.WithName("step 2"))
 
-		sf := func(sw *shipwright.Shipwright[pipeline.Action]) {
+		sf := func(sw *shipwright.Shipwright) {
 			sw.Parallel(pipeline.NoOpStep.WithName("step 3"), pipeline.NoOpStep.WithName("step 4"))
 			sw.Run(pipeline.NoOpStep.WithName("step 5"))
 		}
@@ -57,7 +57,7 @@ func TestSub(t *testing.T) {
 
 		sw.Run(pipeline.NoOpStep.WithName("step 6"), pipeline.NoOpStep.WithName("step 7"))
 
-		if err := sw.Execute(context.Background()); err != nil {
+		if err := sw.Execute(context.Background(), sw.Collection); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -71,9 +71,9 @@ func TestSub(t *testing.T) {
 		)
 
 		// In this test case we're not providing ensurer data because we are not running 'Done'.
-		sw := shipwright.NewMultiWithClient[pipeline.Pipeline](testOpts, ens)
+		sw := shipwright.NewMultiWithClient(testOpts, ens)
 
-		mf := func(sw *shipwright.Shipwright[pipeline.Action]) {
+		mf := func(sw *shipwright.Shipwright) {
 			sw.Run(pipeline.NoOpStep.WithName("step 1"), pipeline.NoOpStep.WithName("step 2"))
 		}
 
@@ -83,7 +83,7 @@ func TestSub(t *testing.T) {
 			sw.New("test 1", mf),
 		)
 
-		sw.Sub(func(sw *shipwright.Shipwright[pipeline.Pipeline]) {
+		sw.Sub(func(sw *shipwright.ShipwrightMulti) {
 			sw.Run(
 				sw.New("test 2", mf),
 				sw.New("test 3", mf),
@@ -91,7 +91,7 @@ func TestSub(t *testing.T) {
 			)
 		})
 
-		if err := sw.Execute(context.Background()); err != nil {
+		if err := sw.Execute(context.Background(), sw.Collection); err != nil {
 			t.Fatal(err)
 		}
 	})

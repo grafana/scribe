@@ -12,7 +12,7 @@ var (
 	ArgumentDockerAuthToken = pipeline.NewStringArgument("docker-auth-token")
 )
 
-func Login(username, password pipeline.Argument) pipeline.Step[pipeline.Action] {
+func Login(username, password pipeline.Argument) pipeline.Step {
 	return pipeline.NewStep(func(ctx context.Context, opts pipeline.ActionOpts) error {
 		u, err := opts.State.Get(username.Key)
 		if err != nil {

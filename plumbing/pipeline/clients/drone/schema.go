@@ -27,7 +27,7 @@ func secretEnv(key string) string {
 // HandleSecrets handles the different 'Secret' arguments that are defined in the pipeline step.
 // Secrets are given a generated value and placed in the 'environment', not a user-defined one. That value is then used when the pipeline attempts to retrieve the value in the argument.
 // String arguments are already provided in the command line arguments when `cmdutil.StepCommand'
-func HandleSecrets(c pipeline.Configurer, step pipeline.Step[pipeline.Action]) map[string]*yaml.Variable {
+func HandleSecrets(c pipeline.Configurer, step pipeline.Step) map[string]*yaml.Variable {
 	env := map[string]*yaml.Variable{}
 	for _, arg := range step.Arguments {
 		switch arg.Type {
@@ -41,7 +41,7 @@ func HandleSecrets(c pipeline.Configurer, step pipeline.Step[pipeline.Action]) m
 	return env
 }
 
-func stepVolumes(c pipeline.Configurer, step pipeline.Step[pipeline.Action]) []*yaml.VolumeMount {
+func stepVolumes(c pipeline.Configurer, step pipeline.Step) []*yaml.VolumeMount {
 	volumes := []*yaml.VolumeMount{}
 	// TODO: It's unlikely that we want to actually associate volume mounts with "FS" type arguments.
 	// We will probably want to zip those up and place them in the state volume or something...
@@ -71,7 +71,7 @@ func stepVolumes(c pipeline.Configurer, step pipeline.Step[pipeline.Action]) []*
 	return volumes
 }
 
-func NewStep(c pipeline.Configurer, path, state string, step pipeline.Step[pipeline.Action]) (*yaml.Container, error) {
+func NewStep(c pipeline.Configurer, path, state string, step pipeline.Step) (*yaml.Container, error) {
 	var (
 		name    = stringutil.Slugify(step.Name)
 		deps    = make([]string, len(step.Dependencies))
@@ -98,12 +98,18 @@ func NewStep(c pipeline.Configurer, path, state string, step pipeline.Step[pipel
 
 	env = combineVariables(env, HandleSecrets(c, step))
 
-	return &yaml.Container{
-		Name:  name,
-		Image: image,
-		Commands: []string{
+	var cmds []string
+
+	if step.Action != nil {
+		cmds = []string{
 			strings.Join(cmd, " "),
-		},
+		}
+	}
+
+	return &yaml.Container{
+		Name:        name,
+		Image:       image,
+		Commands:    cmds,
 		DependsOn:   deps,
 		Environment: env,
 		Volumes:     volumes,

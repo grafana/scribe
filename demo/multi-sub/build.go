@@ -12,7 +12,7 @@ import (
 	"github.com/grafana/shipwright/yarn"
 )
 
-func writeVersion(sw *shipwright.Shipwright[pipeline.Action]) pipeline.Step[pipeline.Action] {
+func writeVersion(sw *shipwright.Shipwright) pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 
 		// equivalent of `git describe --tags --dirty --always`
@@ -28,7 +28,7 @@ func writeVersion(sw *shipwright.Shipwright[pipeline.Action]) pipeline.Step[pipe
 	return pipeline.NewStep(action)
 }
 
-func installDependencies(sw *shipwright.Shipwright[pipeline.Action]) {
+func installDependencies(sw *shipwright.Shipwright) {
 	sw.Run(
 		pipeline.NamedStep("install frontend dependencies", sw.Cache(
 			yarn.Install(),
@@ -41,7 +41,7 @@ func installDependencies(sw *shipwright.Shipwright[pipeline.Action]) {
 	)
 }
 
-func testPipeline(sw *shipwright.Shipwright[pipeline.Action]) {
+func testPipeline(sw *shipwright.Shipwright) {
 	installDependencies(sw)
 
 	sw.Parallel(
@@ -50,7 +50,7 @@ func testPipeline(sw *shipwright.Shipwright[pipeline.Action]) {
 	)
 }
 
-func publishPipeline(sw *shipwright.Shipwright[pipeline.Action]) {
+func publishPipeline(sw *shipwright.Shipwright) {
 	sw.When(
 		pipeline.GitCommitEvent(pipeline.GitCommitFilters{
 			Branch: pipeline.StringFilter("main"),
@@ -72,7 +72,7 @@ func publishPipeline(sw *shipwright.Shipwright[pipeline.Action]) {
 	)
 }
 
-func codeqlPipeline(sw *shipwright.Shipwright[pipeline.Action]) {
+func codeqlPipeline(sw *shipwright.Shipwright) {
 	sw.Run(
 		pipeline.NoOpStep.WithName("codeql"),
 		pipeline.NoOpStep.WithName("notify-slack"),
@@ -90,7 +90,7 @@ func main() {
 
 	// Presumably this function could run for 10+ minutes so we want to run it while test & publish are happening.
 	// We could run it in parallel with test, and if it fails, don't run publish, but we don't actually care if this passes in order to publish a pre-release build.
-	sw.Sub(func(sw *shipwright.Shipwright[pipeline.Pipeline]) {
+	sw.Sub(func(sw *shipwright.ShipwrightMulti) {
 		sw.Run(sw.New("code quality check", codeqlPipeline))
 	})
 

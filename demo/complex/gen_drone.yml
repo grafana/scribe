@@ -24,18 +24,6 @@ steps:
   - name: shipwright
     path: /var/shipwright
 
-- name: redis
-  image: redis:6
-  commands:
-  - /var/shipwright/pipeline -step=0 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/complex
-  volumes:
-  - name: shipwright
-    path: /var/shipwright
-  - name: shipwright-state
-    path: /var/shipwright-state
-  depends_on:
-  - builtin-compile-pipeline
-
 - name: initalize
   image: grafana/shipwright:latest
   commands:
@@ -234,6 +222,10 @@ steps:
   - publish-documentation
   - publish-package
   - publish-docker-image
+
+services:
+- name: redis
+  image: redis:6
 
 volumes:
 - name: shipwright

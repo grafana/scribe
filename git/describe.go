@@ -22,6 +22,6 @@ func DescribeAction(opts DescribeOpts) pipeline.Action {
 	}
 }
 
-func Describe(opts DescribeOpts) pipeline.Step[pipeline.Action] {
+func Describe(opts DescribeOpts) pipeline.Step {
 	return pipeline.NewStep(DescribeAction(opts)).Provides(ArgGitDescription)
 }

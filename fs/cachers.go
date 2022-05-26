@@ -13,5 +13,5 @@ func FileHasChanged(file string) pipeline.CacheCondition {
 // Cache will store the directory or file located at `path` if the conditions return true.
 // If all of the conditions return true, then the step is skipped and the directory is added to the local filesystem.
 func Cache(path string, conditions ...pipeline.CacheCondition) pipeline.Cacher {
-	return func(pipeline.Step[pipeline.Action]) {}
+	return func(pipeline.Step) {}
 }

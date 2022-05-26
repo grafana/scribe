@@ -6,7 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func NewShipwright(initializer shipwright.InitializerFunc) *shipwright.Shipwright[pipeline.Action] {
+func NewShipwright(initializer shipwright.InitializerFunc) *shipwright.Shipwright {
 	log := logrus.New()
 
 	opts := pipeline.CommonOpts{
@@ -14,13 +14,13 @@ func NewShipwright(initializer shipwright.InitializerFunc) *shipwright.Shipwrigh
 	}
 	client := initializer(opts)
 
-	return &shipwright.Shipwright[pipeline.Action]{
+	return &shipwright.Shipwright{
 		Opts:       opts,
 		Client:     client,
 		Collection: shipwright.NewDefaultCollection(opts),
 	}
 }
 
-func NewShipwrightMulti(initializer shipwright.InitializerFunc) *shipwright.Shipwright[pipeline.StepList] {
+func NewShipwrightMulti(initializer shipwright.InitializerFunc) *shipwright.Shipwright {
 	return nil
 }

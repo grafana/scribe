@@ -36,7 +36,7 @@ type Client struct {
 	Language DroneLanguage
 }
 
-func (c *Client) Validate(step pipeline.Step[pipeline.Action]) error {
+func (c *Client) Validate(step pipeline.Step) error {
 	if step.Image == "" {
 		return ErrorNoImage
 	}
@@ -48,7 +48,16 @@ func (c *Client) Validate(step pipeline.Step[pipeline.Action]) error {
 	return nil
 }
 
-func stepsToNames[T pipeline.StepContent](steps []pipeline.Step[T]) []string {
+func stepsToNames(steps []pipeline.Step) []string {
+	s := make([]string, len(steps))
+	for i, v := range steps {
+		s[i] = stringutil.Slugify(v.Name)
+	}
+
+	return s
+}
+
+func pipelinesToNames(steps []pipeline.Pipeline) []string {
 	s := make([]string, len(steps))
 	for i, v := range steps {
 		s[i] = stringutil.Slugify(v.Name)
@@ -58,15 +67,20 @@ func stepsToNames[T pipeline.StepContent](steps []pipeline.Step[T]) []string {
 }
 
 type stepList struct {
-	steps []*yaml.Container
+	steps    []*yaml.Container
+	services []*yaml.Container
 }
 
 func (s *stepList) AddStep(step *yaml.Container) {
 	s.steps = append(s.steps, step)
 }
 
-func (c *Client) StepWalkFunc(log logrus.FieldLogger, s *stepList, state string) func(ctx context.Context, steps ...pipeline.Step[pipeline.Action]) error {
-	return func(ctx context.Context, steps ...pipeline.Step[pipeline.Action]) error {
+func (s *stepList) AddService(step *yaml.Container) {
+	s.services = append(s.services, step)
+}
+
+func (c *Client) StepWalkFunc(log logrus.FieldLogger, s *stepList, state string) func(ctx context.Context, steps ...pipeline.Step) error {
+	return func(ctx context.Context, steps ...pipeline.Step) error {
 		log.Debugf("Processing '%d' steps...", len(steps))
 		for _, v := range steps {
 			log := log.WithField("dependencies", stepsToNames(v.Dependencies))
@@ -74,6 +88,12 @@ func (c *Client) StepWalkFunc(log logrus.FieldLogger, s *stepList, state string)
 			step, err := NewStep(c, c.Opts.Args.Path, state, v)
 			if err != nil {
 				return err
+			}
+
+			if v.IsBackground() {
+				s.AddService(step)
+				log.Debugf("Done Processing background step '%s'.", v.Name)
+				continue
 			}
 
 			step.DependsOn = stepsToNames(v.Dependencies)
@@ -115,6 +135,7 @@ var (
 type newPipelineOpts struct {
 	Name      string
 	Steps     []*yaml.Container
+	Services  []*yaml.Container
 	DependsOn []string
 }
 
@@ -156,6 +177,7 @@ func (c *Client) newPipeline(opts newPipelineOpts, pipelineOpts pipeline.CommonO
 		Type:      "docker",
 		DependsOn: opts.DependsOn,
 		Steps:     append([]*yaml.Container{build}, opts.Steps...),
+		Services:  opts.Services,
 		Volumes: []*yaml.Volume{
 			ShipwrightVolume,
 			ShipwrightStateVolume,
@@ -177,22 +199,23 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 		Path:   path.Join(StatePath, "state.json"),
 	}
 
-	err := w.WalkPipelines(ctx, func(ctx context.Context, pipelines ...pipeline.Step[pipeline.Pipeline]) error {
+	err := w.WalkPipelines(ctx, func(ctx context.Context, pipelines ...pipeline.Pipeline) error {
 		log.Debugf("Walking '%d' pipelines...", len(pipelines))
 		for _, v := range pipelines {
 			log.Debugf("Processing pipeline '%s'...", v.Name)
 			sl := &stepList{}
-			if err := w.WalkSteps(ctx, v.Serial, c.StepWalkFunc(log, sl, state.String())); err != nil {
+			if err := w.WalkSteps(ctx, v.ID, c.StepWalkFunc(log, sl, state.String())); err != nil {
 				return err
 			}
 
 			pipeline := c.newPipeline(newPipelineOpts{
 				Name:      stringutil.Slugify(v.Name),
 				Steps:     sl.steps,
-				DependsOn: stepsToNames(v.Dependencies),
+				Services:  sl.services,
+				DependsOn: pipelinesToNames(v.Dependencies),
 			}, c.Opts)
 
-			events := v.Content.Events
+			events := v.Events
 			if len(events) != 0 {
 				log.Debugf("Generating with %d event filters...", len(events))
 				cond, err := c.Events(events)

@@ -14,10 +14,10 @@ type ensurer struct {
 	steps [][]string
 }
 
-func (e *ensurer) WalkPipelines(w pipeline.Walker) func(context.Context, ...pipeline.Step[pipeline.Pipeline]) error {
-	return func(ctx context.Context, pipelines ...pipeline.Step[pipeline.Pipeline]) error {
+func (e *ensurer) WalkPipelines(w pipeline.Walker) func(context.Context, ...pipeline.Pipeline) error {
+	return func(ctx context.Context, pipelines ...pipeline.Pipeline) error {
 		for _, v := range pipelines {
-			if err := w.WalkSteps(ctx, v.Serial, e.WalkSteps); err != nil {
+			if err := w.WalkSteps(ctx, v.ID, e.WalkSteps); err != nil {
 				return err
 			}
 		}
@@ -25,7 +25,7 @@ func (e *ensurer) WalkPipelines(w pipeline.Walker) func(context.Context, ...pipe
 	}
 }
 
-func (e *ensurer) WalkSteps(ctx context.Context, steps ...pipeline.Step[pipeline.Action]) error {
+func (e *ensurer) WalkSteps(ctx context.Context, steps ...pipeline.Step) error {
 	s := make([]string, len(steps))
 
 	for i, v := range steps {
@@ -58,7 +58,7 @@ func (e *ensurer) WalkSteps(ctx context.Context, steps ...pipeline.Step[pipeline
 // For example, Drone steps MUST have an image so the Drone client returns an error in this function when the provided step does not have an image.
 // If the error encountered is not critical but should still be logged, then return a plumbing.ErrorSkipValidation.
 // The error is checked with `errors.Is` so the error can be wrapped with fmt.Errorf.
-func (e *ensurer) Validate(pipeline.Step[pipeline.Action]) error {
+func (e *ensurer) Validate(pipeline.Step) error {
 	return nil
 }
 

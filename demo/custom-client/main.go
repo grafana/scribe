@@ -12,15 +12,15 @@ type MyClient struct {
 	Log logrus.FieldLogger
 }
 
-func (c *MyClient) Validate(step pipeline.Step[pipeline.Action]) error {
+func (c *MyClient) Validate(step pipeline.Step) error {
 	return nil
 }
 
 func (c *MyClient) Done(ctx context.Context, w pipeline.Walker) error {
-	return w.WalkPipelines(ctx, func(ctx context.Context, pipelines ...pipeline.Step[pipeline.Pipeline]) error {
-		c.Log.Infoln("pipelines:", pipeline.StepNames(pipelines))
+	return w.WalkPipelines(ctx, func(ctx context.Context, pipelines ...pipeline.Pipeline) error {
+		c.Log.Infoln("pipelines:", pipeline.PipelineNames(pipelines))
 		for _, v := range pipelines {
-			err := w.WalkSteps(ctx, v.Serial, func(ctx context.Context, steps ...pipeline.Step[pipeline.Action]) error {
+			err := w.WalkSteps(ctx, v.ID, func(ctx context.Context, steps ...pipeline.Step) error {
 				c.Log.Infoln("steps:", pipeline.StepNames(steps))
 				return nil
 			})

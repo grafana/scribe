@@ -58,7 +58,7 @@ type Image struct {
 	Context    string
 }
 
-func (i Image) BuildStep(sw *shipwright.Shipwright[pipeline.Action]) pipeline.Step[pipeline.Action] {
+func (i Image) BuildStep(sw *shipwright.Shipwright) pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		tag, err := i.Tag()
 		if err != nil {
@@ -87,7 +87,7 @@ func (i Image) BuildStep(sw *shipwright.Shipwright[pipeline.Action]) pipeline.St
 		WithImage(plumbing.SubImage("docker", sw.Version))
 }
 
-func (i Image) PushStep(sw *shipwright.Shipwright[pipeline.Action]) pipeline.Step[pipeline.Action] {
+func (i Image) PushStep(sw *shipwright.Shipwright) pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		tag, err := i.Tag()
 		if err != nil {
@@ -145,8 +145,8 @@ var Images = []Image{
 	},
 }
 
-func BuildSteps(sw *shipwright.Shipwright[pipeline.Action], images []Image) []pipeline.Step[pipeline.Action] {
-	steps := make([]pipeline.Step[pipeline.Action], len(images))
+func BuildSteps(sw *shipwright.Shipwright, images []Image) []pipeline.Step {
+	steps := make([]pipeline.Step, len(images))
 
 	for i, image := range images {
 		steps[i] = image.BuildStep(sw).WithName(fmt.Sprintf("build %s image", image.Name))
@@ -155,8 +155,8 @@ func BuildSteps(sw *shipwright.Shipwright[pipeline.Action], images []Image) []pi
 	return steps
 }
 
-func PushSteps(sw *shipwright.Shipwright[pipeline.Action], images []Image) []pipeline.Step[pipeline.Action] {
-	steps := make([]pipeline.Step[pipeline.Action], len(images))
+func PushSteps(sw *shipwright.Shipwright, images []Image) []pipeline.Step {
+	steps := make([]pipeline.Step, len(images))
 
 	for i, image := range images {
 		steps[i] = image.PushStep(sw).WithName(fmt.Sprintf("push %s", image.Name))

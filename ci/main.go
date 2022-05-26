@@ -17,7 +17,7 @@ func main() {
 	defer sw.Done()
 
 	sw.Run(
-		sw.New("test and build", func(sw *shipwright.Shipwright[pipeline.Action]) {
+		sw.New("test and build", func(sw *shipwright.Shipwright) {
 			// Test the Golang code and ensure that the build steps
 			sw.Run(
 				golang.Test(sw, "./...").WithName("test"),
@@ -29,7 +29,7 @@ func main() {
 	)
 
 	sw.Run(
-		sw.New("publish docker images", func(sw *shipwright.Shipwright[pipeline.Action]) {
+		sw.New("publish docker images", func(sw *shipwright.Shipwright) {
 			sw.When(
 				pipeline.GitTagEvent(pipeline.GitTagFilters{}),
 			)

@@ -11,7 +11,7 @@ import (
 func TestMulti(t *testing.T) {
 	t.Run("Multi pipelines should have a root node with an ID of zero", func(t *testing.T) {
 		// In this test case we're not providing ensurer data because we are not running 'Done'.
-		sw := shipwright.NewMultiWithClient[pipeline.Pipeline](testOpts, newEnsurer())
+		sw := shipwright.NewMultiWithClient(testOpts, newEnsurer())
 
 		if sw.Collection == nil {
 			t.Fatal("Collection is nil")
@@ -30,9 +30,9 @@ func TestMulti(t *testing.T) {
 		)
 
 		// In this test case we're not providing ensurer data because we are not running 'Done'.
-		sw := shipwright.NewMultiWithClient[pipeline.Pipeline](testOpts, ens)
+		sw := shipwright.NewMultiWithClient(testOpts, ens)
 
-		mf := func(sw *shipwright.Shipwright[pipeline.Action]) {
+		mf := func(sw *shipwright.Shipwright) {
 			sw.Run(pipeline.NoOpStep.WithName("step 1"), pipeline.NoOpStep.WithName("step 2"))
 			sw.Run(pipeline.NoOpStep.WithName("step 3"))
 			sw.Run(pipeline.NoOpStep.WithName("step 4"), pipeline.NoOpStep.WithName("step 5"))
@@ -45,7 +45,7 @@ func TestMulti(t *testing.T) {
 			sw.New("test 2", mf),
 		)
 
-		if err := sw.Execute(context.Background()); err != nil {
+		if err := sw.Execute(context.Background(), sw.Collection); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -57,9 +57,9 @@ func TestMulti(t *testing.T) {
 		)
 
 		// In this test case we're not providing ensurer data because we are not running 'Done'.
-		sw := shipwright.NewMultiWithClient[pipeline.Pipeline](testOpts, ens)
+		sw := shipwright.NewMultiWithClient(testOpts, ens)
 
-		mf := func(sw *shipwright.Shipwright[pipeline.Action]) {
+		mf := func(sw *shipwright.Shipwright) {
 			sw.Parallel(pipeline.NoOpStep.WithName("step 1"), pipeline.NoOpStep.WithName("step 2"))
 			sw.Parallel(pipeline.NoOpStep.WithName("step 3"), pipeline.NoOpStep.WithName("step 4"))
 		}
@@ -71,7 +71,7 @@ func TestMulti(t *testing.T) {
 			sw.New("test 2", mf),
 		)
 
-		if err := sw.Execute(context.Background()); err != nil {
+		if err := sw.Execute(context.Background(), sw.Collection); err != nil {
 			t.Fatal(err)
 		}
 	})
