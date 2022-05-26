@@ -32,7 +32,7 @@ type BuildOptions struct {
 	Stdout io.Writer
 }
 
-func BuildStep(buildOpts BuildOptions) pipeline.Step[pipeline.Action] {
+func BuildStep(buildOpts BuildOptions) pipeline.Step {
 	return pipeline.NewStep(func(ctx context.Context, opts pipeline.ActionOpts) error {
 		buildOpts.Stdout = opts.Stdout
 		return Build(ctx, buildOpts)

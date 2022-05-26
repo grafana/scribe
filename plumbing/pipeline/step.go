@@ -6,9 +6,27 @@ import (
 	"io"
 	"strings"
 
-	"github.com/grafana/shipwright/plumbing/pipeline/dag"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
+)
+
+type (
+	StepType     int
+	PipelineType int
+
+	// Action is the function signature that a step provides when it does something.
+	Action func(context.Context, ActionOpts) error
+	Output interface{}
+)
+
+const (
+	StepTypeDefault StepType = iota
+	StepTypeBackground
+)
+
+const (
+	PipelineTypeDefault PipelineType = iota
+	PipelineTypeSub
 )
 
 // The ActionOpts are provided to every step that is ran.
@@ -21,39 +39,13 @@ type ActionOpts struct {
 	Logger logrus.FieldLogger
 }
 
-type (
-	StepType int
-
-	// Action is the function signature that a step provides when it does something.
-	Action func(context.Context, ActionOpts) error
-	Output interface{}
-
-	// A StepList is a list of steps that are ran in parallel.
-	// This type is only used for intermittent storage and should not be used in the Shipwright client library
-	StepList []Step[Action]
-	Pipeline struct {
-		*dag.Graph[Step[StepList]]
-		Events []Event
-	}
-)
-
-const (
-	StepTypeDefault StepType = iota
-	StepTypeBackground
-	StepTypeSubPipeline
-)
-
-// StepContent is used as a type argument to the "Step" type.
-// * Step[Action] is a Step that performs a single action. This type mostly exists for use by pipeline developers to define a single step that performs a single action.
-// * Step[StepList] is a Step that stores multiple Steps that have actions. This is used for storage purposes in the internal data DAG structure.
-// * Step[Pipeline] is a Step that stores a graph of steps.
-type StepContent interface {
-	Action | StepList | Pipeline
-}
-
 // A Step stores a Action and a name for use in pipelines.
 // A Step can consist of either a single action or represent a list of actions.
-type Step[T StepContent] struct {
+type Step struct {
+	// ID is the unique number that represents this step.
+	// This value is used when calling `shipwright -step={serial} [pipeline]`
+	ID int64
+
 	// Type represents the how the step is intended to operate. 90% of the time, the default type should be a sufficient descriptor of a step.
 	// However in some circumstances, clients may want to handle a step differently based on how it's defined.
 	// Background steps, for example, have to have their lifecycles handled differently.
@@ -68,30 +60,26 @@ type Step[T StepContent] struct {
 	Image string
 
 	// Content defines the contents of this step
-	Content T
+	Content Action
 
 	// Dependencies define other steps that are required to run before this one.
 	// As far as we're concerned, Steps can only depend on other steps of the same type.
-	Dependencies []Step[T]
+	Dependencies []Step
 
 	// Arguments are arguments that are must exist in order for this step to run.
 	Arguments []Argument
 
 	// Provides are arguments that this step provides for other arguments to use in their "Arguments" list.
 	ProvidesArgs []Argument
-
-	// Serial is the unique number that represents this step.
-	// This value is used when calling `shipwright -step={serial} [pipeline]`
-	Serial int64
 }
 
-func (s Step[T]) IsBackground() bool {
+func (s Step) IsBackground() bool {
 	return s.Type == StepTypeBackground
 }
 
-func (s Step[T]) After(step Step[T]) Step[T] {
+func (s Step) After(step Step) Step {
 	if s.Dependencies == nil {
-		s.Dependencies = []Step[T]{}
+		s.Dependencies = []Step{}
 	}
 
 	s.Dependencies = append(s.Dependencies, step)
@@ -99,57 +87,57 @@ func (s Step[T]) After(step Step[T]) Step[T] {
 	return s
 }
 
-func (s Step[T]) WithImage(image string) Step[T] {
+func (s Step) WithImage(image string) Step {
 	s.Image = image
 	return s
 }
 
-func (s Step[T]) WithOutput(artifact Artifact) Step[T] {
+func (s Step) WithOutput(artifact Artifact) Step {
 	return s
 }
 
-func (s Step[T]) WithInput(artifact Artifact) Step[T] {
+func (s Step) WithInput(artifact Artifact) Step {
 	return s
 }
-func (s Step[T]) ResetArguments() Step[T] {
+func (s Step) ResetArguments() Step {
 	s.Arguments = []Argument{}
 	return s
 }
 
-func (s Step[T]) WithArguments(args ...Argument) Step[T] {
+func (s Step) WithArguments(args ...Argument) Step {
 	s.Arguments = append(s.Arguments, args...)
 	return s
 }
 
-func (s Step[T]) Provides(arg ...Argument) Step[T] {
+func (s Step) Provides(arg ...Argument) Step {
 	s.ProvidesArgs = arg
 	return s
 }
 
-func (s Step[T]) WithName(name string) Step[T] {
+func (s Step) WithName(name string) Step {
 	s.Name = name
 	return s
 }
 
 // NewStep creates a new step with an automatically generated name
-func NewStep(action Action) Step[Action] {
-	return Step[Action]{
+func NewStep(action Action) Step {
+	return Step{
 		Content: action,
 	}
 }
 
 // NamedStep creates a new step with a name provided
-func NamedStep(name string, action Action) Step[Action] {
-	return Step[Action]{
+func NamedStep(name string, action Action) Step {
+	return Step{
 		Name:    name,
 		Content: action,
 	}
 }
 
 func (s *StepList) Names() []string {
-	names := make([]string, len(*s))
+	names := make([]string, len(s.Steps))
 
-	for i, v := range *s {
+	for i, v := range s.Steps {
 		names[i] = v.Name
 	}
 
@@ -166,7 +154,7 @@ var DefaultAction Action = nil
 
 // NoOpStep is used to represent a step which only exists to form uncommon relationships or for testing.
 // Most clients should completely ignore NoOpSteps.
-var NoOpStep = Step[Action]{
+var NoOpStep = Step{
 	Name: "no op",
 	Content: func(context.Context, ActionOpts) error {
 		return nil
@@ -176,11 +164,11 @@ var NoOpStep = Step[Action]{
 // Combine combines the list of steps into one step, combining all of their required and provided arguments, as well as their actions.
 // For string values that can not be combined, like Name and Image, the first step's values are chosen.
 // These can be overridden with further chaining.
-func Combine(step ...Step[Action]) Step[Action] {
-	s := Step[Action]{
+func Combine(step ...Step) Step {
+	s := Step{
 		Name:         step[0].Name,
 		Image:        step[0].Image,
-		Dependencies: []Step[Action]{},
+		Dependencies: []Step{},
 		Arguments:    []Argument{},
 		ProvidesArgs: []Argument{},
 	}
@@ -202,4 +190,27 @@ func Combine(step ...Step[Action]) Step[Action] {
 	}
 
 	return s
+}
+
+func stepListEqual(a, b []Step) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		if a[i].ID != b[i].ID {
+			return false
+		}
+	}
+
+	return true
+}
+
+func StepNames(s []Step) []string {
+	v := make([]string, len(s))
+	for i := range s {
+		v[i] = s[i].Name
+	}
+
+	return v
 }

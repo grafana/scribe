@@ -14,18 +14,18 @@ type TraceWrapper struct {
 	Tracer opentracing.Tracer
 }
 
-func (l *TraceWrapper) Fields(ctx context.Context, step pipeline.Step[pipeline.Action]) logrus.Fields {
+func (l *TraceWrapper) Fields(ctx context.Context, step pipeline.Step) logrus.Fields {
 	fields := plog.DefaultFields(ctx, step, l.Opts)
 
 	return fields
 }
 
-func TagSpan(span opentracing.Span, opts pipeline.CommonOpts, step pipeline.Step[pipeline.Action]) {
+func TagSpan(span opentracing.Span, opts pipeline.CommonOpts, step pipeline.Step) {
 	span.SetTag("job", "shipwright")
 	span.SetTag("build_id", opts.Args.BuildID)
 }
 
-func (l *TraceWrapper) WrapStep(steps ...pipeline.Step[pipeline.Action]) []pipeline.Step[pipeline.Action] {
+func (l *TraceWrapper) WrapStep(steps ...pipeline.Step) []pipeline.Step {
 	for i := range steps {
 		// Steps that provide a nil action should continue to provide a nil action.
 		// There is nothing for us to trace in the execution of this action anyways, though there is an implication that
@@ -55,7 +55,7 @@ func (l *TraceWrapper) WrapStep(steps ...pipeline.Step[pipeline.Action]) []pipel
 }
 
 func (l *TraceWrapper) Wrap(wf pipeline.StepWalkFunc) pipeline.StepWalkFunc {
-	return func(ctx context.Context, step ...pipeline.Step[pipeline.Action]) error {
+	return func(ctx context.Context, step ...pipeline.Step) error {
 		steps := l.WrapStep(step...)
 
 		if err := wf(ctx, steps...); err != nil {

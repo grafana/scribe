@@ -22,7 +22,7 @@ var (
 
 func NewDefaultCollection(opts pipeline.CommonOpts) *pipeline.Collection {
 	p := pipeline.NewCollection()
-	if err := p.AddPipelines(pipeline.NewPipelineNode(opts.Name, DefaultPipelineID)); err != nil {
+	if err := p.AddPipelines(pipeline.New(opts.Name, DefaultPipelineID)); err != nil {
 		panic(err)
 	}
 

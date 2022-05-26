@@ -20,7 +20,7 @@ import (
 
 type CreateStepContainerOpts struct {
 	Configurer pipeline.Configurer
-	Step       pipeline.Step[pipeline.Action]
+	Step       pipeline.Step
 	Env        []string
 	Network    *docker.Network
 	Volumes    []*docker.Volume

@@ -26,10 +26,10 @@ func TracingFields(ctx context.Context) logrus.Fields {
 	return fields
 }
 
-func StepFields(step pipeline.Step[pipeline.Action]) logrus.Fields {
+func StepFields(step pipeline.Step) logrus.Fields {
 	return logrus.Fields{
 		"step":   step.Name,
-		"serial": step.Serial,
+		"serial": step.ID,
 	}
 }
 
@@ -52,6 +52,6 @@ func Combine(field ...logrus.Fields) logrus.Fields {
 	return fields
 }
 
-func DefaultFields(ctx context.Context, step pipeline.Step[pipeline.Action], opts pipeline.CommonOpts) logrus.Fields {
+func DefaultFields(ctx context.Context, step pipeline.Step, opts pipeline.CommonOpts) logrus.Fields {
 	return Combine(TracingFields(ctx), StepFields(step), PipelineFields(opts))
 }

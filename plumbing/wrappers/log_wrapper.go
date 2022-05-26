@@ -13,13 +13,13 @@ type LogWrapper struct {
 	Log  *logrus.Logger
 }
 
-func (l *LogWrapper) Fields(ctx context.Context, step pipeline.Step[pipeline.Action]) logrus.Fields {
+func (l *LogWrapper) Fields(ctx context.Context, step pipeline.Step) logrus.Fields {
 	fields := plog.DefaultFields(ctx, step, l.Opts)
 
 	return fields
 }
 
-func (l *LogWrapper) WrapStep(steps ...pipeline.Step[pipeline.Action]) []pipeline.Step[pipeline.Action] {
+func (l *LogWrapper) WrapStep(steps ...pipeline.Step) []pipeline.Step {
 	for i := range steps {
 		step := steps[i]
 		action := steps[i].Content
@@ -57,7 +57,7 @@ func (l *LogWrapper) WrapStep(steps ...pipeline.Step[pipeline.Action]) []pipelin
 }
 
 func (l *LogWrapper) Wrap(wf pipeline.StepWalkFunc) pipeline.StepWalkFunc {
-	return func(ctx context.Context, step ...pipeline.Step[pipeline.Action]) error {
+	return func(ctx context.Context, step ...pipeline.Step) error {
 		steps := l.WrapStep(step...)
 
 		if err := wf(ctx, steps...); err != nil {

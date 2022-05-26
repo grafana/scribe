@@ -11,7 +11,7 @@ import (
 // CommandOpts is a list of arguments that can be provided to the StepCommand function.
 type CommandOpts struct {
 	// Step is the pipeline step this command is being generated for. The step contains a lot of necessary information for generating a command, mostly around arguments.
-	Step pipeline.Step[pipeline.Action]
+	Step pipeline.Step
 
 	// CompiledPipeline is an optional argument. If it is supplied, this value will be used as the first argument in the command instead of the shipwright command.
 	// This option is useful scenarios where the 'shipwright' command will not be available, but the pipeline has been compiled.
@@ -69,7 +69,7 @@ func StepCommand(c pipeline.Configurer, opts CommandOpts) ([]string, error) {
 		name = p
 	}
 
-	cmd := append([]string{name, fmt.Sprintf("-step=%d", opts.Step.Serial)}, args...)
+	cmd := append([]string{name, fmt.Sprintf("-step=%d", opts.Step.ID)}, args...)
 	if opts.Path != "" {
 		cmd = append(cmd, opts.Path)
 	}
