@@ -13,7 +13,7 @@ var (
 	ArgumentRandomInt = pipeline.NewStringArgument("random_int")
 )
 
-func StepProduceRandom() pipeline.Step[pipeline.Action] {
+func StepProduceRandom() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		r := rand.Int63n(10000)
 		opts.State.Set(ArgumentRandomInt.Key, strconv.FormatInt(r, 10))
@@ -25,7 +25,7 @@ func StepProduceRandom() pipeline.Step[pipeline.Action] {
 	return step.Provides(ArgumentRandomInt)
 }
 
-func StepPrintRandom() pipeline.Step[pipeline.Action] {
+func StepPrintRandom() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		strVal, err := opts.State.Get(ArgumentRandomInt.Key)
 		if err != nil {
@@ -41,8 +41,8 @@ func StepPrintRandom() pipeline.Step[pipeline.Action] {
 		return nil
 	}
 
-	step := pipeline.Step[pipeline.Action]{
-		Content: action,
+	step := pipeline.Step{
+		Action: action,
 		Arguments: []pipeline.Argument{
 			ArgumentRandomInt,
 		},

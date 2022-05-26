@@ -15,16 +15,16 @@ func TestCollectionAddSteps(t *testing.T) {
 		col := shipwright.NewDefaultCollection(pipeline.CommonOpts{
 			Name: "test",
 		})
-		steps := pipeline.Step[pipeline.StepList]{
-			Serial: 3,
-			Content: []pipeline.Step[pipeline.Action]{
+		steps := pipeline.StepList{
+			ID: 3,
+			Steps: []pipeline.Step{
 				{
-					Serial: 1,
-					Name:   "step 1",
+					ID:   1,
+					Name: "step 1",
 				},
 				{
-					Serial: 2,
-					Name:   "step 2",
+					ID:   2,
+					Name: "step 2",
 				},
 			},
 		}
@@ -36,46 +36,46 @@ func TestCollectionAddSteps(t *testing.T) {
 		col := shipwright.NewDefaultCollection(pipeline.CommonOpts{
 			Name: "test",
 		})
-		step1 := pipeline.Step[pipeline.StepList]{
-			Serial: 7,
-			Content: []pipeline.Step[pipeline.Action]{
+		step1 := pipeline.StepList{
+			ID: 7,
+			Steps: []pipeline.Step{
 				{
-					Serial: 1,
-					Name:   "step 1",
+					ID:   1,
+					Name: "step 1",
 				},
 				{
-					Serial: 2,
-					Name:   "step 2",
-				},
-			},
-		}
-
-		step2 := pipeline.Step[pipeline.StepList]{
-			Serial:       8,
-			Dependencies: []pipeline.Step[pipeline.StepList]{step1},
-			Content: []pipeline.Step[pipeline.Action]{
-				{
-					Serial: 3,
-					Name:   "step 3",
-				},
-				{
-					Serial: 4,
-					Name:   "step 4",
-				},
-				{
-					Serial: 5,
-					Name:   "step 5",
+					ID:   2,
+					Name: "step 2",
 				},
 			},
 		}
 
-		step3 := pipeline.Step[pipeline.StepList]{
-			Serial:       9,
-			Dependencies: []pipeline.Step[pipeline.StepList]{step2},
-			Content: pipeline.StepList{
+		step2 := pipeline.StepList{
+			ID:           8,
+			Dependencies: []pipeline.StepList{step1},
+			Steps: []pipeline.Step{
 				{
-					Serial: 6,
-					Name:   "step 6",
+					ID:   3,
+					Name: "step 3",
+				},
+				{
+					ID:   4,
+					Name: "step 4",
+				},
+				{
+					ID:   5,
+					Name: "step 5",
+				},
+			},
+		}
+
+		step3 := pipeline.StepList{
+			ID:           9,
+			Dependencies: []pipeline.StepList{step2},
+			Steps: []pipeline.Step{
+				{
+					ID:   6,
+					Name: "step 6",
 				},
 			},
 		}
@@ -91,55 +91,55 @@ func TestCollectionAddSteps(t *testing.T) {
 		}
 
 		g, _ := col.Graph.Node(shipwright.DefaultPipelineID)
-		dag.EnsureGraphEdges(t, expectedEdges, g.Value.Content.Edges)
+		dag.EnsureGraphEdges(t, expectedEdges, g.Value.Graph.Edges)
 	})
 
 	t.Run("AddSteps should always make steps where type == StepTypeBackground a child of the root node", func(t *testing.T) {
 		col := shipwright.NewDefaultCollection(pipeline.CommonOpts{
 			Name: "test",
 		})
-		step1 := pipeline.Step[pipeline.StepList]{
-			Serial: 1,
-			Content: pipeline.StepList{
+		step1 := pipeline.StepList{
+			ID: 1,
+			Steps: []pipeline.Step{
 				{
-					Serial: 2,
-					Name:   "step 1",
+					ID:   2,
+					Name: "step 1",
 				},
 				{
-					Serial: 3,
-					Name:   "step 2",
-				},
-			},
-		}
-
-		step2 := pipeline.Step[pipeline.StepList]{
-			Serial: 4,
-			Content: pipeline.StepList{
-				{
-					Serial: 5,
-					Name:   "step 3",
-					Type:   pipeline.StepTypeBackground,
-				},
-				{
-					Serial: 6,
-					Name:   "step 4",
-					Type:   pipeline.StepTypeBackground,
-				},
-				{
-					Serial: 7,
-					Name:   "step 5",
-					Type:   pipeline.StepTypeBackground,
+					ID:   3,
+					Name: "step 2",
 				},
 			},
 		}
 
-		step3 := pipeline.Step[pipeline.StepList]{
-			Serial:       8,
-			Dependencies: []pipeline.Step[pipeline.StepList]{step1},
-			Content: pipeline.StepList{
+		step2 := pipeline.StepList{
+			ID: 4,
+			Steps: []pipeline.Step{
 				{
-					Serial: 9,
-					Name:   "step 6",
+					ID:   5,
+					Name: "step 3",
+					Type: pipeline.StepTypeBackground,
+				},
+				{
+					ID:   6,
+					Name: "step 4",
+					Type: pipeline.StepTypeBackground,
+				},
+				{
+					ID:   7,
+					Name: "step 5",
+					Type: pipeline.StepTypeBackground,
+				},
+			},
+		}
+
+		step3 := pipeline.StepList{
+			ID:           8,
+			Dependencies: []pipeline.StepList{step1},
+			Steps: []pipeline.Step{
+				{
+					ID:   9,
+					Name: "step 6",
 				},
 			},
 		}
@@ -160,7 +160,7 @@ func TestCollectionAddSteps(t *testing.T) {
 
 		g, _ := col.Graph.Node(shipwright.DefaultPipelineID)
 
-		dag.EnsureGraphEdges(t, expectedEdges, g.Value.Content.Edges)
+		dag.EnsureGraphEdges(t, expectedEdges, g.Value.Graph.Edges)
 	})
 }
 
@@ -168,48 +168,48 @@ func TestCollectionGetters(t *testing.T) {
 	col := shipwright.NewDefaultCollection(pipeline.CommonOpts{
 		Name: "test",
 	})
-	step1 := pipeline.Step[pipeline.StepList]{
-		Serial: 1,
-		Content: pipeline.StepList{
+	step1 := pipeline.StepList{
+		ID: 1,
+		Steps: []pipeline.Step{
 			{
-				Serial: 2,
-				Name:   "step 1",
+				ID:   2,
+				Name: "step 1",
 			},
 			{
-				Serial: 3,
-				Name:   "step 2",
-			},
-		},
-	}
-
-	step2 := pipeline.Step[pipeline.StepList]{
-		Serial: 4,
-		Content: pipeline.StepList{
-			{
-				Serial: 5,
-				Name:   "step 3",
-				Type:   pipeline.StepTypeBackground,
-			},
-			{
-				Serial: 6,
-				Name:   "step 4",
-				Type:   pipeline.StepTypeBackground,
-			},
-			{
-				Serial: 7,
-				Name:   "step 5",
-				Type:   pipeline.StepTypeBackground,
+				ID:   3,
+				Name: "step 2",
 			},
 		},
 	}
 
-	step3 := pipeline.Step[pipeline.StepList]{
-		Serial:       8,
-		Dependencies: []pipeline.Step[pipeline.StepList]{step1},
-		Content: pipeline.StepList{
+	step2 := pipeline.StepList{
+		ID: 4,
+		Steps: []pipeline.Step{
 			{
-				Serial: 9,
-				Name:   "step 6",
+				ID:   5,
+				Name: "step 3",
+				Type: pipeline.StepTypeBackground,
+			},
+			{
+				ID:   6,
+				Name: "step 4",
+				Type: pipeline.StepTypeBackground,
+			},
+			{
+				ID:   7,
+				Name: "step 5",
+				Type: pipeline.StepTypeBackground,
+			},
+		},
+	}
+
+	step3 := pipeline.StepList{
+		ID:           8,
+		Dependencies: []pipeline.StepList{step1},
+		Steps: []pipeline.Step{
+			{
+				ID:   9,
+				Name: "step 6",
 			},
 		},
 	}
@@ -223,8 +223,8 @@ func TestCollectionGetters(t *testing.T) {
 	// Add 6
 	testutil.EnsureError(t, col.AddSteps(shipwright.DefaultPipelineID, step3), nil)
 
-	t.Run("BySerial should return the step that has the provided serial number", func(t *testing.T) {
-		steps, err := col.BySerial(context.Background(), 9)
+	t.Run("ByID should return the step that has the provided serial number", func(t *testing.T) {
+		steps, err := col.ByID(context.Background(), 9)
 		if err != nil {
 			t.Fatal(err)
 		}

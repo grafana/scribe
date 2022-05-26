@@ -67,11 +67,16 @@ func pipelinesToNames(steps []pipeline.Pipeline) []string {
 }
 
 type stepList struct {
-	steps []*yaml.Container
+	steps    []*yaml.Container
+	services []*yaml.Container
 }
 
 func (s *stepList) AddStep(step *yaml.Container) {
 	s.steps = append(s.steps, step)
+}
+
+func (s *stepList) AddService(step *yaml.Container) {
+	s.services = append(s.services, step)
 }
 
 func (c *Client) StepWalkFunc(log logrus.FieldLogger, s *stepList, state string) func(ctx context.Context, steps ...pipeline.Step) error {
@@ -83,6 +88,12 @@ func (c *Client) StepWalkFunc(log logrus.FieldLogger, s *stepList, state string)
 			step, err := NewStep(c, c.Opts.Args.Path, state, v)
 			if err != nil {
 				return err
+			}
+
+			if v.IsBackground() {
+				s.AddService(step)
+				log.Debugf("Done Processing background step '%s'.", v.Name)
+				continue
 			}
 
 			step.DependsOn = stepsToNames(v.Dependencies)
@@ -124,6 +135,7 @@ var (
 type newPipelineOpts struct {
 	Name      string
 	Steps     []*yaml.Container
+	Services  []*yaml.Container
 	DependsOn []string
 }
 
@@ -165,6 +177,7 @@ func (c *Client) newPipeline(opts newPipelineOpts, pipelineOpts pipeline.CommonO
 		Type:      "docker",
 		DependsOn: opts.DependsOn,
 		Steps:     append([]*yaml.Container{build}, opts.Steps...),
+		Services:  opts.Services,
 		Volumes: []*yaml.Volume{
 			ShipwrightVolume,
 			ShipwrightStateVolume,
@@ -198,6 +211,7 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 			pipeline := c.newPipeline(newPipelineOpts{
 				Name:      stringutil.Slugify(v.Name),
 				Steps:     sl.steps,
+				Services:  sl.services,
 				DependsOn: pipelinesToNames(v.Dependencies),
 			}, c.Opts)
 

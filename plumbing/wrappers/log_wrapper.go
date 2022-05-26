@@ -22,16 +22,16 @@ func (l *LogWrapper) Fields(ctx context.Context, step pipeline.Step) logrus.Fiel
 func (l *LogWrapper) WrapStep(steps ...pipeline.Step) []pipeline.Step {
 	for i := range steps {
 		step := steps[i]
-		action := steps[i].Content
+		action := steps[i].Action
 
 		// Steps that provide a nil action should continue to provide a nil action.
 		// There is nothing for us to log in the execution of this action anyways, though there is an implication that
 		// this step may execute something that is not defined in the pipeline.
-		if steps[i].Content == nil {
+		if steps[i].Action == nil {
 			continue
 		}
 
-		steps[i].Content = func(ctx context.Context, opts pipeline.ActionOpts) error {
+		steps[i].Action = func(ctx context.Context, opts pipeline.ActionOpts) error {
 			l.Log.WithFields(l.Fields(ctx, step)).Infoln("starting step'")
 
 			stdoutFields := l.Fields(ctx, step)

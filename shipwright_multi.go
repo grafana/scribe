@@ -151,7 +151,7 @@ func (s *ShipwrightMulti) When(events ...pipeline.Event) {
 
 // NewMulti is the equivalent of `shipwright.New`, but for building a pipeline made of multiple pipelines.
 // Pipelines can behave in the same way that a step does. They can be ran in parallel using the Parallel function, or ran in a series using the Run function.
-// To add new pipelines to execution, use the `(*shipwright[pipeline.Pipeline].New(...)` function.
+// To add new pipelines to execution, use the `(*shipwright.ShipwrightMulti).New(...)` function.
 func NewMulti() *ShipwrightMulti {
 	opts, err := parseOpts()
 	if err != nil {
@@ -224,7 +224,7 @@ func (s *ShipwrightMulti) New(name string, mf MultiFunc) pipeline.Pipeline {
 	if err != nil {
 		log.Fatal(err)
 	}
-	graph := node.Value.Steps
+	graph := node.Value.Graph
 	log.WithFields(logrus.Fields{
 		"nodes": len(graph.Nodes),
 		"edges": len(graph.Edges),
@@ -233,7 +233,7 @@ func (s *ShipwrightMulti) New(name string, mf MultiFunc) pipeline.Pipeline {
 	return pipeline.Pipeline{
 		Name:  name,
 		ID:    s.serial(),
-		Steps: node.Value.Steps,
+		Graph: node.Value.Graph,
 	}
 }
 

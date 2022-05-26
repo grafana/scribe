@@ -98,12 +98,18 @@ func NewStep(c pipeline.Configurer, path, state string, step pipeline.Step) (*ya
 
 	env = combineVariables(env, HandleSecrets(c, step))
 
-	return &yaml.Container{
-		Name:  name,
-		Image: image,
-		Commands: []string{
+	var cmds []string
+
+	if step.Action != nil {
+		cmds = []string{
 			strings.Join(cmd, " "),
-		},
+		}
+	}
+
+	return &yaml.Container{
+		Name:        name,
+		Image:       image,
+		Commands:    cmds,
 		DependsOn:   deps,
 		Environment: env,
 		Volumes:     volumes,

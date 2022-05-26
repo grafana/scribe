@@ -28,8 +28,8 @@ func RunPipeline(ctx context.Context, t *testing.T, path string, stdout io.Write
 }
 
 // NewTestStep creates a new TestStep that emits data into the channel 'b' when the action is ran
-func NewTestStep(b chan bool) pipeline.Step[pipeline.Action] {
-	return pipeline.Step[pipeline.Action]{
+func NewTestStep(b chan bool) pipeline.Step {
+	return pipeline.Step{
 		Name: "test",
 		Content: func(context.Context, pipeline.ActionOpts) error {
 			b <- true

@@ -27,7 +27,7 @@ steps:
 - name: codeql
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/multi-sub
+  - /var/shipwright/pipeline -step=2 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/multi-sub
   volumes:
   - name: shipwright
     path: /var/shipwright
@@ -39,7 +39,7 @@ steps:
 - name: notify-slack
   image: grafana/shipwright:latest
   commands:
-  - /var/shipwright/pipeline -step=2 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/multi-sub
+  - /var/shipwright/pipeline -step=3 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/shipwright-state/state.json ./demo/multi-sub
   volumes:
   - name: shipwright
     path: /var/shipwright
@@ -238,15 +238,6 @@ volumes:
 - name: docker-socket
   host:
     path: /var/run/docker.sock
-
-trigger:
-  branch:
-  - main
-  event:
-  - branch
-  - tag
-  ref:
-  - refs/tags/v*
 
 depends_on:
 - test

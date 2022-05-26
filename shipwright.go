@@ -68,7 +68,11 @@ func (s *Shipwright) Background(steps ...pipeline.Step) {
 	if err := s.validateSteps(steps...); err != nil {
 		s.Log.Fatalln(err)
 	}
+	for i := range steps {
+		steps[i].Type = pipeline.StepTypeBackground
+	}
 
+	steps = s.setup(steps...)
 	list := pipeline.NewStepList(s.n.Next(), steps...)
 
 	if err := s.Collection.AddSteps(s.pipeline, list); err != nil {

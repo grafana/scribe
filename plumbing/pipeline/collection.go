@@ -14,7 +14,7 @@ var (
 
 // AddStep adds the steps as a single node in the pipeline.
 func (p *Pipeline) AddSteps(id int64, steps StepList) error {
-	if err := p.Steps.AddNode(id, steps); err != nil {
+	if err := p.Graph.AddNode(id, steps); err != nil {
 		return err
 	}
 
@@ -139,9 +139,7 @@ func (c *Collection) stepVisitFunc(ctx context.Context, wf StepWalkFunc) dag.Vis
 		// but all of the steps that are contained within the group.
 		deps := []Step{}
 		for _, step := range list.Dependencies {
-			for _, v := range step.Steps {
-				deps = append(deps, v)
-			}
+			deps = append(deps, step.Steps...)
 		}
 
 		for i := range list.Steps {
@@ -159,7 +157,7 @@ func (c *Collection) WalkSteps(ctx context.Context, pipelineID int64, wf StepWal
 
 	pipeline := node.Value
 
-	if err := pipeline.Steps.BreadthFirstSearch(0, c.stepVisitFunc(ctx, wf)); err != nil {
+	if err := pipeline.Graph.BreadthFirstSearch(0, c.stepVisitFunc(ctx, wf)); err != nil {
 		return err
 	}
 
@@ -229,7 +227,7 @@ func (c *Collection) AddSteps(pipelineID int64, steps StepList) error {
 	// Background steps should only have an edge from the root node. This is automatically added as Background Steps do not have dependencies.
 	// Because Backgorund steps are intended to persist until the pipeline terminates, they can't have child steps.
 	if len(steps.Dependencies) == 0 {
-		pipeline.Steps.AddEdge(0, steps.ID)
+		pipeline.Graph.AddEdge(0, steps.ID)
 	}
 
 	if steps.Type == StepTypeBackground {
@@ -237,7 +235,7 @@ func (c *Collection) AddSteps(pipelineID int64, steps StepList) error {
 	}
 
 	for _, parent := range steps.Dependencies {
-		if err := pipeline.Steps.AddEdge(parent.ID, steps.ID); err != nil {
+		if err := pipeline.Graph.AddEdge(parent.ID, steps.ID); err != nil {
 			return fmt.Errorf("error adding edges to pipeline graph: %w", err)
 		}
 	}

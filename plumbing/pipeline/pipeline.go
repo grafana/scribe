@@ -7,7 +7,7 @@ import "github.com/grafana/shipwright/plumbing/pipeline/dag"
 type Pipeline struct {
 	ID           int64
 	Name         string
-	Steps        *dag.Graph[StepList]
+	Graph        *dag.Graph[StepList]
 	Events       []Event
 	Type         PipelineType
 	Dependencies []Pipeline
@@ -15,10 +15,12 @@ type Pipeline struct {
 
 // New creates a new Step that represents a pipeline.
 func New(name string, id int64) Pipeline {
+	graph := dag.New[StepList]()
+	graph.AddNode(0, StepList{})
 	return Pipeline{
 		Name:  name,
 		ID:    id,
-		Steps: dag.New[StepList](),
+		Graph: graph,
 	}
 }
 

@@ -13,7 +13,7 @@ func main() {
 	sw := shipwright.New("demo-pipeline-with-sub")
 	defer sw.Done()
 
-	sw.Sub(func(sw *shipwright.Shipwright[pipeline.Action]) {
+	sw.Sub(func(sw *shipwright.Shipwright) {
 		sw.Run(pipeline.NoOpStep.WithName("sub-step-1"))
 		sw.Parallel(
 			pipeline.NoOpStep.WithName("sub-step-2"),

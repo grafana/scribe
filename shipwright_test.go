@@ -91,7 +91,7 @@ func TestShipwrightRun(t *testing.T) {
 			5: {6},
 			6: {7},
 			7: {8},
-		}, n.Value.Steps.Edges)
+		}, n.Value.Graph.Edges)
 	})
 
 	t.Run("Using a multiple single-Run functions", func(t *testing.T) {
@@ -112,7 +112,7 @@ func TestShipwrightRun(t *testing.T) {
 			2: {4},
 			4: {6},
 			6: {8},
-		}, n.Value.Steps.Edges)
+		}, n.Value.Graph.Edges)
 	})
 
 	t.Run("Using a combination of multi and single Run functions", func(t *testing.T) {
@@ -133,7 +133,7 @@ func TestShipwrightRun(t *testing.T) {
 			4: {6},
 			6: {9},
 			9: {10},
-		}, n.Value.Steps.Edges)
+		}, n.Value.Graph.Edges)
 	})
 }
 
@@ -151,20 +151,15 @@ func TestBasicPipeline(t *testing.T) {
 	}
 }
 
-func TestBasictPipelineWithBackground(t *testing.T) {
+func TestBasicPipelineWithBackground(t *testing.T) {
 	ensurer := newEnsurer([]string{"step 1"}, []string{"step 2"}, []string{"step 7"}, []string{"step 3", "step 4", "step 5"}, []string{"step 6"})
 
 	client := shipwright.NewWithClient(testOpts, ensurer)
 
-	// 2
 	client.Background(pipeline.NoOpStep.WithName("step 1"))
-	// 4
 	client.Run(pipeline.NoOpStep.WithName("step 2"))
-	// 8
 	client.Parallel(pipeline.NoOpStep.WithName("step 3"), pipeline.NoOpStep.WithName("step 4"), pipeline.NoOpStep.WithName("step 5"))
-	// 10
 	client.Run(pipeline.NoOpStep.WithName("step 6"))
-	// 12
 	client.Background(pipeline.NoOpStep.WithName("step 7"))
 
 	n, err := client.Collection.Graph.Node(shipwright.DefaultPipelineID)
@@ -173,10 +168,10 @@ func TestBasictPipelineWithBackground(t *testing.T) {
 	}
 
 	dag.EnsureGraphEdges(t, map[int64][]int64{
-		0: {2, 4, 12},
-		4: {8},
-		8: {10},
-	}, n.Value.Steps.Edges)
+		0: {1, 3, 10},
+		3: {7},
+		7: {9},
+	}, n.Value.Graph.Edges)
 
 	if err := client.Execute(context.Background(), client.Collection); err != nil {
 		t.Fatal(err)

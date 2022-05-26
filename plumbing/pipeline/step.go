@@ -59,8 +59,8 @@ type Step struct {
 	// Typically, in docker environments (or drone with a Docker executor), it defines the docker image that is used to run the step.
 	Image string
 
-	// Content defines the contents of this step
-	Content Action
+	// Action defines the action this step performs.
+	Action Action
 
 	// Dependencies define other steps that are required to run before this one.
 	// As far as we're concerned, Steps can only depend on other steps of the same type.
@@ -122,15 +122,15 @@ func (s Step) WithName(name string) Step {
 // NewStep creates a new step with an automatically generated name
 func NewStep(action Action) Step {
 	return Step{
-		Content: action,
+		Action: action,
 	}
 }
 
 // NamedStep creates a new step with a name provided
 func NamedStep(name string, action Action) Step {
 	return Step{
-		Name:    name,
-		Content: action,
+		Name:   name,
+		Action: action,
 	}
 }
 
@@ -156,7 +156,7 @@ var DefaultAction Action = nil
 // Most clients should completely ignore NoOpSteps.
 var NoOpStep = Step{
 	Name: "no op",
-	Content: func(context.Context, ActionOpts) error {
+	Action: func(context.Context, ActionOpts) error {
 		return nil
 	},
 }
@@ -179,9 +179,9 @@ func Combine(step ...Step) Step {
 		s.ProvidesArgs = append(s.ProvidesArgs, v.ProvidesArgs...)
 	}
 
-	s.Content = func(ctx context.Context, opts ActionOpts) error {
+	s.Action = func(ctx context.Context, opts ActionOpts) error {
 		for _, v := range step {
-			if err := v.Content(ctx, opts); err != nil {
+			if err := v.Action(ctx, opts); err != nil {
 				return err
 			}
 		}
