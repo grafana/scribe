@@ -1,5 +1,7 @@
 package pipeline
 
+import "io"
+
 type ArgumentType int
 
 const (
@@ -7,6 +9,11 @@ const (
 	ArgumentTypeSecret
 	ArgumentTypeFS
 )
+
+type ArgumentHandler interface {
+	Get(StateValue) (io.Reader, error)
+	Set() (string, error)
+}
 
 // An Argument is a pre-defined argument that is used in a typical CI pipeline.
 // This allows the shipwright library to define different methods of retrieving the same information
