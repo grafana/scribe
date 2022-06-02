@@ -31,7 +31,7 @@ func RunPipeline(ctx context.Context, t *testing.T, path string, stdout io.Write
 func NewTestStep(b chan bool) pipeline.Step {
 	return pipeline.Step{
 		Name: "test",
-		Content: func(context.Context, pipeline.ActionOpts) error {
+		Action: func(context.Context, pipeline.ActionOpts) error {
 			b <- true
 			return nil
 		},

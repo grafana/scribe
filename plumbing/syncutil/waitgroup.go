@@ -2,6 +2,7 @@ package syncutil
 
 import (
 	"context"
+	"fmt"
 	"sync"
 )
 
@@ -41,8 +42,8 @@ func (w *WaitGroup) Wait(ctx context.Context) error {
 	}()
 
 	select {
-	case <-ctx.Done():
-		return context.Canceled
+	case err := <-ctx.Done():
+		return fmt.Errorf("%w: %s", context.Canceled, err)
 	case <-doneChan:
 		return nil
 	case err := <-errChan:

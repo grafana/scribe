@@ -1,18 +1,25 @@
 package pipeline
 
-import "io"
-
 type ArgumentType int
 
 const (
 	ArgumentTypeString ArgumentType = iota
+	ArgumentTypeInt64
+	ArgumentTypeFloat64
 	ArgumentTypeSecret
+	ArgumentTypeFile
 	ArgumentTypeFS
 )
 
-type ArgumentHandler interface {
-	Get(StateValue) (io.Reader, error)
-	Set() (string, error)
+var argumentTypeStr = []string{"string", "int", "float", "secret", "file", "directory"}
+
+func (a ArgumentType) String() string {
+	i := int(a)
+	return argumentTypeStr[i]
+}
+
+func ArgumentTypesEqual(argType ArgumentType, arg Argument) bool {
+	return arg.Type == argType
 }
 
 // An Argument is a pre-defined argument that is used in a typical CI pipeline.
@@ -35,7 +42,28 @@ func NewStringArgument(key string) Argument {
 	}
 }
 
-func NewFSArgument(key string) Argument {
+func NewInt64Argument(key string) Argument {
+	return Argument{
+		Type: ArgumentTypeInt64,
+		Key:  key,
+	}
+}
+
+func NewFloat64Argument(key string) Argument {
+	return Argument{
+		Type: ArgumentTypeFloat64,
+		Key:  key,
+	}
+}
+
+func NewFileArgument(key string) Argument {
+	return Argument{
+		Type: ArgumentTypeFile,
+		Key:  key,
+	}
+}
+
+func NewDirectoryArgument(key string) Argument {
 	return Argument{
 		Type: ArgumentTypeFS,
 		Key:  key,
@@ -51,8 +79,8 @@ func NewSecretArgument(key string) Argument {
 
 // These arguments are the pre-defined ones and are mostly used in events.
 var (
-	ArgumentSourceFS       = NewFSArgument("source")
-	ArgumentDockerSocketFS = NewFSArgument("docker-socket")
+	ArgumentSourceFS       = NewDirectoryArgument("source")
+	ArgumentDockerSocketFS = NewDirectoryArgument("docker-socket")
 
 	// Git arguments
 	ArgumentCommitSHA = NewStringArgument("git-commit-sha")

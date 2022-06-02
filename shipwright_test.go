@@ -168,9 +168,9 @@ func TestBasicPipelineWithBackground(t *testing.T) {
 	}
 
 	dag.EnsureGraphEdges(t, map[int64][]int64{
-		0: {1, 3, 10},
-		3: {7},
-		7: {9},
+		0: {2, 4, 12},
+		4: {8},
+		8: {10},
 	}, n.Value.Graph.Edges)
 
 	if err := client.Execute(context.Background(), client.Collection); err != nil {

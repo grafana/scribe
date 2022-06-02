@@ -94,7 +94,7 @@ func (i Image) PushStep(sw *shipwright.Shipwright) pipeline.Step {
 			return err
 		}
 
-		auth, err := opts.State.Get(ArgumentDockerAuthToken.Key)
+		auth, err := opts.State.GetString(ArgumentDockerAuthToken)
 		if err != nil {
 			return err
 		}
