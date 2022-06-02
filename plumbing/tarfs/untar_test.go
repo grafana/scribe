@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -46,7 +45,6 @@ func TestUntar(t *testing.T) {
 
 	tmp := t.TempDir()
 	out := filepath.Join(tmp, "testdir")
-	log.Println(buf.Len())
 	if err := tarfs.Untar(out, buf); err != nil {
 		t.Fatal(err)
 	}

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 )
 
 type buildLogs struct {
@@ -48,8 +47,6 @@ type ImageProgress struct {
 func WriteImageLogs(r io.Reader, out io.Writer) error {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		log.Println(scanner.Text())
-
 		l := &ImageProgress{}
 		if err := json.Unmarshal(scanner.Bytes(), l); err != nil {
 			return err
