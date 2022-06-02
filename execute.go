@@ -1,4 +1,4 @@
-package shipwright
+package scribe
 
 import (
 	"context"
@@ -9,22 +9,22 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/grafana/shipwright/plumbing"
-	"github.com/grafana/shipwright/plumbing/pipeline"
-	"github.com/grafana/shipwright/plumbing/plog"
+	"github.com/grafana/scribe/plumbing"
+	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/plog"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"github.com/uber/jaeger-client-go"
 )
 
-// executeFunc is shared between the Shipwright and ShipwrightMulti types.
+// executeFunc is shared between the Scribe and ScribeMulti types.
 // Because the behavior of processing the pipeline is essentially the same, and they should behave the same in perpituity,
 // these functions ensure that they at least behave consistently.
 type executeFunc func(context.Context, *pipeline.Collection) error
 
 func executeWithTracing(tracer opentracing.Tracer, ef executeFunc) executeFunc {
 	return func(ctx context.Context, collection *pipeline.Collection) error {
-		span, ctx := opentracing.StartSpanFromContextWithTracer(ctx, tracer, "shipwright")
+		span, ctx := opentracing.StartSpanFromContextWithTracer(ctx, tracer, "scribe")
 		defer span.Finish()
 		err := ef(ctx, collection)
 		if v, ok := tracer.(*jaeger.Tracer); ok {

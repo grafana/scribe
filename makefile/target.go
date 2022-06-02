@@ -3,7 +3,7 @@ package makefile
 import (
 	"context"
 
-	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/pipeline"
 )
 
 func Target(name string) pipeline.Action {

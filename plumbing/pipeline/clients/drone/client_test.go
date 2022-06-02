@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	shipwright "github.com/grafana/shipwright"
-	"github.com/grafana/shipwright/plumbing"
-	"github.com/grafana/shipwright/plumbing/testutil"
+	scribe "github.com/grafana/scribe"
+	"github.com/grafana/scribe/plumbing"
+	"github.com/grafana/scribe/plumbing/testutil"
 	"github.com/sirupsen/logrus"
 )
 
@@ -32,7 +32,7 @@ func testDemoPipeline(t *testing.T, path string) {
 
 	testutil.RunPipeline(ctx, t, pipelinePath, io.MultiWriter(buf, os.Stdout), stderr, &plumbing.PipelineArgs{
 		BuildID:  "test",
-		Client:   shipwright.ClientDrone,
+		Client:   scribe.ClientDrone,
 		Path:     fmt.Sprintf("./demo/%s", path), // Note that we're intentionally using ./demo/ instead of filepath because this path is used in a Go command.
 		LogLevel: logrus.DebugLevel,
 	})
@@ -76,7 +76,7 @@ func TestDroneRun(t *testing.T) {
 			t.SkipNow()
 
 			t.Log("Creating new drone client...")
-			sw := testutil.NewShipwright(shipwright.NewDroneClient)
+			sw := testutil.NewScribe(scribe.NewDroneClient)
 
 			t.Log("Creating new test steps...")
 			var (

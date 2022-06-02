@@ -4,15 +4,15 @@ import (
 	"context"
 	"testing"
 
-	"github.com/grafana/shipwright"
-	"github.com/grafana/shipwright/plumbing/pipeline"
-	"github.com/grafana/shipwright/plumbing/pipeline/dag"
-	"github.com/grafana/shipwright/plumbing/testutil"
+	"github.com/grafana/scribe"
+	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/pipeline/dag"
+	"github.com/grafana/scribe/plumbing/testutil"
 )
 
 func TestCollectionAddSteps(t *testing.T) {
 	t.Run("AddSteps should add steps to the graph", func(t *testing.T) {
-		col := shipwright.NewDefaultCollection(pipeline.CommonOpts{
+		col := scribe.NewDefaultCollection(pipeline.CommonOpts{
 			Name: "test",
 		})
 		steps := pipeline.StepList{
@@ -29,11 +29,11 @@ func TestCollectionAddSteps(t *testing.T) {
 			},
 		}
 
-		testutil.EnsureError(t, col.AddSteps(shipwright.DefaultPipelineID, steps), nil)
+		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, steps), nil)
 	})
 
 	t.Run("AddSteps should add steps to the graph with the correct edges", func(t *testing.T) {
-		col := shipwright.NewDefaultCollection(pipeline.CommonOpts{
+		col := scribe.NewDefaultCollection(pipeline.CommonOpts{
 			Name: "test",
 		})
 		step1 := pipeline.StepList{
@@ -80,9 +80,9 @@ func TestCollectionAddSteps(t *testing.T) {
 			},
 		}
 
-		testutil.EnsureError(t, col.AddSteps(shipwright.DefaultPipelineID, step1), nil)
-		testutil.EnsureError(t, col.AddSteps(shipwright.DefaultPipelineID, step2), nil)
-		testutil.EnsureError(t, col.AddSteps(shipwright.DefaultPipelineID, step3), nil)
+		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step1), nil)
+		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step2), nil)
+		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step3), nil)
 
 		expectedEdges := map[int64][]int64{
 			0: {7},
@@ -90,12 +90,12 @@ func TestCollectionAddSteps(t *testing.T) {
 			8: {9},
 		}
 
-		g, _ := col.Graph.Node(shipwright.DefaultPipelineID)
+		g, _ := col.Graph.Node(scribe.DefaultPipelineID)
 		dag.EnsureGraphEdges(t, expectedEdges, g.Value.Graph.Edges)
 	})
 
 	t.Run("AddSteps should always make steps where type == StepTypeBackground a child of the root node", func(t *testing.T) {
-		col := shipwright.NewDefaultCollection(pipeline.CommonOpts{
+		col := scribe.NewDefaultCollection(pipeline.CommonOpts{
 			Name: "test",
 		})
 		step1 := pipeline.StepList{
@@ -145,27 +145,27 @@ func TestCollectionAddSteps(t *testing.T) {
 		}
 
 		// Add 1, 2
-		testutil.EnsureError(t, col.AddSteps(shipwright.DefaultPipelineID, step1), nil)
+		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step1), nil)
 
 		// Add 3, 4, 5
-		testutil.EnsureError(t, col.AddSteps(shipwright.DefaultPipelineID, step2), nil)
+		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step2), nil)
 
 		// Add 6
-		testutil.EnsureError(t, col.AddSteps(shipwright.DefaultPipelineID, step3), nil)
+		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step3), nil)
 
 		expectedEdges := map[int64][]int64{
 			0: {1, 4},
 			1: {8},
 		}
 
-		g, _ := col.Graph.Node(shipwright.DefaultPipelineID)
+		g, _ := col.Graph.Node(scribe.DefaultPipelineID)
 
 		dag.EnsureGraphEdges(t, expectedEdges, g.Value.Graph.Edges)
 	})
 }
 
 func TestCollectionGetters(t *testing.T) {
-	col := shipwright.NewDefaultCollection(pipeline.CommonOpts{
+	col := scribe.NewDefaultCollection(pipeline.CommonOpts{
 		Name: "test",
 	})
 	step1 := pipeline.StepList{
@@ -215,13 +215,13 @@ func TestCollectionGetters(t *testing.T) {
 	}
 
 	// Add 1, 2
-	testutil.EnsureError(t, col.AddSteps(shipwright.DefaultPipelineID, step1), nil)
+	testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step1), nil)
 
 	// Add 3, 4, 5
-	testutil.EnsureError(t, col.AddSteps(shipwright.DefaultPipelineID, step2), nil)
+	testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step2), nil)
 
 	// Add 6
-	testutil.EnsureError(t, col.AddSteps(shipwright.DefaultPipelineID, step3), nil)
+	testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step3), nil)
 
 	t.Run("ByID should return the step that has the provided serial number", func(t *testing.T) {
 		steps, err := col.ByID(context.Background(), 9)

@@ -3,7 +3,7 @@ package pipeline
 import (
 	"io"
 
-	"github.com/grafana/shipwright/plumbing"
+	"github.com/grafana/scribe/plumbing"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )

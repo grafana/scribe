@@ -1,4 +1,4 @@
-module github.com/grafana/shipwright
+module github.com/grafana/scribe
 
 go 1.18
 

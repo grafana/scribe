@@ -3,7 +3,7 @@ package plog
 import (
 	"strings"
 
-	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/pipeline"
 	"github.com/sirupsen/logrus"
 )
 

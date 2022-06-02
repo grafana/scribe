@@ -1,27 +1,27 @@
 package main
 
 import (
-	"github.com/grafana/shipwright"
-	"github.com/grafana/shipwright/ci/docker"
-	"github.com/grafana/shipwright/golang"
-	"github.com/grafana/shipwright/plumbing"
-	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/scribe"
+	"github.com/grafana/scribe/ci/docker"
+	"github.com/grafana/scribe/golang"
+	"github.com/grafana/scribe/plumbing"
+	"github.com/grafana/scribe/plumbing/pipeline"
 )
 
 // "main" defines our program pipeline.
-// Every pipeline step should be instantiated using the shipwright client (sw).
+// Every pipeline step should be instantiated using the scribe client (sw).
 // This allows the various client modes to work properly in different scenarios, like in a CI environment or locally.
 // Logic and processing done outside of the `sw.*` family of functions may not be included in the resulting pipeline.
 func main() {
-	sw := shipwright.NewMulti()
+	sw := scribe.NewMulti()
 	defer sw.Done()
 
 	sw.Run(
-		sw.New("test and build", func(sw *shipwright.Shipwright) {
+		sw.New("test and build", func(sw *scribe.Scribe) {
 			// Test the Golang code and ensure that the build steps
 			sw.Run(
 				golang.Test(sw, "./...").WithName("test"),
-				docker.ShipwrightImage.BuildStep(sw).WithName("build shipwright docker image"),
+				docker.ScribeImage.BuildStep(sw).WithName("build scribe docker image"),
 			)
 
 			sw.Run(docker.BuildSteps(sw, docker.Images)...)
@@ -29,7 +29,7 @@ func main() {
 	)
 
 	sw.Run(
-		sw.New("publish docker images", func(sw *shipwright.Shipwright) {
+		sw.New("publish docker images", func(sw *scribe.Scribe) {
 			sw.When(
 				pipeline.GitTagEvent(pipeline.GitTagFilters{}),
 			)
@@ -44,7 +44,7 @@ func main() {
 			sw.Run(login)
 
 			sw.Run(docker.BuildSteps(sw, docker.Images)...)
-			sw.Run(docker.ShipwrightImage.PushStep(sw).WithName("push shipwright docker image"))
+			sw.Run(docker.ScribeImage.PushStep(sw).WithName("push scribe docker image"))
 			sw.Run(docker.PushSteps(sw, docker.Images)...)
 		}),
 	)

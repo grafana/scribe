@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/grafana/shipwright/fs/x"
+	"github.com/grafana/scribe/fs/x"
 )
 
 func TestCopy(t *testing.T) {

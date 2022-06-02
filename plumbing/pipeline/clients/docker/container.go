@@ -11,11 +11,11 @@ import (
 
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
-	"github.com/grafana/shipwright/docker"
-	"github.com/grafana/shipwright/plumbing/cmdutil"
-	"github.com/grafana/shipwright/plumbing/pipeline"
-	"github.com/grafana/shipwright/plumbing/pipeline/clients/cli"
-	"github.com/grafana/shipwright/plumbing/stringutil"
+	"github.com/grafana/scribe/docker"
+	"github.com/grafana/scribe/plumbing/cmdutil"
+	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/pipeline/clients/cli"
+	"github.com/grafana/scribe/plumbing/stringutil"
 )
 
 type CreateStepContainerOpts struct {
@@ -37,7 +37,7 @@ func CreateStepContainer(ctx context.Context, cli client.APIClient, opts CreateS
 		Path:             opts.Pipeline,
 		Step:             opts.Step,
 		BuildID:          opts.BuildID,
-		State:            "/var/shipwright-state/state.json",
+		State:            "/var/scribe-state/state.json",
 	})
 
 	if err != nil {
@@ -45,13 +45,13 @@ func CreateStepContainer(ctx context.Context, cli client.APIClient, opts CreateS
 	}
 
 	createOpts, err := applyArguments(opts.Configurer, docker.CreateContainerOpts{
-		Name:    strings.Join([]string{"shipwright", stringutil.Slugify(opts.Step.Name), stringutil.Random(8)}, "-"),
+		Name:    strings.Join([]string{"scribe", stringutil.Slugify(opts.Step.Name), stringutil.Random(8)}, "-"),
 		Image:   opts.Step.Image,
 		Network: opts.Network,
 		Mounts:  opts.Mounts,
 		Command: cmd,
 		Out:     opts.Out,
-		Env:     append(opts.Env, "GIT_CEILING_DIRECTORIES=/var/shipwright"),
+		Env:     append(opts.Env, "GIT_CEILING_DIRECTORIES=/var/scribe"),
 	}, opts.Step.Arguments)
 
 	return docker.CreateContainer(ctx, cli, createOpts)
@@ -69,7 +69,7 @@ func (c *Client) Value(arg pipeline.Argument) (string, error) {
 	return "", nil
 }
 
-const ShipwrightContainerPath = "/var/shipwright"
+const ScribeContainerPath = "/var/scribe"
 
 func formatVolume(dir, mountPath string) string {
 	return strings.Join([]string{dir, mountPath}, ":")
@@ -89,7 +89,7 @@ func fsArgument(dir string) (mount.Mount, error) {
 		}, nil
 	}
 
-	// Relative paths should be mounted relative to /var/shipwright in the container,
+	// Relative paths should be mounted relative to /var/scribe in the container,
 	// and have an absolute path for mounting (because docker).
 	wd, err := os.Getwd()
 	if err != nil {
@@ -109,7 +109,7 @@ func fsArgument(dir string) (mount.Mount, error) {
 	return mount.Mount{
 		Type:   mount.TypeBind,
 		Source: d,
-		Target: path.Join(ShipwrightContainerPath, rel),
+		Target: path.Join(ScribeContainerPath, rel),
 	}, nil
 }
 

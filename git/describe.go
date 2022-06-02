@@ -3,7 +3,7 @@ package git
 import (
 	"context"
 
-	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/pipeline"
 )
 
 var (

@@ -3,8 +3,8 @@ package drone
 import (
 	"fmt"
 
-	"github.com/grafana/shipwright/plumbing"
-	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing"
+	"github.com/grafana/scribe/plumbing/pipeline"
 )
 
 type DroneLanguage int

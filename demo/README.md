@@ -2,15 +2,15 @@
 
 These demo pipelines are available to demosntrate a valuable structure of a pipeline.
 
-Running a demo pipeline with the Shipwright CLI utility (requires `mage`):
+Running a demo pipeline with the Scribe CLI utility (requires `mage`):
 
-1. Clone and `cd` into the Shipwright project: `git clone git@github.com:grafana/shipwright.git && cd shipwright`
-2. Compile the shipwright CLI: `mage build`
-3. Run the pipeline: `./bin/shipwright ./demo/{demo}`.
+1. Clone and `cd` into the Scribe project: `git clone git@github.com:grafana/scribe.git && cd scribe`
+2. Compile the scribe CLI: `mage build`
+3. Run the pipeline: `./bin/scribe ./demo/{demo}`.
 
-Running a demo pipeline without the Shipwright CLI:
+Running a demo pipeline without the Scribe CLI:
 
-1. Clone and `cd` into the Shipwright project: `git clone git@github.com:grafana/shipwright.git && cd shipwright`
+1. Clone and `cd` into the Scribe project: `git clone git@github.com:grafana/scribe.git && cd scribe`
 2. Run the pipeline: `PIPELINE=./demo/{pipeline} go run -path=$PIPELINE $PIPELINE`
 
 ## [`./basic`](./basic)

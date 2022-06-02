@@ -10,9 +10,9 @@ import (
 	"strings"
 	"sync"
 
-	swfs "github.com/grafana/shipwright/fs/x"
-	"github.com/grafana/shipwright/plumbing/stringutil"
-	"github.com/grafana/shipwright/plumbing/tarfs"
+	swfs "github.com/grafana/scribe/fs/x"
+	"github.com/grafana/scribe/plumbing/stringutil"
+	"github.com/grafana/scribe/plumbing/tarfs"
 )
 
 type stateValue struct {

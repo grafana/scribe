@@ -1,19 +1,19 @@
 package main
 
 import (
-	"github.com/grafana/shipwright"
-	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/scribe"
+	"github.com/grafana/scribe/plumbing/pipeline"
 )
 
 // "main" defines our program pipeline.
-// Every pipeline step should be instantiated using the shipwright client (sw).
+// Every pipeline step should be instantiated using the scribe client (sw).
 // This allows the various client modes to work properly in different scenarios, like in a CI environment or locally.
 // Logic and processing done outside of the `sw.*` family of functions may not be included in the resulting pipeline.
 func main() {
-	sw := shipwright.New("demo-pipeline-with-sub")
+	sw := scribe.New("demo-pipeline-with-sub")
 	defer sw.Done()
 
-	sw.Sub(func(sw *shipwright.Shipwright) {
+	sw.Sub(func(sw *scribe.Scribe) {
 		sw.Run(pipeline.NoOpStep.WithName("sub-step-1"))
 		sw.Parallel(
 			pipeline.NoOpStep.WithName("sub-step-2"),

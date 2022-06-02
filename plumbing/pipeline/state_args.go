@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/grafana/shipwright/plumbing"
+	"github.com/grafana/scribe/plumbing"
 )
 
 // ArgMapReader attempts to read state values from the provided "ArgMap".

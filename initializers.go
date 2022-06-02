@@ -1,18 +1,18 @@
-package shipwright
+package scribe
 
 import (
 	"github.com/docker/docker/client"
-	"github.com/grafana/shipwright/plumbing/pipeline"
-	"github.com/grafana/shipwright/plumbing/pipeline/clients/cli"
-	"github.com/grafana/shipwright/plumbing/pipeline/clients/docker"
-	"github.com/grafana/shipwright/plumbing/pipeline/clients/drone"
+	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/pipeline/clients/cli"
+	"github.com/grafana/scribe/plumbing/pipeline/clients/docker"
+	"github.com/grafana/scribe/plumbing/pipeline/clients/drone"
 )
 
 var (
-	// ClientCLI is set when a pipeline is ran from the Shipwright CLI, typically for local development, but can also be set when running Shipwright within a third-party service like CircleCI or Drone
+	// ClientCLI is set when a pipeline is ran from the Scribe CLI, typically for local development, but can also be set when running Scribe within a third-party service like CircleCI or Drone
 	ClientCLI string = "cli"
 
-	// ClientDrone is set when a pipeline is ran in Drone mode, which is used to generate a Drone config from a Shipwright pipeline
+	// ClientDrone is set when a pipeline is ran in Drone mode, which is used to generate a Drone config from a Scribe pipeline
 	ClientDrone         = "drone"
 	ClientDroneStarlark = "drone-starlark"
 
@@ -35,7 +35,7 @@ func NewMultiCollection() *pipeline.Collection {
 
 type InitializerFunc func(pipeline.CommonOpts) pipeline.Client
 
-// The ClientInitializers define how different RunModes initialize the Shipwright client
+// The ClientInitializers define how different RunModes initialize the Scribe client
 var ClientInitializers = map[string]InitializerFunc{
 	ClientCLI:           NewCLIClient,
 	ClientDrone:         NewDroneClient,

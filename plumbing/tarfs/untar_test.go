@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/grafana/shipwright/plumbing/tarfs"
+	"github.com/grafana/scribe/plumbing/tarfs"
 )
 
 func ensureEqualFS(t *testing.T, a fs.FS, b fs.FS) {

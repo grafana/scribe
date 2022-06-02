@@ -3,12 +3,12 @@ package main
 import (
 	"time"
 
-	"github.com/grafana/shipwright"
-	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/scribe"
+	"github.com/grafana/scribe/plumbing/pipeline"
 )
 
 func main() {
-	sw := shipwright.New("complex-pipeline")
+	sw := scribe.New("complex-pipeline")
 	defer sw.Done()
 
 	sw.Background(pipeline.NamedStep("redis", pipeline.DefaultAction).WithImage("redis:6"))

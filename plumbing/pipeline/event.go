@@ -50,16 +50,16 @@ func GlobFilter(v string) *FilterValue {
 	}
 }
 
-// Event is provided when defining a Shipwright pipeline to define the events that cause the pipeline to be ran.
+// Event is provided when defining a Scribe pipeline to define the events that cause the pipeline to be ran.
 // Some example events that might cause pipelines to be created:
-// * Manual events with user input, like 'Promotions' in Drone. In this scenario, the user may have the ability to supply any keys/values as arguments, however, pipeline developers in Shipwright should be able to specifically define what fields are accepted. See https://docs.drone.io/promote/.
+// * Manual events with user input, like 'Promotions' in Drone. In this scenario, the user may have the ability to supply any keys/values as arguments, however, pipeline developers in Scribe should be able to specifically define what fields are accepted. See https://docs.drone.io/promote/.
 // * git and SCM-related events like 'Pull Reuqest', 'Commit', 'Tag'. Each one of these events has a unique set of arguments / filters. `Commit` may allow pipeline developers to filter by branch or message. Tags may allow developers to filter by name.
 // * cron events, which may allow the pipeline in the CI service to be ran on a schedule.
 // The Event type stores both the filters and a list of values that it provides to the pipeline.
 // Client implementations of the pipeline (type Client) are expected to handle events that they are capable of handling.
 // 'Handling' events means that the the arguments in the `Provides` key should be available before any first steps are ran. It will not typically be up to pipeline developers to decide what arguments an event provides.
 // The only case where this may happen is if the event is a manual one, where users are able to submit the event with any arbitrary set of keys/values.
-// The 'Filters' key is provided in the pipeline code and should not be populated when pre-defined in the Shipwright package.
+// The 'Filters' key is provided in the pipeline code and should not be populated when pre-defined in the Scribe package.
 type Event struct {
 	Filters  map[string]*FilterValue
 	Provides []Argument

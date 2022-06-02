@@ -8,17 +8,17 @@ import (
 	"os/exec"
 	"strconv"
 
-	"github.com/grafana/shipwright/plumbing"
-	"github.com/grafana/shipwright/plumbing/plog"
+	"github.com/grafana/scribe/plumbing"
+	"github.com/grafana/scribe/plumbing/plog"
 )
 
 type RunOpts struct {
-	// Version specifies the shipwright version to run.
-	// This value is used in generating the shipwright image. A value will be provided if using the shipwright CLI.
+	// Version specifies the scribe version to run.
+	// This value is used in generating the scribe image. A value will be provided if using the scribe CLI.
 	// If no value is provided, then it will be replaced with "latest".
 	Version string
 
-	// Path specifies the path to the shipwright pipeline.
+	// Path specifies the path to the scribe pipeline.
 	// This value is assumed to be "." if not provided.
 	// This is not the same as the "Path" argument for the pipeline itself, which is required and used for code / config generation.
 	Path string
@@ -35,11 +35,11 @@ type RunOpts struct {
 	// If it is not provided, it defaults to "os.Stdin"
 	Stdin io.Reader
 
-	// Args are arguments that are passed to the shipwright pipeline
+	// Args are arguments that are passed to the scribe pipeline
 	Args *plumbing.PipelineArgs
 }
 
-// Run handles the default shipwright command, "shipwright run".
+// Run handles the default scribe command, "scribe run".
 // The run command attempts to run the pipeline by using "go run ...".
 // This function will exit the program if it encounters an error.
 // TODO: there is a function in `cmdutil` that should be able to create this command to run.
@@ -87,7 +87,7 @@ func Run(ctx context.Context, opts *RunOpts) *exec.Cmd {
 		cmdArgs = append(cmdArgs, "-step", strconv.FormatInt(*args.Step, 10))
 	}
 
-	logger.Infoln("Running shipwright pipeline with command", append([]string{"go"}, cmdArgs...))
+	logger.Infoln("Running scribe pipeline with command", append([]string{"go"}, cmdArgs...))
 
 	cmd := exec.CommandContext(ctx, "go", cmdArgs...)
 	cmd.Stdout = stdout

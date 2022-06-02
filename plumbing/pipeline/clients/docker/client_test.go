@@ -18,6 +18,6 @@ package docker
 // 	}
 //
 // 	t.Run("It should use the same absolute path if an absolute path is provided", expect(t, "/some/absolute/path", "/some/absolute/path:/some/absolute/path"))
-// 	t.Run("It should mount the volume relative to /var/shipwright if a relative path is provided", expect(t, "./some/relative/path", fmt.Sprintf("%s:/var/shipwright/some/relative/path", path.Join(wd, "./some/relative/path"))))
+// 	t.Run("It should mount the volume relative to /var/scribe if a relative path is provided", expect(t, "./some/relative/path", fmt.Sprintf("%s:/var/scribe/some/relative/path", path.Join(wd, "./some/relative/path"))))
 // 	t.Run("It should preserve a fully-formatted volume mount", expect(t, "/absolute/path:/other/path", "/absolute/path:/other/path"))
 // }

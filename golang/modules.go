@@ -3,7 +3,7 @@ package golang
 import (
 	"context"
 
-	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/pipeline"
 )
 
 func ModDownload() pipeline.Action {

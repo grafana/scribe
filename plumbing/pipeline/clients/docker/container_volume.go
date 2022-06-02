@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/docker/docker/api/types/mount"
-	"github.com/grafana/shipwright/docker"
+	"github.com/grafana/scribe/docker"
 )
 
 func DefaultMounts(v *docker.Volume) ([]mount.Mount, error) {
@@ -12,7 +12,7 @@ func DefaultMounts(v *docker.Volume) ([]mount.Mount, error) {
 		{
 			Type:   mount.TypeVolume,
 			Source: v.Name,
-			Target: "/opt/shipwright",
+			Target: "/opt/scribe",
 			TmpfsOptions: &mount.TmpfsOptions{
 				Mode: os.FileMode(0777),
 			},

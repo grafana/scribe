@@ -1,6 +1,6 @@
 package pipeline
 
-import "github.com/grafana/shipwright/plumbing/pipeline/dag"
+import "github.com/grafana/scribe/plumbing/pipeline/dag"
 
 // A Pipeline is really similar to a Step, except that it contains a graph of steps rather than
 // a single action. Just like a Step, it has dependencies, a name, an ID, etc.

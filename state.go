@@ -1,4 +1,4 @@
-package shipwright
+package scribe
 
 import (
 	"fmt"
@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/grafana/shipwright/plumbing"
-	"github.com/grafana/shipwright/plumbing/pipeline"
-	"github.com/grafana/shipwright/plumbing/stringutil"
+	"github.com/grafana/scribe/plumbing"
+	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/stringutil"
 	"github.com/sirupsen/logrus"
 )
 

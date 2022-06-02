@@ -3,16 +3,16 @@ package main
 import (
 	"context"
 
-	"github.com/grafana/shipwright"
-	"github.com/grafana/shipwright/fs"
-	gitx "github.com/grafana/shipwright/git/x"
-	"github.com/grafana/shipwright/golang"
-	"github.com/grafana/shipwright/makefile"
-	"github.com/grafana/shipwright/plumbing/pipeline"
-	"github.com/grafana/shipwright/yarn"
+	"github.com/grafana/scribe"
+	"github.com/grafana/scribe/fs"
+	gitx "github.com/grafana/scribe/git/x"
+	"github.com/grafana/scribe/golang"
+	"github.com/grafana/scribe/makefile"
+	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/yarn"
 )
 
-func writeVersion(sw *shipwright.Shipwright) pipeline.Step {
+func writeVersion(sw *scribe.Scribe) pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 
 		// equivalent of `git describe --tags --dirty --always`
@@ -28,7 +28,7 @@ func writeVersion(sw *shipwright.Shipwright) pipeline.Step {
 	return pipeline.NewStep(action)
 }
 
-func installDependencies(sw *shipwright.Shipwright) {
+func installDependencies(sw *scribe.Scribe) {
 	sw.Run(
 		pipeline.NamedStep("install frontend dependencies", sw.Cache(
 			yarn.Install(),
@@ -41,7 +41,7 @@ func installDependencies(sw *shipwright.Shipwright) {
 	)
 }
 
-func testPipeline(sw *shipwright.Shipwright) {
+func testPipeline(sw *scribe.Scribe) {
 	installDependencies(sw)
 
 	sw.Parallel(
@@ -50,7 +50,7 @@ func testPipeline(sw *shipwright.Shipwright) {
 	)
 }
 
-func publishPipeline(sw *shipwright.Shipwright) {
+func publishPipeline(sw *scribe.Scribe) {
 	sw.When(
 		pipeline.GitCommitEvent(pipeline.GitCommitFilters{
 			Branch: pipeline.StringFilter("main"),
@@ -72,7 +72,7 @@ func publishPipeline(sw *shipwright.Shipwright) {
 	)
 }
 
-func codeqlPipeline(sw *shipwright.Shipwright) {
+func codeqlPipeline(sw *scribe.Scribe) {
 	sw.Run(
 		pipeline.NoOpStep.WithName("codeql"),
 		pipeline.NoOpStep.WithName("notify-slack"),
@@ -81,16 +81,16 @@ func codeqlPipeline(sw *shipwright.Shipwright) {
 
 // "main" defines our program pipeline.
 // "main" defines our program pipeline.
-// Every pipeline step should be instantiated using the shipwright client (sw).
+// Every pipeline step should be instantiated using the scribe client (sw).
 // This allows the various client modes to work properly in different scenarios, like in a CI environment or locally.
 // Logic and processing done outside of the `sw.*` family of functions may not be included in the resulting pipeline.
 func main() {
-	sw := shipwright.NewMulti()
+	sw := scribe.NewMulti()
 	defer sw.Done()
 
 	// Presumably this function could run for 10+ minutes so we want to run it while test & publish are happening.
 	// We could run it in parallel with test, and if it fails, don't run publish, but we don't actually care if this passes in order to publish a pre-release build.
-	sw.Sub(func(sw *shipwright.ShipwrightMulti) {
+	sw.Sub(func(sw *scribe.ScribeMulti) {
 		sw.Run(sw.New("code quality check", codeqlPipeline))
 	})
 

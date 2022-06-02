@@ -1,10 +1,10 @@
-package shipwright_test
+package scribe_test
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/pipeline"
 )
 
 // ensurer provides a pipeline.StepWalkFunc that ensures that the steps that it receives are ran in the order provided.

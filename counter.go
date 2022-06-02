@@ -1,4 +1,4 @@
-package shipwright
+package scribe
 
 import "sync/atomic"
 
