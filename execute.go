@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/grafana/shipwright/plumbing"
-	"github.com/grafana/shipwright/plumbing/cmdutil"
 	"github.com/grafana/shipwright/plumbing/pipeline"
 	"github.com/grafana/shipwright/plumbing/plog"
 	"github.com/opentracing/opentracing-go"
@@ -24,7 +26,6 @@ func executeWithTracing(tracer opentracing.Tracer, ef executeFunc) executeFunc {
 	return func(ctx context.Context, collection *pipeline.Collection) error {
 		span, ctx := opentracing.StartSpanFromContextWithTracer(ctx, tracer, "shipwright")
 		defer span.Finish()
-
 		err := ef(ctx, collection)
 		if v, ok := tracer.(*jaeger.Tracer); ok {
 			v.Close()
@@ -90,11 +91,13 @@ func executeWithSignals(
 	ef executeFunc,
 ) executeFunc {
 	return func(ctx context.Context, collection *pipeline.Collection) error {
-		go func() {
-			if err := cmdutil.WatchSignals(); err != nil {
-				// return fmt.Errorf("%w: %s", ErrorCancelled, err.String())
-			}
-		}()
+		ctx, cancel := signal.NotifyContext(ctx, os.Interrupt,
+			syscall.SIGINT,
+			syscall.SIGTERM,
+			syscall.SIGQUIT,
+		)
+
+		defer cancel()
 		return ef(ctx, collection)
 	}
 }
@@ -108,12 +111,10 @@ func execute(ctx context.Context, collection *pipeline.Collection, name string, 
 	wrapped := executeWithSignals(ef)
 
 	// Add a root tracing span to the context, and end the span when the executeFunc is done.
-	if opts.Tracer != nil {
-		wrapped = executeWithTracing(opts.Tracer, ef)
-	}
+	wrapped = executeWithTracing(opts.Tracer, wrapped)
 
 	// Add structured logging when the pipeline execution starts and ends.
-	wrapped = executeWithLogging(logger, ef)
+	wrapped = executeWithLogging(logger, wrapped)
 
 	if err := wrapped(ctx, collection); err != nil {
 		return err

@@ -38,6 +38,7 @@ func (l *TraceWrapper) WrapStep(steps ...pipeline.Step) []pipeline.Step {
 		action := step.Action
 		steps[i].Action = func(ctx context.Context, opts pipeline.ActionOpts) error {
 			parent := opentracing.SpanFromContext(ctx)
+
 			span, ctx := opentracing.StartSpanFromContextWithTracer(ctx, l.Tracer, step.Name, opentracing.ChildOf(parent.Context()))
 			TagSpan(span, l.Opts, step)
 			defer span.Finish()

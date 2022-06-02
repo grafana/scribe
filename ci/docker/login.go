@@ -14,12 +14,12 @@ var (
 
 func Login(username, password pipeline.Argument) pipeline.Step {
 	return pipeline.NewStep(func(ctx context.Context, opts pipeline.ActionOpts) error {
-		u, err := opts.State.Get(username.Key)
+		u, err := opts.State.GetString(username)
 		if err != nil {
 			return err
 		}
 
-		p, err := opts.State.Get(password.Key)
+		p, err := opts.State.GetString(password)
 		if err != nil {
 			return err
 		}
@@ -36,7 +36,7 @@ func Login(username, password pipeline.Argument) pipeline.Step {
 		// 	return err
 		// }
 
-		return opts.State.Set(ArgumentDockerAuthToken.Key, auth)
+		return opts.State.SetString(ArgumentDockerAuthToken, auth)
 	}).
 		WithArguments(username, password, pipeline.ArgumentDockerSocketFS).
 		Provides(ArgumentDockerAuthToken)

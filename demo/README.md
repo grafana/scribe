@@ -115,7 +115,7 @@ This program creates multiple pipelines which run in sequence, and one pipeline 
 
 ## [`./state`](./sub)
 
-This program creates a very simple pipeline which demostrates setting and getting from the state.
+This program creates a very simple pipeline which demostrates setting and getting all different kinds of arguments from the state, including files, directories, strings, integers, and floating points.
 
 ### Features
 

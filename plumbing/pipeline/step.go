@@ -37,6 +37,9 @@ type ActionOpts struct {
 	Stderr io.Writer
 	Tracer opentracing.Tracer
 	Logger logrus.FieldLogger
+
+	// Path is the path to the pipeline, typically provided via the `-path` argument, but automatically supplied if using the shipwright CLI.
+	Path string
 }
 
 // A Step stores a Action and a name for use in pipelines.
