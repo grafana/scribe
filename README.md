@@ -2,6 +2,10 @@
 
 Scribe is a framework to write flexible CI pipelines in Go that have consistent behavior when ran locally or in a CI server.
 
+## Status
+
+This is still in beta. Expect breaking changes.
+
 ## Why?
 
 Continuous integration and delivery are built on flaky foundations.
