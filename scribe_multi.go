@@ -1,15 +1,15 @@
-package shipwright
+package scribe
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/grafana/shipwright/plumbing"
-	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing"
+	"github.com/grafana/scribe/plumbing/pipeline"
 	"github.com/sirupsen/logrus"
 )
 
-type ShipwrightMulti struct {
+type ScribeMulti struct {
 	Client     pipeline.Client
 	Collection *pipeline.Collection
 
@@ -24,13 +24,13 @@ type ShipwrightMulti struct {
 	prev []pipeline.Pipeline
 }
 
-func (s *ShipwrightMulti) serial() int64 {
+func (s *ScribeMulti) serial() int64 {
 	return s.n.Next()
 }
 
 // runPipeliens adds the list of pipelines to the collection. Pipelines are essentially branches in the graph.
 // The pipelines provided run one after another.
-func (s *ShipwrightMulti) runPipelines(pipelines ...pipeline.Pipeline) error {
+func (s *ScribeMulti) runPipelines(pipelines ...pipeline.Pipeline) error {
 	prev := s.prev
 
 	for _, v := range pipelines {
@@ -47,13 +47,13 @@ func (s *ShipwrightMulti) runPipelines(pipelines ...pipeline.Pipeline) error {
 	return nil
 }
 
-func (s *ShipwrightMulti) Run(steps ...pipeline.Pipeline) {
+func (s *ScribeMulti) Run(steps ...pipeline.Pipeline) {
 	if err := s.runPipelines(steps...); err != nil {
 		s.Log.Fatalln(err)
 	}
 }
 
-func (s *ShipwrightMulti) parallelPipelines(pipelines ...pipeline.Pipeline) error {
+func (s *ScribeMulti) parallelPipelines(pipelines ...pipeline.Pipeline) error {
 	for i := range pipelines {
 		pipelines[i].Dependencies = s.prev
 	}
@@ -67,13 +67,13 @@ func (s *ShipwrightMulti) parallelPipelines(pipelines ...pipeline.Pipeline) erro
 	return nil
 }
 
-func (s *ShipwrightMulti) Parallel(steps ...pipeline.Pipeline) {
+func (s *ScribeMulti) Parallel(steps ...pipeline.Pipeline) {
 	if err := s.parallelPipelines(steps...); err != nil {
 		s.Log.Fatalln(err)
 	}
 }
 
-func (s *ShipwrightMulti) subMulti(sub *ShipwrightMulti) error {
+func (s *ScribeMulti) subMulti(sub *ScribeMulti) error {
 	prev := s.prev
 
 	for i, v := range sub.Collection.Graph.Nodes {
@@ -96,14 +96,14 @@ func (s *ShipwrightMulti) subMulti(sub *ShipwrightMulti) error {
 	return nil
 }
 
-func (s *ShipwrightMulti) newSub() *ShipwrightMulti {
+func (s *ScribeMulti) newSub() *ScribeMulti {
 	serial := s.n.Next()
 	opts := s.Opts
 	opts.Name = fmt.Sprintf("sub-pipeline-%d", serial)
 
 	collection := NewDefaultCollection(opts)
 
-	return &ShipwrightMulti{
+	return &ScribeMulti{
 		Client:     s.Client,
 		Opts:       opts,
 		Log:        s.Log.WithField("sub-pipeline", opts.Name),
@@ -114,9 +114,9 @@ func (s *ShipwrightMulti) newSub() *ShipwrightMulti {
 	}
 }
 
-type MultiSubFunc func(*ShipwrightMulti)
+type MultiSubFunc func(*ScribeMulti)
 
-func (s *ShipwrightMulti) Sub(sf MultiSubFunc) {
+func (s *ScribeMulti) Sub(sf MultiSubFunc) {
 	sub := s.newSub()
 	sf(sub)
 
@@ -126,15 +126,15 @@ func (s *ShipwrightMulti) Sub(sf MultiSubFunc) {
 }
 
 // Execute is the equivalent of Done, but returns an error.
-// Done should be preferred in Shipwright pipelines as it includes sub-process handling and logging.
-func (s *ShipwrightMulti) Execute(ctx context.Context, collection *pipeline.Collection) error {
+// Done should be preferred in Scribe pipelines as it includes sub-process handling and logging.
+func (s *ScribeMulti) Execute(ctx context.Context, collection *pipeline.Collection) error {
 	if err := s.Client.Done(ctx, collection); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *ShipwrightMulti) Done() {
+func (s *ScribeMulti) Done() {
 	ctx := context.Background()
 
 	if err := execute(ctx, s.Collection, nameOrDefault(s.Opts.Name), s.Opts, s.n, s.Execute); err != nil {
@@ -143,16 +143,16 @@ func (s *ShipwrightMulti) Done() {
 }
 
 // When allows users to define when this pipeline is executed, especially in the remote environment.
-func (s *ShipwrightMulti) When(events ...pipeline.Event) {
+func (s *ScribeMulti) When(events ...pipeline.Event) {
 	if err := s.Collection.AddEvents(s.pipeline, events...); err != nil {
 		s.Log.WithError(err).Fatalln("Failed to add events to graph")
 	}
 }
 
-// NewMulti is the equivalent of `shipwright.New`, but for building a pipeline made of multiple pipelines.
+// NewMulti is the equivalent of `scribe.New`, but for building a pipeline made of multiple pipelines.
 // Pipelines can behave in the same way that a step does. They can be ran in parallel using the Parallel function, or ran in a series using the Run function.
-// To add new pipelines to execution, use the `(*shipwright.ShipwrightMulti).New(...)` function.
-func NewMulti() *ShipwrightMulti {
+// To add new pipelines to execution, use the `(*scribe.ScribeMulti).New(...)` function.
+func NewMulti() *ScribeMulti {
 	opts, err := parseOpts()
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse arguments: %s", err.Error()))
@@ -160,24 +160,24 @@ func NewMulti() *ShipwrightMulti {
 
 	sw := NewClient(opts, NewMultiCollection())
 
-	return &ShipwrightMulti{
+	return &ScribeMulti{
 		Client:     sw.Client,
 		Collection: sw.Collection,
 		Opts:       opts,
 		Log:        sw.Log,
 
-		// Ensure that no matter the behavior of the initializer, we still set the version on the shipwright object.
+		// Ensure that no matter the behavior of the initializer, we still set the version on the scribe object.
 		Version: opts.Args.Version,
 		n:       &counter{1},
 	}
 }
 
-func NewMultiWithClient(opts pipeline.CommonOpts, client pipeline.Client) *ShipwrightMulti {
+func NewMultiWithClient(opts pipeline.CommonOpts, client pipeline.Client) *ScribeMulti {
 	if opts.Args == nil {
 		opts.Args = &plumbing.PipelineArgs{}
 	}
 
-	return &ShipwrightMulti{
+	return &ScribeMulti{
 		Client:     client,
 		Opts:       opts,
 		Log:        opts.Log,
@@ -186,10 +186,10 @@ func NewMultiWithClient(opts pipeline.CommonOpts, client pipeline.Client) *Shipw
 	}
 }
 
-type MultiFunc func(*Shipwright)
+type MultiFunc func(*Scribe)
 
 func MultiFuncWithLogging(logger logrus.FieldLogger, mf MultiFunc) MultiFunc {
-	return func(sw *Shipwright) {
+	return func(sw *Scribe) {
 		log := logger.WithFields(logrus.Fields{
 			"n":        sw.n,
 			"pipeline": sw.pipeline,
@@ -200,9 +200,9 @@ func MultiFuncWithLogging(logger logrus.FieldLogger, mf MultiFunc) MultiFunc {
 	}
 }
 
-// New creates a new Pipeline step that executes the provided MultiFunc onto a new `*Shipwright` type, creating a DAG.
-// Because this function returns a pipeline.Step[T], it can be used with the normal Shipwright functions like `Run` and `Parallel`.
-func (s *ShipwrightMulti) New(name string, mf MultiFunc) pipeline.Pipeline {
+// New creates a new Pipeline step that executes the provided MultiFunc onto a new `*Scribe` type, creating a DAG.
+// Because this function returns a pipeline.Step[T], it can be used with the normal Scribe functions like `Run` and `Parallel`.
+func (s *ScribeMulti) New(name string, mf MultiFunc) pipeline.Pipeline {
 	log := s.Log.WithFields(logrus.Fields{
 		"pipeline": name,
 	})
@@ -212,7 +212,7 @@ func (s *ShipwrightMulti) New(name string, mf MultiFunc) pipeline.Pipeline {
 		log.WithError(err).Fatalln("Failed to clone pipeline for use in multi-pipeline")
 	}
 
-	// This function adds the pipeline the way the user specified. It should look exactly like a normal shipwright pipeline.
+	// This function adds the pipeline the way the user specified. It should look exactly like a normal scribe pipeline.
 	// This collection will be populated with a collection of Steps with actions.
 	wrapped := MultiFuncWithLogging(log, mf)
 	wrapped(sw)
@@ -237,7 +237,7 @@ func (s *ShipwrightMulti) New(name string, mf MultiFunc) pipeline.Pipeline {
 	}
 }
 
-func (s *ShipwrightMulti) newMulti(name string) (*Shipwright, error) {
+func (s *ScribeMulti) newMulti(name string) (*Scribe, error) {
 	log := s.Log.WithField("pipeline", name)
 	collection := NewMultiCollection()
 
@@ -245,7 +245,7 @@ func (s *ShipwrightMulti) newMulti(name string) (*Shipwright, error) {
 		return nil, err
 	}
 
-	sw := &Shipwright{
+	sw := &Scribe{
 		Client:     s.Client,
 		Opts:       s.Opts,
 		Log:        log,

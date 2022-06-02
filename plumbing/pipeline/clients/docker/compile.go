@@ -6,17 +6,17 @@ import (
 	"os"
 
 	"github.com/docker/docker/api/types/mount"
-	"github.com/grafana/shipwright/docker"
-	"github.com/grafana/shipwright/plumbing/pipelineutil"
+	"github.com/grafana/scribe/docker"
+	"github.com/grafana/scribe/plumbing/pipelineutil"
 )
 
 // compilePipeline creates a docker container that compiles the provided pipeline so that the compiled pipeline can be mounted in
-// other containers without requiring that the container has the shipwright command or go installed.
+// other containers without requiring that the container has the scribe command or go installed.
 func (c *Client) compilePipeline(ctx context.Context, id string, network *docker.Network) (*docker.Volume, error) {
 	log := c.Log
 
 	volume, err := docker.CreateVolume(ctx, c.Client, docker.CreateVolumeOpts{
-		Name: fmt.Sprintf("shipwright-%s", id),
+		Name: fmt.Sprintf("scribe-%s", id),
 	})
 
 	if err != nil {
@@ -25,8 +25,8 @@ func (c *Client) compilePipeline(ctx context.Context, id string, network *docker
 
 	cmd := pipelineutil.GoBuild(ctx, pipelineutil.GoBuildOpts{
 		Pipeline: c.Opts.Args.Path,
-		Module:   "/var/shipwright",
-		Output:   "/opt/shipwright/pipeline",
+		Module:   "/var/scribe",
+		Output:   "/opt/scribe/pipeline",
 	})
 
 	mounts, err := DefaultMounts(volume)
@@ -41,7 +41,7 @@ func (c *Client) compilePipeline(ctx context.Context, id string, network *docker
 	mounts = append(mounts, mount.Mount{
 		Type:   mount.TypeBind,
 		Source: wd,
-		Target: "/var/shipwright",
+		Target: "/var/scribe",
 		TmpfsOptions: &mount.TmpfsOptions{
 			Mode: os.FileMode(0755),
 		},
@@ -52,7 +52,7 @@ func (c *Client) compilePipeline(ctx context.Context, id string, network *docker
 		Image:   "golang:1.18",
 		Command: cmd.Args,
 		Mounts:  mounts,
-		Workdir: "/var/shipwright",
+		Workdir: "/var/scribe",
 		Env: []string{
 			"GOOS=linux",
 			"GOARCH=amd64",
@@ -68,7 +68,7 @@ func (c *Client) compilePipeline(ctx context.Context, id string, network *docker
 
 	log.Warnf("Building pipeline binary '%s' in docker volume...", c.Opts.Args.Path)
 	// This should run a command very similar to this:
-	// docker run --rm -v $TMPDIR:/var/shipwright shipwright/go:{version} go build -o /var/shipwright/pipeline ./{pipeline}
+	// docker run --rm -v $TMPDIR:/var/scribe scribe/go:{version} go build -o /var/scribe/pipeline ./{pipeline}
 	if err := docker.RunContainer(ctx, c.Client, docker.RunContainerOpts{
 		Container: container,
 		Stdout:    log.WithField("stream", "stdout").Writer(),

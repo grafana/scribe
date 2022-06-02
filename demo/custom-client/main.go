@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 
-	"github.com/grafana/shipwright"
-	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/scribe"
+	"github.com/grafana/scribe/plumbing/pipeline"
 	"github.com/sirupsen/logrus"
 )
 
@@ -34,7 +34,7 @@ func (c *MyClient) Done(ctx context.Context, w pipeline.Walker) error {
 }
 
 func init() {
-	shipwright.RegisterClient("my-custom-client", func(opts pipeline.CommonOpts) pipeline.Client {
+	scribe.RegisterClient("my-custom-client", func(opts pipeline.CommonOpts) pipeline.Client {
 		return &MyClient{
 			Log: opts.Log,
 		}
@@ -42,7 +42,7 @@ func init() {
 }
 
 func main() {
-	sw := shipwright.New("custom-client")
+	sw := scribe.New("custom-client")
 	defer sw.Done()
 
 	sw.Run(

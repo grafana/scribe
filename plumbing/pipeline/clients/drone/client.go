@@ -8,11 +8,11 @@ import (
 
 	"github.com/drone/drone-yaml/yaml"
 	"github.com/drone/drone-yaml/yaml/pretty"
-	"github.com/grafana/shipwright/plumbing"
-	"github.com/grafana/shipwright/plumbing/pipeline"
-	"github.com/grafana/shipwright/plumbing/pipeline/clients/drone/starlark"
-	"github.com/grafana/shipwright/plumbing/pipelineutil"
-	"github.com/grafana/shipwright/plumbing/stringutil"
+	"github.com/grafana/scribe/plumbing"
+	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/pipeline/clients/drone/starlark"
+	"github.com/grafana/scribe/plumbing/pipelineutil"
+	"github.com/grafana/scribe/plumbing/stringutil"
 	"github.com/sirupsen/logrus"
 )
 
@@ -32,7 +32,7 @@ type Client struct {
 	//
 	// Other languages will be generated using functions that you can use within
 	// your own pipelines in those other languages. They are intended to facilitate
-	// transitions between other systems and Shipwright.
+	// transitions between other systems and Scribe.
 	Language DroneLanguage
 }
 
@@ -106,10 +106,10 @@ func (c *Client) StepWalkFunc(log logrus.FieldLogger, s *stepList, state string)
 }
 
 var (
-	PipelinePath     = "/var/shipwright/pipeline"
-	StatePath        = "/var/shipwright-state"
-	ShipwrightVolume = &yaml.Volume{
-		Name:     "shipwright",
+	PipelinePath     = "/var/scribe/pipeline"
+	StatePath        = "/var/scribe-state"
+	ScribeVolume = &yaml.Volume{
+		Name:     "scribe",
 		EmptyDir: &yaml.VolumeEmptyDir{},
 	}
 	HostDockerVolume = &yaml.Volume{
@@ -118,16 +118,16 @@ var (
 			Path: "/var/run/docker.sock",
 		},
 	}
-	ShipwrightStateVolume = &yaml.Volume{
-		Name:     "shipwright-state",
+	ScribeStateVolume = &yaml.Volume{
+		Name:     "scribe-state",
 		EmptyDir: &yaml.VolumeEmptyDir{},
 	}
-	ShipwrightVolumeMount = &yaml.VolumeMount{
-		Name:      "shipwright",
-		MountPath: "/var/shipwright",
+	ScribeVolumeMount = &yaml.VolumeMount{
+		Name:      "scribe",
+		MountPath: "/var/scribe",
 	}
-	ShipwrightStateVolumeMount = &yaml.VolumeMount{
-		Name:      "shipwright-state",
+	ScribeStateVolumeMount = &yaml.VolumeMount{
+		Name:      "scribe-state",
 		MountPath: StatePath,
 	}
 )
@@ -160,7 +160,7 @@ func (c *Client) newPipeline(opts newPipelineOpts, pipelineOpts pipeline.CommonO
 				Value: "0",
 			},
 		},
-		Volumes: []*yaml.VolumeMount{ShipwrightVolumeMount},
+		Volumes: []*yaml.VolumeMount{ScribeVolumeMount},
 	}
 
 	// Add the approprirate steps and "DependsOn" to each step.
@@ -168,7 +168,7 @@ func (c *Client) newPipeline(opts newPipelineOpts, pipelineOpts pipeline.CommonO
 		if len(v.DependsOn) == 0 {
 			opts.Steps[i].DependsOn = []string{build.Name}
 		}
-		opts.Steps[i].Volumes = append(opts.Steps[i].Volumes, ShipwrightVolumeMount, ShipwrightStateVolumeMount)
+		opts.Steps[i].Volumes = append(opts.Steps[i].Volumes, ScribeVolumeMount, ScribeStateVolumeMount)
 	}
 
 	p := &yaml.Pipeline{
@@ -179,8 +179,8 @@ func (c *Client) newPipeline(opts newPipelineOpts, pipelineOpts pipeline.CommonO
 		Steps:     append([]*yaml.Container{build}, opts.Steps...),
 		Services:  opts.Services,
 		Volumes: []*yaml.Volume{
-			ShipwrightVolume,
-			ShipwrightStateVolume,
+			ScribeVolume,
+			ScribeStateVolume,
 			HostDockerVolume,
 		},
 	}

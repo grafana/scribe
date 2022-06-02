@@ -38,7 +38,7 @@ type ActionOpts struct {
 	Tracer opentracing.Tracer
 	Logger logrus.FieldLogger
 
-	// Path is the path to the pipeline, typically provided via the `-path` argument, but automatically supplied if using the shipwright CLI.
+	// Path is the path to the pipeline, typically provided via the `-path` argument, but automatically supplied if using the scribe CLI.
 	Path string
 }
 
@@ -46,7 +46,7 @@ type ActionOpts struct {
 // A Step can consist of either a single action or represent a list of actions.
 type Step struct {
 	// ID is the unique number that represents this step.
-	// This value is used when calling `shipwright -step={serial} [pipeline]`
+	// This value is used when calling `scribe -step={serial} [pipeline]`
 	ID int64
 
 	// Type represents the how the step is intended to operate. 90% of the time, the default type should be a sufficient descriptor of a step.

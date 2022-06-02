@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	tarfs "github.com/grafana/shipwright/plumbing/tarfs"
+	tarfs "github.com/grafana/scribe/plumbing/tarfs"
 )
 
 func TestWrite(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	golangx "github.com/grafana/shipwright/golang/x"
+	golangx "github.com/grafana/scribe/golang/x"
 )
 
 // GoBuildOpts is the list of (mostly) optional arguments that can be provided when building a pipeline into a static binary.

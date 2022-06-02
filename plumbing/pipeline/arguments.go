@@ -23,7 +23,7 @@ func ArgumentTypesEqual(argType ArgumentType, arg Argument) bool {
 }
 
 // An Argument is a pre-defined argument that is used in a typical CI pipeline.
-// This allows the shipwright library to define different methods of retrieving the same information
+// This allows the scribe library to define different methods of retrieving the same information
 // in different run modes.
 // For example, when running in CLI or Docker mode, getting the git ref might be as simple as running `git rev-parse HEAD`.
 // But in a Drone pipeline, that information may be available before the repository has been cloned in an environment variable.

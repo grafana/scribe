@@ -8,16 +8,16 @@ import (
 
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
-	"github.com/grafana/shipwright/docker"
-	"github.com/grafana/shipwright/plumbing"
-	"github.com/grafana/shipwright/plumbing/pipeline"
-	"github.com/grafana/shipwright/plumbing/plog"
-	"github.com/grafana/shipwright/plumbing/stringutil"
-	"github.com/grafana/shipwright/plumbing/syncutil"
+	"github.com/grafana/scribe/docker"
+	"github.com/grafana/scribe/plumbing"
+	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/plog"
+	"github.com/grafana/scribe/plumbing/stringutil"
+	"github.com/grafana/scribe/plumbing/syncutil"
 	"github.com/sirupsen/logrus"
 )
 
-// The Client is used when interacting with a shipwright pipeline using the shipwright CLI.
+// The Client is used when interacting with a scribe pipeline using the scribe CLI.
 // In order to emulate what happens in a remote environment, the steps are put into a queue before being ran.
 // Each step is ran in its own docker container.
 type Client struct {
@@ -35,7 +35,7 @@ func (c *Client) Validate(step pipeline.Step) error {
 }
 
 func (c *Client) networkName(id string) string {
-	return fmt.Sprintf("shipwright-%s-%s", stringutil.Slugify(c.Opts.Name), id)
+	return fmt.Sprintf("scribe-%s-%s", stringutil.Slugify(c.Opts.Name), id)
 }
 
 type walkOpts struct {
@@ -57,7 +57,7 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 
 	logger.Infoln("Compiling pipeline in docker volume...")
 	// Every step needs a compiled version of the pipeline in order to know what to do
-	// without requiring that every image has a copy of the shipwright binary
+	// without requiring that every image has a copy of the scribe binary
 	volume, err := c.compilePipeline(ctx, id, network)
 	if err != nil {
 		return fmt.Errorf("failed to compile the pipeline in docker. Error: %w", err)
@@ -96,7 +96,7 @@ func (c *Client) stepWalkFunc(opts walkOpts) pipeline.StepWalkFunc {
 				Configurer: c,
 				Step:       step,
 				Network:    opts.network,
-				Binary:     "/opt/shipwright/pipeline",
+				Binary:     "/opt/scribe/pipeline",
 				Pipeline:   c.Opts.Args.Path,
 				BuildID:    c.Opts.Args.BuildID,
 				Volumes: []*docker.Volume{
@@ -104,8 +104,8 @@ func (c *Client) stepWalkFunc(opts walkOpts) pipeline.StepWalkFunc {
 					opts.stateVolume,
 				},
 				Mounts: []mount.Mount{
-					opts.volume.MountAt("/var/shipwright", os.FileMode(0777)),
-					opts.stateVolume.MountAt("/var/shipwright-state", os.FileMode(0666)),
+					opts.volume.MountAt("/var/scribe", os.FileMode(0777)),
+					opts.stateVolume.MountAt("/var/scribe-state", os.FileMode(0666)),
 				},
 				Out: log.Writer(),
 			})

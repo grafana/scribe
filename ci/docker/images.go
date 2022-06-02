@@ -6,10 +6,10 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/grafana/shipwright"
-	"github.com/grafana/shipwright/docker"
-	"github.com/grafana/shipwright/plumbing"
-	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/scribe"
+	"github.com/grafana/scribe/docker"
+	"github.com/grafana/scribe/plumbing"
+	"github.com/grafana/scribe/plumbing/pipeline"
 	"github.com/sirupsen/logrus"
 )
 
@@ -58,7 +58,7 @@ type Image struct {
 	Context    string
 }
 
-func (i Image) BuildStep(sw *shipwright.Shipwright) pipeline.Step {
+func (i Image) BuildStep(sw *scribe.Scribe) pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		tag, err := i.Tag()
 		if err != nil {
@@ -87,7 +87,7 @@ func (i Image) BuildStep(sw *shipwright.Shipwright) pipeline.Step {
 		WithImage(plumbing.SubImage("docker", sw.Version))
 }
 
-func (i Image) PushStep(sw *shipwright.Shipwright) pipeline.Step {
+func (i Image) PushStep(sw *scribe.Scribe) pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		tag, err := i.Tag()
 		if err != nil {
@@ -114,38 +114,38 @@ func (i Image) PushStep(sw *shipwright.Shipwright) pipeline.Step {
 		WithImage(plumbing.SubImage("docker", sw.Version))
 }
 
-// ShipwrightImage has to be built before its derivitive images.
-var ShipwrightImage = Image{
-	Name:       "shipwright",
-	Dockerfile: "./ci/docker/shipwright.Dockerfile",
+// ScribeImage has to be built before its derivitive images.
+var ScribeImage = Image{
+	Name:       "scribe",
+	Dockerfile: "./ci/docker/scribe.Dockerfile",
 	Context:    ".",
 }
 
-// Images is a list of images derived from the ShipwrightImage
+// Images is a list of images derived from the ScribeImage
 var Images = []Image{
 	{
 		Name:       "git",
-		Dockerfile: "./ci/docker/shipwright.git.Dockerfile",
+		Dockerfile: "./ci/docker/scribe.git.Dockerfile",
 		Context:    ".",
 	},
 	{
 		Name:       "go",
-		Dockerfile: "./ci/docker/shipwright.go.Dockerfile",
+		Dockerfile: "./ci/docker/scribe.go.Dockerfile",
 		Context:    ".",
 	},
 	{
 		Name:       "node",
-		Dockerfile: "./ci/docker/shipwright.node.Dockerfile",
+		Dockerfile: "./ci/docker/scribe.node.Dockerfile",
 		Context:    ".",
 	},
 	{
 		Name:       "docker",
-		Dockerfile: "./ci/docker/shipwright.docker.Dockerfile",
+		Dockerfile: "./ci/docker/scribe.docker.Dockerfile",
 		Context:    ".",
 	},
 }
 
-func BuildSteps(sw *shipwright.Shipwright, images []Image) []pipeline.Step {
+func BuildSteps(sw *scribe.Scribe, images []Image) []pipeline.Step {
 	steps := make([]pipeline.Step, len(images))
 
 	for i, image := range images {
@@ -155,7 +155,7 @@ func BuildSteps(sw *shipwright.Shipwright, images []Image) []pipeline.Step {
 	return steps
 }
 
-func PushSteps(sw *shipwright.Shipwright, images []Image) []pipeline.Step {
+func PushSteps(sw *scribe.Scribe, images []Image) []pipeline.Step {
 	steps := make([]pipeline.Step, len(images))
 
 	for i, image := range images {

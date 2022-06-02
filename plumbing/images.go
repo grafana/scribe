@@ -2,7 +2,7 @@ package plumbing
 
 import "fmt"
 
-const DefaultRepo = "grafana/shipwright"
+const DefaultRepo = "grafana/scribe"
 
 func DefaultImage(version string) string {
 	// TODO don't hardcode this image but for now I don't care good luck

@@ -1,5 +1,5 @@
-// Package main contains the CLI logic for the `shipwright` command
-// The shipwright command's main responsibility is to run a pipeline.
+// Package main contains the CLI logic for the `scribe` command
+// The scribe command's main responsibility is to run a pipeline.
 package main
 
 import (
@@ -7,9 +7,9 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/grafana/shipwright/plumbing/cmd/commands"
-	"github.com/grafana/shipwright/plumbing/cmdutil"
-	"github.com/grafana/shipwright/plumbing/plog"
+	"github.com/grafana/scribe/plumbing/cmd/commands"
+	"github.com/grafana/scribe/plumbing/cmdutil"
+	"github.com/grafana/scribe/plumbing/plog"
 	"github.com/sirupsen/logrus"
 )
 

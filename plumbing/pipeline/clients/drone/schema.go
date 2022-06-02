@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/drone/drone-yaml/yaml"
-	"github.com/grafana/shipwright/plumbing/cmdutil"
-	"github.com/grafana/shipwright/plumbing/pipeline"
-	"github.com/grafana/shipwright/plumbing/stringutil"
+	"github.com/grafana/scribe/plumbing/cmdutil"
+	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/stringutil"
 )
 
 func combineVariables(a map[string]*yaml.Variable, b map[string]*yaml.Variable) map[string]*yaml.Variable {

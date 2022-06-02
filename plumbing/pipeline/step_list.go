@@ -1,7 +1,7 @@
 package pipeline
 
 // A StepList is a list of steps that are ran in parallel.
-// This type is only used for intermittent storage and should not be used in the Shipwright client library
+// This type is only used for intermittent storage and should not be used in the Scribe client library
 type StepList struct {
 	ID           int64
 	Steps        []Step

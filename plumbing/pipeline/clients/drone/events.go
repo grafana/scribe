@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/drone/drone-yaml/yaml"
-	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/pipeline"
 )
 
 // TODO: I'm lazy at the moment and haven't implemented reverse filters (exlude).

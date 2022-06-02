@@ -6,9 +6,9 @@ import (
 	"io"
 	"testing"
 
-	"github.com/grafana/shipwright/plumbing"
-	"github.com/grafana/shipwright/plumbing/cmd/commands"
-	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing"
+	"github.com/grafana/scribe/plumbing/cmd/commands"
+	"github.com/grafana/scribe/plumbing/pipeline"
 )
 
 func RunPipeline(ctx context.Context, t *testing.T, path string, stdout io.Writer, stderr io.Writer, args *plumbing.PipelineArgs) {

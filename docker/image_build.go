@@ -6,15 +6,15 @@ import (
 
 	"github.com/docker/docker/api/types"
 
-	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/pipeline"
 )
 
 type BuildOptions struct {
 	// Names is the list of names / tags (including domain name) of the being created. Of course, it could be anything and doesn't have to include the domain name.
 	// Names should include the tag (the string that follows the colon).
 	// Examples:
-	// "grafana/shipwright:latest"
-	// "docker.io/grafana/shipwright:v1.0.0"
+	// "grafana/scribe:latest"
+	// "docker.io/grafana/scribe:v1.0.0"
 	Names []string
 
 	// ContextDir is packaged into a tarball and provided to the docker daemon as the docker build context. Read more about docker build contexts here:

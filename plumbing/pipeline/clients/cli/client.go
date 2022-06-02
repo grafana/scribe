@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/grafana/shipwright/plumbing/pipeline"
-	"github.com/grafana/shipwright/plumbing/syncutil"
-	"github.com/grafana/shipwright/plumbing/wrappers"
+	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/syncutil"
+	"github.com/grafana/scribe/plumbing/wrappers"
 	"github.com/sirupsen/logrus"
 )
 
@@ -61,7 +61,7 @@ func (c *Client) StepWalkFunc(ctx context.Context, steps ...pipeline.Step) error
 	return nil
 }
 
-// The Client is used when interacting with a shipwright pipeline using the shipwright CLI.
+// The Client is used when interacting with a scribe pipeline using the scribe CLI.
 // In order to emulate what happens in a remote environment, the steps are put into a queue before being ran.
 type Client struct {
 	Opts pipeline.CommonOpts

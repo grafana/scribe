@@ -1,2 +1,2 @@
-// Package main contains the logic for the `shipwright` CLI
+// Package main contains the logic for the `scribe` CLI
 package main

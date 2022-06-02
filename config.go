@@ -1,4 +1,4 @@
-package shipwright
+package scribe
 
 type GitConfig struct{}
 

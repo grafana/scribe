@@ -3,16 +3,16 @@ package main
 import (
 	"context"
 
-	"github.com/grafana/shipwright"
-	"github.com/grafana/shipwright/fs"
-	gitx "github.com/grafana/shipwright/git/x"
-	"github.com/grafana/shipwright/golang"
-	"github.com/grafana/shipwright/makefile"
-	"github.com/grafana/shipwright/plumbing/pipeline"
-	"github.com/grafana/shipwright/yarn"
+	"github.com/grafana/scribe"
+	"github.com/grafana/scribe/fs"
+	gitx "github.com/grafana/scribe/git/x"
+	"github.com/grafana/scribe/golang"
+	"github.com/grafana/scribe/makefile"
+	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/yarn"
 )
 
-func writeVersion(sw *shipwright.Shipwright) pipeline.Step {
+func writeVersion(sw *scribe.Scribe) pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 
 		// equivalent of `git describe --tags --dirty --always`
@@ -29,11 +29,11 @@ func writeVersion(sw *shipwright.Shipwright) pipeline.Step {
 }
 
 // "main" defines our program pipeline.
-// Every pipeline step should be instantiated using the shipwright client (sw).
+// Every pipeline step should be instantiated using the scribe client (sw).
 // This allows the various client modes to work properly in different scenarios, like in a CI environment or locally.
 // Logic and processing done outside of the `sw.*` family of functions may not be included in the resulting pipeline.
 func main() {
-	sw := shipwright.New("basic pipeline")
+	sw := scribe.New("basic pipeline")
 	defer sw.Done()
 
 	sw.When(

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/grafana/shipwright/plumbing/pipeline/dag"
+	"github.com/grafana/scribe/plumbing/pipeline/dag"
 )
 
 var (

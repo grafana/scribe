@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/pipeline"
 	"github.com/opentracing/opentracing-go"
 )
 
@@ -36,7 +36,7 @@ func IntegrationTest(variant string, duration time.Duration) pipeline.Action {
 
 		for _, test := range tests {
 			span, _ := opentracing.StartSpanFromContextWithTracer(ctx, opts.Tracer, test, opentracing.ChildOf(parent.Context()))
-			span.SetTag("job", "shipwright")
+			span.SetTag("job", "scribe")
 			l := log.New(opts.Stdout, variant, 0)
 			l.Printf("Testing '%s' package with '%s'...", test, variant)
 

@@ -3,8 +3,8 @@ package wrappers
 import (
 	"context"
 
-	"github.com/grafana/shipwright/plumbing/pipeline"
-	"github.com/grafana/shipwright/plumbing/plog"
+	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/plog"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
@@ -21,7 +21,7 @@ func (l *TraceWrapper) Fields(ctx context.Context, step pipeline.Step) logrus.Fi
 }
 
 func TagSpan(span opentracing.Span, opts pipeline.CommonOpts, step pipeline.Step) {
-	span.SetTag("job", "shipwright")
+	span.SetTag("job", "scribe")
 	span.SetTag("build_id", opts.Args.BuildID)
 }
 

@@ -1,10 +1,10 @@
 yarn run v1.22.17
 $ grafana-toolkit plugin:test
-⠋ Running tests  Using standard jest plugin config /home/kminehart/Grafana/shipwright/.compose/grafana/plugins/shipwright-app/node_modules/@grafana/toolkit/src/config/jest.plugin.config.local.js
+⠋ Running tests  Using standard jest plugin config /home/kminehart/Grafana/scribe/.compose/grafana/plugins/scribe-app/node_modules/@grafana/toolkit/src/config/jest.plugin.config.local.js
 ts-jest[config] (WARN) The option `tsConfig` is deprecated and will be removed in ts-jest 27, use `tsconfig` instead
 ts-jest[config] (WARN) The option `tsConfig` is deprecated and will be removed in ts-jest 27, use `tsconfig` instead
- PASS  src/panels/shipwright-build-list-panel/module.test.ts
- PASS  src/panels/shipwright-pipeline-list-panel/module.test.ts
+ PASS  src/panels/scribe-build-list-panel/module.test.ts
+ PASS  src/panels/scribe-pipeline-list-panel/module.test.ts
 
 Test Suites: 2 passed, 2 total
 Tests:       2 passed, 2 total

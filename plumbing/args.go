@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/grafana/shipwright/plumbing/stringutil"
+	"github.com/grafana/scribe/plumbing/stringutil"
 	"github.com/sirupsen/logrus"
 )
 
@@ -16,12 +16,12 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-// PipelineArgs are provided to the `shipwright` command.
+// PipelineArgs are provided to the `scribe` command.
 type PipelineArgs struct {
 	Client string
 
-	// Path is provided in every execution to the shipwright run command,
-	// and contians the user-supplied location of the shipwright pipeline (or "." / "$PWD") by default.
+	// Path is provided in every execution to the scribe run command,
+	// and contians the user-supplied location of the scribe pipeline (or "." / "$PWD") by default.
 	Path    string
 	Version string
 
@@ -47,10 +47,10 @@ type PipelineArgs struct {
 
 	// State is a URL where the build state is stored.
 	// Examples:
-	// * 'fs:///var/shipwright/state.json' - Uses a JSON file to store the state.
-	// * 'fs:///c:/shipwright/state.json' - Uses a JSON file to store the state, but on Windows.
-	// * 'fs:///var/shipwright/state/' - Stores the state file in the given directory, using a randomly generated ID to store the state.
-	//    * This might be a good option if implementing a Shipwright client in a provider.
+	// * 'fs:///var/scribe/state.json' - Uses a JSON file to store the state.
+	// * 'fs:///c:/scribe/state.json' - Uses a JSON file to store the state, but on Windows.
+	// * 'fs:///var/scribe/state/' - Stores the state file in the given directory, using a randomly generated ID to store the state.
+	//    * This might be a good option if implementing a Scribe client in a provider.
 	// * 's3://bucket-name/path'
 	// * 'gcs://bucket-name/path'
 	// If 'State' is not provided, then one is created using os.Tmpdir.
@@ -84,7 +84,7 @@ func ParseArguments(args []string) (*PipelineArgs, error) {
 	flagSet.Var(&argMap, "arg", "Provide pre-available arguments for use in pipeline steps. This argument can be provided multiple times. Format: '-arg={key}={value}")
 	flagSet.BoolVar(&noStdinPrompt, "no-stdin", false, "If this flag is provided, then the CLI pipeline will not request absent arguments via stdin")
 	flagSet.StringVar(&pathOverride, "path", "", "Providing the path argument overrides the $PWD of the pipeline for generation")
-	flagSet.StringVar(&version, "version", "latest", "The version is provided by the 'shipwright' command, however if only using 'go run', it can be provided here")
+	flagSet.StringVar(&version, "version", "latest", "The version is provided by the 'scribe' command, however if only using 'go run', it can be provided here")
 	flagSet.StringVar(&buildID, "build-id", stringutil.Random(12), "A unique identifier typically assigned by a build system. Defaults to a random string if no build ID is provided")
 	flagSet.StringVar(&state, "state", defaultState.String(), "A URI that refers to a state file or directory where state between steps is stored. Must include a protocol, like 'file://', 'gcs://', or 's3://'")
 
@@ -126,13 +126,13 @@ func ParseArguments(args []string) (*PipelineArgs, error) {
 }
 
 var examples = `Examples:
-  shipwright # Runs the pipeline located in $PWD
-  shipwright path/to/pipeline # Runs the pipeline located in path/to/pipeline
-  shipwright -mode=drone path/to/pipeline # Generates a Drone config using the pipeline defined at the specified path`
+  scribe # Runs the pipeline located in $PWD
+  scribe path/to/pipeline # Runs the pipeline located in path/to/pipeline
+  scribe -mode=drone path/to/pipeline # Generates a Drone config using the pipeline defined at the specified path`
 
 func usage(f *flag.FlagSet) func() {
 	return func() {
-		fmt.Fprintln(f.Output(), "Usage of shipwright: shipwright [-arg=...] [-mode=run|drone|docker] [path]")
+		fmt.Fprintln(f.Output(), "Usage of scribe: scribe [-arg=...] [-mode=run|drone|docker] [path]")
 		f.PrintDefaults()
 		fmt.Fprintln(f.Output(), examples)
 		if f.ErrorHandling() == flag.ExitOnError {

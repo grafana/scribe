@@ -22,13 +22,13 @@ func Build() error {
 	// go build \
 	// -ldflags \
 	// "-X main.Version=$(git describe --tags --dirty --always)" \
-	// -o bin/shipwright ./plumbing/cmd
+	// -o bin/scribe ./plumbing/cmd
 
 	fmt.Println("building version", version)
 	return sh.Run("go",
 		"build",
 		"-ldflags", fmt.Sprintf("-X main.Version=%s", version),
-		"-o", "./bin/shipwright",
+		"-o", "./bin/scribe",
 		"./plumbing/cmd",
 	)
 }

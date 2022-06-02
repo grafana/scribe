@@ -1,9 +1,9 @@
 package fs
 
-import "github.com/grafana/shipwright/plumbing/pipeline"
+import "github.com/grafana/scribe/plumbing/pipeline"
 
 // FileHasChanged creates a checksum for the file "file" and stores it.
-// If the checksum does not exist in the shipwright key store, then it will return false.
+// If the checksum does not exist in the scribe key store, then it will return false.
 func FileHasChanged(file string) pipeline.CacheCondition {
 	return func() bool {
 		return false

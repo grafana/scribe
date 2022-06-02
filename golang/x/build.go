@@ -5,7 +5,7 @@ import (
 	"io"
 	"os/exec"
 
-	swexec "github.com/grafana/shipwright/exec"
+	swexec "github.com/grafana/scribe/exec"
 )
 
 type BuildOpts struct {

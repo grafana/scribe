@@ -1,11 +1,11 @@
-package shipwright_test
+package scribe_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/grafana/shipwright"
-	"github.com/grafana/shipwright/plumbing/pipeline"
+	"github.com/grafana/scribe"
+	"github.com/grafana/scribe/plumbing/pipeline"
 )
 
 func TestSub(t *testing.T) {
@@ -18,11 +18,11 @@ func TestSub(t *testing.T) {
 		)
 
 		// In this test case we're not providing ensurer data because we are not running 'Done'.
-		sw := shipwright.NewWithClient(testOpts, ens)
+		sw := scribe.NewWithClient(testOpts, ens)
 
 		sw.Run(pipeline.NoOpStep.WithName("step 1"), pipeline.NoOpStep.WithName("step 2"))
 
-		sf := func(sw *shipwright.Shipwright) {
+		sf := func(sw *scribe.Scribe) {
 			sw.Run(pipeline.NoOpStep.WithName("step 3"))
 			sw.Run(pipeline.NoOpStep.WithName("step 4"), pipeline.NoOpStep.WithName("step 5"))
 		}
@@ -44,11 +44,11 @@ func TestSub(t *testing.T) {
 		)
 
 		// In this test case we're not providing ensurer data because we are not running 'Done'.
-		sw := shipwright.NewWithClient(testOpts, ens)
+		sw := scribe.NewWithClient(testOpts, ens)
 
 		sw.Run(pipeline.NoOpStep.WithName("step 1"), pipeline.NoOpStep.WithName("step 2"))
 
-		sf := func(sw *shipwright.Shipwright) {
+		sf := func(sw *scribe.Scribe) {
 			sw.Parallel(pipeline.NoOpStep.WithName("step 3"), pipeline.NoOpStep.WithName("step 4"))
 			sw.Run(pipeline.NoOpStep.WithName("step 5"))
 		}
@@ -71,9 +71,9 @@ func TestSub(t *testing.T) {
 		)
 
 		// In this test case we're not providing ensurer data because we are not running 'Done'.
-		sw := shipwright.NewMultiWithClient(testOpts, ens)
+		sw := scribe.NewMultiWithClient(testOpts, ens)
 
-		mf := func(sw *shipwright.Shipwright) {
+		mf := func(sw *scribe.Scribe) {
 			sw.Run(pipeline.NoOpStep.WithName("step 1"), pipeline.NoOpStep.WithName("step 2"))
 		}
 
@@ -83,7 +83,7 @@ func TestSub(t *testing.T) {
 			sw.New("test 1", mf),
 		)
 
-		sw.Sub(func(sw *shipwright.ShipwrightMulti) {
+		sw.Sub(func(sw *scribe.ScribeMulti) {
 			sw.Run(
 				sw.New("test 2", mf),
 				sw.New("test 3", mf),

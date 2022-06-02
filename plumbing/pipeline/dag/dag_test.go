@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/grafana/shipwright/plumbing/pipeline/dag"
-	"github.com/grafana/shipwright/plumbing/testutil"
+	"github.com/grafana/scribe/plumbing/pipeline/dag"
+	"github.com/grafana/scribe/plumbing/testutil"
 )
 
 func EnsureNodesExist[T any](t *testing.T, nodes []*dag.Node[T], ids ...int64) {

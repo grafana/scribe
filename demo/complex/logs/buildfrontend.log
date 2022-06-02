@@ -10,27 +10,27 @@ Built at: 03/09/2022 1:55:23 PM
                                          index.html  370 bytes                                                [emitted]
                                           module.js   9.79 KiB                                        module                   module
                                       module.js.map   7.76 KiB                                        module  [dev]            module
-       panels/shipwright-build-list-panel/module.js   12.7 KiB     panels/shipwright-build-list-panel/module  [emitted]        panels/shipwright-build-list-panel/module
-   panels/shipwright-build-list-panel/module.js.map   12.8 KiB     panels/shipwright-build-list-panel/module  [emitted] [dev]  panels/shipwright-build-list-panel/module
-    panels/shipwright-pipeline-list-panel/module.js   26.4 KiB  panels/shipwright-pipeline-list-panel/module  [emitted]        panels/shipwright-pipeline-list-panel/module
-panels/shipwright-pipeline-list-panel/module.js.map   26.1 KiB  panels/shipwright-pipeline-list-panel/module  [emitted] [dev]  panels/shipwright-pipeline-list-panel/module
+       panels/scribe-build-list-panel/module.js   12.7 KiB     panels/scribe-build-list-panel/module  [emitted]        panels/scribe-build-list-panel/module
+   panels/scribe-build-list-panel/module.js.map   12.8 KiB     panels/scribe-build-list-panel/module  [emitted] [dev]  panels/scribe-build-list-panel/module
+    panels/scribe-pipeline-list-panel/module.js   26.4 KiB  panels/scribe-pipeline-list-panel/module  [emitted]        panels/scribe-pipeline-list-panel/module
+panels/scribe-pipeline-list-panel/module.js.map   26.1 KiB  panels/scribe-pipeline-list-panel/module  [emitted] [dev]  panels/scribe-pipeline-list-panel/module
 Entrypoint module = module.js module.js.map
-Entrypoint panels/shipwright-build-list-panel/module = panels/shipwright-build-list-panel/module.js panels/shipwright-build-list-panel/module.js.map
-Entrypoint panels/shipwright-pipeline-list-panel/module = panels/shipwright-pipeline-list-panel/module.js panels/shipwright-pipeline-list-panel/module.js.map
-[../node_modules/tslib/tslib.es6.js] 10 KiB {panels/shipwright-pipeline-list-panel/module}
-[./components/BuildCard.tsx] 1.46 KiB {panels/shipwright-build-list-panel/module} [built]
-[./components/StatusIndicators.tsx] 1.41 KiB {panels/shipwright-pipeline-list-panel/module}
+Entrypoint panels/scribe-build-list-panel/module = panels/scribe-build-list-panel/module.js panels/scribe-build-list-panel/module.js.map
+Entrypoint panels/scribe-pipeline-list-panel/module = panels/scribe-pipeline-list-panel/module.js panels/scribe-pipeline-list-panel/module.js.map
+[../node_modules/tslib/tslib.es6.js] 10 KiB {panels/scribe-pipeline-list-panel/module}
+[./components/BuildCard.tsx] 1.46 KiB {panels/scribe-build-list-panel/module} [built]
+[./components/StatusIndicators.tsx] 1.41 KiB {panels/scribe-pipeline-list-panel/module}
 [./config/Loki.tsx] 735 bytes {module}
 [./configctrl/config.ts] 1.08 KiB {module}
 [./module.ts] 311 bytes {module}
-[./panels/shipwright-build-list-panel/Panel.tsx] 2.87 KiB {panels/shipwright-build-list-panel/module}
-[./panels/shipwright-build-list-panel/module.ts] 475 bytes {panels/shipwright-build-list-panel/module}
-[./panels/shipwright-pipeline-list-panel/Panel.tsx] 3.23 KiB {panels/shipwright-pipeline-list-panel/module} [built]
-[./panels/shipwright-pipeline-list-panel/module.ts] 179 bytes {panels/shipwright-pipeline-list-panel/module}
-[@grafana/data] external "@grafana/data" 42 bytes {module} {panels/shipwright-build-list-panel/module} {panels/shipwright-pipeline-list-panel/module}
+[./panels/scribe-build-list-panel/Panel.tsx] 2.87 KiB {panels/scribe-build-list-panel/module}
+[./panels/scribe-build-list-panel/module.ts] 475 bytes {panels/scribe-build-list-panel/module}
+[./panels/scribe-pipeline-list-panel/Panel.tsx] 3.23 KiB {panels/scribe-pipeline-list-panel/module} [built]
+[./panels/scribe-pipeline-list-panel/module.ts] 179 bytes {panels/scribe-pipeline-list-panel/module}
+[@grafana/data] external "@grafana/data" 42 bytes {module} {panels/scribe-build-list-panel/module} {panels/scribe-pipeline-list-panel/module}
 [@grafana/runtime] external "@grafana/runtime" 42 bytes {module}
-[@grafana/ui] external "@grafana/ui" 42 bytes {module} {panels/shipwright-build-list-panel/module} {panels/shipwright-pipeline-list-panel/module}
-[react] external "react" 42 bytes {module} {panels/shipwright-build-list-panel/module} {panels/shipwright-pipeline-list-panel/module}
+[@grafana/ui] external "@grafana/ui" 42 bytes {module} {panels/scribe-build-list-panel/module} {panels/scribe-pipeline-list-panel/module}
+[react] external "react" 42 bytes {module} {panels/scribe-build-list-panel/module} {panels/scribe-pipeline-list-panel/module}
 Child html-webpack-plugin for "index.html":
          Asset     Size  Chunks  Chunk Names
     index.html  538 KiB       1

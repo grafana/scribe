@@ -7,9 +7,9 @@ import (
 	"math/rand"
 	"path/filepath"
 
-	"github.com/grafana/shipwright"
-	"github.com/grafana/shipwright/plumbing/pipeline"
-	"github.com/grafana/shipwright/plumbing/stringutil"
+	"github.com/grafana/scribe"
+	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/plumbing/stringutil"
 )
 
 var (
@@ -165,7 +165,7 @@ func StepPrintDirectory() pipeline.Step {
 // }
 
 func main() {
-	sw := shipwright.New("state-example")
+	sw := scribe.New("state-example")
 	defer sw.Done()
 
 	sw.Run(
