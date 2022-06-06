@@ -3,6 +3,7 @@ package pipeline
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 
@@ -17,6 +18,7 @@ var (
 )
 
 type StateReader interface {
+	Exists(Argument) (bool, error)
 	GetString(Argument) (string, error)
 	GetInt64(Argument) (int64, error)
 	GetFloat64(Argument) (float64, error)
@@ -29,6 +31,7 @@ type StateWriter interface {
 	SetInt64(Argument, int64) error
 	SetFloat64(Argument, float64) error
 	SetFile(Argument, string) error
+	SetFileReader(Argument, io.Reader) error
 	SetDirectory(Argument, string) error
 }
 
@@ -43,11 +46,38 @@ type State struct {
 	Log      logrus.FieldLogger
 }
 
+// Exists checks the state to see if an argument exists in it.
+// It can return an error in the event of a failure to check the state.
+// An error will not be returned if the state could be read and the value was not in it.
+// If a value for argument was not found, then false and a nil error is returned.
+func (s *State) Exists(arg Argument) (bool, error) {
+	exists, err := s.Handler.Exists(arg)
+	if err != nil {
+		return false, err
+	}
+
+	if exists {
+		return true, nil
+	}
+
+	for _, v := range s.Fallback {
+		exists, err := v.Exists(arg)
+		if err != nil {
+			return false, err
+		}
+		if exists {
+			return exists, nil
+		}
+	}
+
+	return false, nil
+}
+
 // GetString attempts to get the string from the state.
 // If there are Fallback readers and the state returned an error, then it will loop through each one, attempting to retrieve the value from the fallback state reader.
 // If no fallback reader returns the value, then the original error is returned.
 func (s *State) GetString(arg Argument) (string, error) {
-	if !ArgumentTypesEqual(ArgumentTypeString, arg) {
+	if !ArgumentTypesEqual(arg, ArgumentTypeString) {
 		return "", fmt.Errorf("attempted to get string from state for wrong argument type '%s'", arg.Type)
 	}
 
@@ -69,11 +99,20 @@ func (s *State) GetString(arg Argument) (string, error) {
 	return "", err
 }
 
+func (s *State) MustGetString(arg Argument) string {
+	val, err := s.GetString(arg)
+	if err != nil {
+		panic(err)
+	}
+
+	return val
+}
+
 // GetInt64 attempts to get the int64 from the state.
 // If there are Fallback readers and the state returned an error, then it will loop through each one, attempting to retrieve the value from the fallback state reader.
 // If no fallback reader returns the value, then the original error is returned.
 func (s *State) GetInt64(arg Argument) (int64, error) {
-	if !ArgumentTypesEqual(ArgumentTypeInt64, arg) {
+	if !ArgumentTypesEqual(arg, ArgumentTypeInt64) {
 		return 0, fmt.Errorf("attempted to get int64 from state for wrong argument type '%s'", arg.Type)
 	}
 
@@ -95,11 +134,20 @@ func (s *State) GetInt64(arg Argument) (int64, error) {
 	return 0, err
 }
 
+func (s *State) MustGetInt64(arg Argument) int64 {
+	val, err := s.GetInt64(arg)
+	if err != nil {
+		panic(err)
+	}
+
+	return val
+}
+
 // GetFloat64 attempts to get the int64 from the state.
 // If there are Fallback readers and the state returned an error, then it will loop through each one, attempting to retrieve the value from the fallback state reader.
 // If no fallback reader returns the value, then the original error is returned.
 func (s *State) GetFloat64(arg Argument) (float64, error) {
-	if !ArgumentTypesEqual(ArgumentTypeFloat64, arg) {
+	if !ArgumentTypesEqual(arg, ArgumentTypeFloat64) {
 		return 0.0, fmt.Errorf("attempted to get float64 from state for wrong argument type '%s'", arg.Type)
 	}
 
@@ -122,11 +170,20 @@ func (s *State) GetFloat64(arg Argument) (float64, error) {
 	return 0, err
 }
 
+func (s *State) MustGetFloat64(arg Argument) float64 {
+	val, err := s.GetFloat64(arg)
+	if err != nil {
+		panic(err)
+	}
+
+	return val
+}
+
 // GetFile attempts to get the file from the state.
 // If there are Fallback readers and the state returned an error, then it will loop through each one, attempting to retrieve the value from the fallback state reader.
 // If no fallback reader returns the value, then the original error is returned.
 func (s *State) GetFile(arg Argument) (*os.File, error) {
-	if !ArgumentTypesEqual(ArgumentTypeFile, arg) {
+	if !ArgumentTypesEqual(arg, ArgumentTypeFile) {
 		return nil, fmt.Errorf("attempted to get file from state for wrong argument type '%s'", arg.Type)
 	}
 
@@ -148,11 +205,20 @@ func (s *State) GetFile(arg Argument) (*os.File, error) {
 	return nil, err
 }
 
+func (s *State) MustGetFile(arg Argument) *os.File {
+	val, err := s.GetFile(arg)
+	if err != nil {
+		panic(err)
+	}
+
+	return val
+}
+
 // GetDirectory attempts to get the directory from the state.
 // If there are Fallback readers and the state returned an error, then it will loop through each one, attempting to retrieve the value from the fallback state reader.
 // If no fallback reader returns the value, then the original error is returned.
 func (s *State) GetDirectory(arg Argument) (fs.FS, error) {
-	if !ArgumentTypesEqual(ArgumentTypeFS, arg) {
+	if !ArgumentTypesEqual(arg, ArgumentTypeFS, ArgumentTypeUnpackagedFS) {
 		return nil, fmt.Errorf("attempted to get directory from state for wrong argument type '%s'", arg.Type)
 	}
 
@@ -174,9 +240,18 @@ func (s *State) GetDirectory(arg Argument) (fs.FS, error) {
 	return nil, err
 }
 
+func (s *State) MustGetDirectory(arg Argument) fs.FS {
+	val, err := s.GetDirectory(arg)
+	if err != nil {
+		panic(err)
+	}
+
+	return val
+}
+
 // SetString attempts to set the string into the state.
 func (s *State) SetString(arg Argument, value string) error {
-	if !ArgumentTypesEqual(ArgumentTypeString, arg) {
+	if !ArgumentTypesEqual(arg, ArgumentTypeString) {
 		return fmt.Errorf("attempted to set string in state for wrong argument type '%s'", arg.Type)
 	}
 
@@ -185,7 +260,7 @@ func (s *State) SetString(arg Argument, value string) error {
 
 // SetInt64 attempts to set the int64 into the state.
 func (s *State) SetInt64(arg Argument, value int64) error {
-	if !ArgumentTypesEqual(ArgumentTypeInt64, arg) {
+	if !ArgumentTypesEqual(arg, ArgumentTypeInt64) {
 		return fmt.Errorf("attempted to set int64 in state for wrong argument type '%s'", arg.Type)
 	}
 
@@ -194,7 +269,7 @@ func (s *State) SetInt64(arg Argument, value int64) error {
 
 // SetFloat64 attempts to set the float64 into the state.
 func (s *State) SetFloat64(arg Argument, value float64) error {
-	if !ArgumentTypesEqual(ArgumentTypeFloat64, arg) {
+	if !ArgumentTypesEqual(arg, ArgumentTypeFloat64) {
 		return fmt.Errorf("attempted to set float64 in state for wrong argument type '%s'", arg.Type)
 	}
 
@@ -204,17 +279,27 @@ func (s *State) SetFloat64(arg Argument, value float64) error {
 // SetFile attempts to set the file into the state.
 // The "path" argument should be the path to the file to be stored.
 func (s *State) SetFile(arg Argument, path string) error {
-	if !ArgumentTypesEqual(ArgumentTypeFile, arg) {
+	if !ArgumentTypesEqual(arg, ArgumentTypeFile) {
 		return fmt.Errorf("attempted to set file in state for wrong argument type '%s'", arg.Type)
 	}
 
 	return s.Handler.SetFile(arg, path)
 }
 
+// SetFileReader attempts to set the reader into the state as a file.
+// This is an easy way to go from downloading a file to setting it into the state without having to write it to disk first.
+func (s *State) SetFileReader(arg Argument, r io.Reader) error {
+	if !ArgumentTypesEqual(arg, ArgumentTypeFile) {
+		return fmt.Errorf("attempted to set file in state for wrong argument type '%s'", arg.Type)
+	}
+
+	return s.Handler.SetFileReader(arg, r)
+}
+
 // SetDirectory attempts to set the directory into the state.
 // The "path" argument should be the path to the directory to be stored.
 func (s *State) SetDirectory(arg Argument, path string) error {
-	if !ArgumentTypesEqual(ArgumentTypeFS, arg) {
+	if !ArgumentTypesEqual(arg, ArgumentTypeUnpackagedFS, ArgumentTypeFS) {
 		return fmt.Errorf("attempted to set folder in state for wrong argument type '%s'", arg.Type)
 	}
 

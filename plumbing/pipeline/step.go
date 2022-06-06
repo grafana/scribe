@@ -74,6 +74,8 @@ type Step struct {
 
 	// Provides are arguments that this step provides for other arguments to use in their "Arguments" list.
 	ProvidesArgs []Argument
+
+	Environment StepEnv
 }
 
 func (s Step) IsBackground() bool {
@@ -102,6 +104,29 @@ func (s Step) WithOutput(artifact Artifact) Step {
 func (s Step) WithInput(artifact Artifact) Step {
 	return s
 }
+
+// WithEnvVar appends a new EnvVar to the Step's environment, replacing existing EnvVars with the provided key.
+// If an EnvVar is provided with a type of EnvVarArgument, then the argument is also added to this step's required arguments.
+func (s Step) WithEnvVar(key string, val EnvVar) Step {
+	if val.Type == EnvVarArgument {
+		s = s.WithArguments(val.Argument())
+	}
+	return s
+}
+
+// WithEnvironment replaces the entire environment for this step.
+// If an EnvVar is provided with a type of EnvVarArgument, then the argument is also added to this step's required arguments.
+func (s Step) WithEnvironment(env StepEnv) Step {
+	for _, v := range env {
+		if v.Type == EnvVarArgument {
+			s = s.WithArguments(v.Argument())
+		}
+	}
+
+	s.Environment = env
+	return s
+}
+
 func (s Step) ResetArguments() Step {
 	s.Arguments = []Argument{}
 	return s

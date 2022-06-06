@@ -65,3 +65,13 @@ func (s *ArgMapReader) GetDirectory(arg Argument) (fs.FS, error) {
 
 	return os.DirFS(val), nil
 }
+
+func (s *ArgMapReader) Exists(arg Argument) (bool, error) {
+	// defaults.Get only returns an error if no value was found.
+	_, err := s.defaults.Get(arg.Key)
+	if err != nil {
+		return false, nil
+	}
+
+	return true, nil
+}

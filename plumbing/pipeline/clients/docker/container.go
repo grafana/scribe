@@ -14,7 +14,6 @@ import (
 	"github.com/grafana/scribe/docker"
 	"github.com/grafana/scribe/plumbing/cmdutil"
 	"github.com/grafana/scribe/plumbing/pipeline"
-	"github.com/grafana/scribe/plumbing/pipeline/clients/cli"
 	"github.com/grafana/scribe/plumbing/stringutil"
 )
 
@@ -60,8 +59,8 @@ func CreateStepContainer(ctx context.Context, cli client.APIClient, opts CreateS
 // Value retrieves the configuration item the same way the CLI does; by looking in the argmap or by asking via stdin.
 func (c *Client) Value(arg pipeline.Argument) (string, error) {
 	switch arg.Type {
-	case pipeline.ArgumentTypeString:
-		return cli.GetArgValue(c.Opts.Args, arg)
+	//case pipeline.ArgumentTypeString:
+	//	return cli.GetArgValue(c.Opts.Args, arg)
 	case pipeline.ArgumentTypeFS:
 		return GetVolumeValue(c.Opts.Args, arg)
 	}

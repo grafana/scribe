@@ -4,15 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 
-	swfs "github.com/grafana/scribe/fs/x"
 	"github.com/grafana/scribe/plumbing/stringutil"
 	"github.com/grafana/scribe/plumbing/tarfs"
+	swfs "github.com/grafana/scribe/swfs"
 )
 
 type stateValue struct {
@@ -33,8 +34,15 @@ func NewFilesystemState(path string) (*FilesystemState, error) {
 	}, nil
 }
 
-func (f *FilesystemState) fsStatePath() string {
-	return strings.TrimSuffix(f.path, filepath.Ext(f.path))
+// fsStatePath gets the folder that can be used for placing items in the state.
+// It will create the folder if it does not exist.
+func (f *FilesystemState) fsStatePath() (string, error) {
+	path := strings.TrimSuffix(f.path, filepath.Ext(f.path))
+	if err := os.MkdirAll(path, os.FileMode(0755)); err != nil {
+		return "", err
+	}
+
+	return path, nil
 }
 
 func (f *FilesystemState) openr() (*os.File, error) {
@@ -162,9 +170,26 @@ func (f *FilesystemState) GetFile(arg Argument) (*os.File, error) {
 }
 
 func (f *FilesystemState) SetFile(arg Argument, value string) error {
-	path := f.fsStatePath()
+	path, err := f.fsStatePath()
+	if err != nil {
+		return err
+	}
+
 	path = filepath.Join(path, filepath.Base(value))
 	if err := swfs.CopyFile(value, path); err != nil {
+		return err
+	}
+
+	return f.setValue(arg, path)
+}
+
+func (f *FilesystemState) SetFileReader(arg Argument, value io.Reader) error {
+	path, err := f.fsStatePath()
+	if err != nil {
+		return err
+	}
+	path = filepath.Join(path, stringutil.Slugify(arg.Key))
+	if err := swfs.CopyFileReader(value, path); err != nil {
 		return err
 	}
 
@@ -184,7 +209,12 @@ func (f *FilesystemState) GetDirectory(arg Argument) (fs.FS, error) {
 		return nil, err
 	}
 	name := strings.TrimSuffix(path, filepath.Ext(path))
-	destination := filepath.Join(f.fsStatePath(), name, stringutil.Random(8))
+	fsp, err := f.fsStatePath()
+	if err != nil {
+		return nil, err
+	}
+
+	destination := filepath.Join(fsp, name, stringutil.Random(8))
 
 	// Extract the .tar.gz and provide the fs.FS
 	// Ensure that this extraction is unique to this step.
@@ -196,15 +226,52 @@ func (f *FilesystemState) GetDirectory(arg Argument) (fs.FS, error) {
 	return os.DirFS(destination), nil
 }
 
-func (f *FilesystemState) SetDirectory(arg Argument, value string) error {
+func (f *FilesystemState) setDirectory(arg Argument, value string) error {
 	// /tmp/asdf1234/x-asdf1234.tar.gz
-	path := filepath.Join(f.fsStatePath(), fmt.Sprintf("%s-%s.tar.gz", stringutil.Slugify(arg.Key), stringutil.Random(8)))
+	fsp, err := f.fsStatePath()
+	if err != nil {
+		return err
+	}
+
+	path := filepath.Join(fsp, fmt.Sprintf("%s-%s.tar.gz", stringutil.Slugify(arg.Key), stringutil.Random(8)))
 	dir := os.DirFS(value)
 
-	_, err := tarfs.WriteFile(path, dir)
-	if err != nil {
+	if _, err := tarfs.WriteFile(path, dir); err != nil {
 		return fmt.Errorf("error creating tar.gz for directory state: %w", err)
 	}
 
 	return f.setValue(arg, path)
+}
+
+func (f *FilesystemState) setUnpackagedDirectory(arg Argument, value string) error {
+	info, err := os.Stat(value)
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("directory '%s' does not exist", value)
+	}
+
+	return f.setValue(arg, value)
+
+}
+
+func (f *FilesystemState) SetDirectory(arg Argument, value string) error {
+	if arg.Type == ArgumentTypeFS {
+		return f.setDirectory(arg, value)
+	}
+	return f.setUnpackagedDirectory(arg, value)
+}
+
+func (f *FilesystemState) Exists(arg Argument) (bool, error) {
+	_, err := f.getValue(arg)
+	if err == nil {
+		return true, nil
+	}
+
+	if errors.Is(err, ErrorNotFound) {
+		return false, nil
+	}
+
+	return false, err
 }

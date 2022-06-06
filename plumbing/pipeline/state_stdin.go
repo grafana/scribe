@@ -89,3 +89,8 @@ func (s *StdinReader) GetDirectory(arg Argument) (fs.FS, error) {
 
 	return os.DirFS(val), nil
 }
+
+// Since the StdinReader can read any state value, it's better if we assume that if it's being used, then it wasn't found in other reasonable state managers.
+func (s *StdinReader) Exists(arg Argument) (bool, error) {
+	return false, nil
+}

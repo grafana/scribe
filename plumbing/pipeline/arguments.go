@@ -9,17 +9,27 @@ const (
 	ArgumentTypeSecret
 	ArgumentTypeFile
 	ArgumentTypeFS
+	// An ArgumentTypeUnpackagedFS is used for filesystems that are invariably consistent regardless of operating system.
+	// Developers can get around packaging and unpackaging of large directories using this argument type.
+	// Filesystems and directories used with this argument should always exist on every machine. This basically means that they should be available within the source tree.
+	// If this argument type is used for directories outside of the source tree, then expect divergeant behavior between operating systems.
+	ArgumentTypeUnpackagedFS
 )
 
-var argumentTypeStr = []string{"string", "int", "float", "secret", "file", "directory"}
+var argumentTypeStr = []string{"string", "int", "float", "secret", "file", "directory", "unpackaged-directory"}
 
 func (a ArgumentType) String() string {
 	i := int(a)
 	return argumentTypeStr[i]
 }
 
-func ArgumentTypesEqual(argType ArgumentType, arg Argument) bool {
-	return arg.Type == argType
+func ArgumentTypesEqual(arg Argument, argTypes ...ArgumentType) bool {
+	for _, v := range argTypes {
+		if arg.Type == v {
+			return true
+		}
+	}
+	return false
 }
 
 // An Argument is a pre-defined argument that is used in a typical CI pipeline.
@@ -65,6 +75,13 @@ func NewFileArgument(key string) Argument {
 
 func NewDirectoryArgument(key string) Argument {
 	return Argument{
+		Type: ArgumentTypeUnpackagedFS,
+		Key:  key,
+	}
+}
+
+func NewUnpackagedDirectoryArgument(key string) Argument {
+	return Argument{
 		Type: ArgumentTypeFS,
 		Key:  key,
 	}
@@ -79,8 +96,8 @@ func NewSecretArgument(key string) Argument {
 
 // These arguments are the pre-defined ones and are mostly used in events.
 var (
-	ArgumentSourceFS       = NewDirectoryArgument("source")
-	ArgumentDockerSocketFS = NewDirectoryArgument("docker-socket")
+	ArgumentSourceFS       = NewUnpackagedDirectoryArgument("source")
+	ArgumentDockerSocketFS = NewUnpackagedDirectoryArgument("docker-socket")
 
 	// Git arguments
 	ArgumentCommitSHA = NewStringArgument("git-commit-sha")

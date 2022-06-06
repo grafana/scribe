@@ -108,12 +108,38 @@ func (c *Client) runPipeline(ctx context.Context, w pipeline.Walker, wf pipeline
 	return w.WalkSteps(ctx, p.ID, wf)
 }
 
+func (c *Client) prepopulateState(state *pipeline.State) error {
+	log := c.Log
+	for k, v := range KnownValues {
+		exists, err := state.Exists(k)
+		if err != nil {
+			// Even if we encounter an error, we still want to attempt to set the state.
+			// One error that could happen here is if the state is empty.
+			log.WithError(err).Debugln("Failed to read state")
+		}
+
+		if !exists {
+			log.Debugln("State not found for", k.Key, "preopulating value")
+			if err := v(state); err != nil {
+				log.WithError(err).Debugln("Failed to pre-populate state for argument", k.Key)
+			}
+		}
+	}
+
+	return nil
+}
+
 func (c *Client) runSteps(ctx context.Context, steps []pipeline.Step) error {
 	c.Log.Debugln("Running steps in parallel:", len(steps))
 
 	var (
 		wg = syncutil.NewStepWaitGroup()
 	)
+	state := c.Opts.State
+
+	if err := c.prepopulateState(state); err != nil {
+		c.Log.WithError(err).Debugln("Error encountered when pre-populating state...")
+	}
 
 	for _, v := range steps {
 		log := c.Log.WithField("step", v.Name)
