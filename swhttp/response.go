@@ -8,7 +8,7 @@ import (
 
 // HandleResponse is a utility function for standardizing failed responses. It checks the HTTP status code for a success response (200-299), and will attach the body of the response in the event of a non-200 response.
 // This should be called immediately after an HTTP request, rather than checking immediately for the error.
-func HandleResponse(res http.Response, err error) error {
+func HandleResponse(res *http.Response, err error) error {
 	if err != nil {
 		return err
 	}
