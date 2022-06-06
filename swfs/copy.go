@@ -1,4 +1,4 @@
-package x
+package swfs
 
 import (
 	"errors"
@@ -15,6 +15,10 @@ func CopyFile(from, to string) error {
 	}
 	defer r.Close()
 
+	return CopyFileReader(r, to)
+}
+
+func CopyFileReader(r io.Reader, to string) error {
 	info, err := os.Stat(filepath.Dir(to))
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {

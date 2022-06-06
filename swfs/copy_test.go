@@ -1,4 +1,4 @@
-package x_test
+package swfs_test
 
 import (
 	"io"
@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/grafana/scribe/fs/x"
+	"github.com/grafana/scribe/swfs"
 )
 
 func TestCopy(t *testing.T) {
@@ -28,7 +28,7 @@ func TestCopy(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := x.CopyFile(from, to); err != nil {
+	if err := swfs.CopyFile(from, to); err != nil {
 		t.Fatal(err)
 	}
 
