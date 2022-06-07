@@ -203,7 +203,10 @@ func (f *FilesystemState) GetDirectory(arg Argument) (fs.FS, error) {
 	}
 
 	// Path will be the path to the tar.gz containing the directory, ending in `.tar.gz`.
-	path := v.(string)
+	paths := v.(string)
+	p := strings.Split(paths, ":")
+
+	path := p[1]
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -226,6 +229,20 @@ func (f *FilesystemState) GetDirectory(arg Argument) (fs.FS, error) {
 	return os.DirFS(destination), nil
 }
 
+// GetDirectoryString retrieves the original directory path.
+// This can be particularly useful for things stored within the source filesystem.
+func (f *FilesystemState) GetDirectoryString(arg Argument) (string, error) {
+	v, err := f.getValue(arg)
+	if err != nil {
+		return "", err
+	}
+
+	p := strings.Split(v.(string), ":")
+
+	// This path will be the path to the directory and not the .tar.gz.
+	return p[0], nil
+}
+
 func (f *FilesystemState) setDirectory(arg Argument, value string) error {
 	// /tmp/asdf1234/x-asdf1234.tar.gz
 	fsp, err := f.fsStatePath()
@@ -240,7 +257,7 @@ func (f *FilesystemState) setDirectory(arg Argument, value string) error {
 		return fmt.Errorf("error creating tar.gz for directory state: %w", err)
 	}
 
-	return f.setValue(arg, path)
+	return f.setValue(arg, strings.Join([]string{value, path}, ":"))
 }
 
 func (f *FilesystemState) setUnpackagedDirectory(arg Argument, value string) error {

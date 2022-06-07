@@ -24,6 +24,7 @@ type StateReader interface {
 	GetFloat64(Argument) (float64, error)
 	GetFile(Argument) (*os.File, error)
 	GetDirectory(Argument) (fs.FS, error)
+	GetDirectoryString(Argument) (string, error)
 }
 
 type StateWriter interface {
@@ -240,8 +241,43 @@ func (s *State) GetDirectory(arg Argument) (fs.FS, error) {
 	return nil, err
 }
 
+// GetDirectory attempts to get the directory from the state.
+// If there are Fallback readers and the state returned an error, then it will loop through each one, attempting to retrieve the value from the fallback state reader.
+// If no fallback reader returns the value, then the original error is returned.
+func (s *State) GetDirectoryString(arg Argument) (string, error) {
+	if !ArgumentTypesEqual(arg, ArgumentTypeFS, ArgumentTypeUnpackagedFS) {
+		return "", fmt.Errorf("attempted to get directory from state for wrong argument type '%s'", arg.Type)
+	}
+
+	dir, err := s.Handler.GetDirectoryString(arg)
+	if err == nil {
+		return dir, nil
+	}
+
+	for _, v := range s.Fallback {
+		s.Log.WithError(err).Debugln("state returned an error; attempting fallback state")
+		dir, err := v.GetDirectoryString(arg)
+		if err == nil {
+			return dir, nil
+		}
+
+		s.Log.WithError(err).Debugln("fallback state reader returned an error")
+	}
+
+	return "", err
+}
+
 func (s *State) MustGetDirectory(arg Argument) fs.FS {
 	val, err := s.GetDirectory(arg)
+	if err != nil {
+		panic(err)
+	}
+
+	return val
+}
+
+func (s *State) MustGetDirectoryString(arg Argument) string {
+	val, err := s.GetDirectoryString(arg)
 	if err != nil {
 		panic(err)
 	}

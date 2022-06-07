@@ -54,6 +54,15 @@ func (s *StdinReader) GetString(arg Argument) (string, error) {
 	return val, nil
 }
 
+func (s *StdinReader) GetDirectoryString(arg Argument) (string, error) {
+	val, err := s.Get(arg)
+	if err != nil {
+		return "", err
+	}
+
+	return val, nil
+}
+
 func (s *StdinReader) GetInt64(arg Argument) (int64, error) {
 	val, err := s.Get(arg)
 	if err != nil {
