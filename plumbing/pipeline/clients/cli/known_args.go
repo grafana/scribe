@@ -65,7 +65,7 @@ func setSourceFS(state *pipeline.State) error {
 
 func setBuildID(state *pipeline.State) error {
 	r := stringutil.Random(8)
-	return state.SetDirectory(pipeline.ArgumentBuildID, r)
+	return state.SetString(pipeline.ArgumentBuildID, r)
 }
 
 // KnownValues are URL values that we know how to retrieve using the command line.

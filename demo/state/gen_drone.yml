@@ -9,7 +9,7 @@ platform:
 
 steps:
 - name: builtin-compile-pipeline
-  image: grafana/scribe:go-latest
+  image: grafana/shipwright:go-latest
   command:
   - go
   - build
@@ -25,7 +25,7 @@ steps:
     path: /var/scribe
 
 - name: test-1
-  image: grafana/scribe:latest
+  image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=0 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/state
   volumes:

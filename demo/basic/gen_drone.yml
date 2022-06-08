@@ -9,7 +9,7 @@ platform:
 
 steps:
 - name: builtin-compile-pipeline
-  image: grafana/scribe:go-latest
+  image: grafana/shipwright:go-latest
   command:
   - go
   - build
@@ -25,7 +25,7 @@ steps:
     path: /var/scribe
 
 - name: install-frontend-dependencies
-  image: grafana/scribe:latest
+  image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=0 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/basic
   volumes:
@@ -37,7 +37,7 @@ steps:
   - builtin-compile-pipeline
 
 - name: install-backend-dependencies
-  image: grafana/scribe:latest
+  image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/basic
   volumes:
@@ -49,7 +49,7 @@ steps:
   - install-frontend-dependencies
 
 - name: write-version-file
-  image: grafana/scribe:latest
+  image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=2 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/basic
   volumes:
@@ -61,7 +61,7 @@ steps:
   - install-backend-dependencies
 
 - name: compile-backend
-  image: grafana/scribe:latest
+  image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=6 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/basic
   volumes:
@@ -73,7 +73,7 @@ steps:
   - write-version-file
 
 - name: compile-frontend
-  image: grafana/scribe:latest
+  image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=7 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/basic
   volumes:
@@ -85,7 +85,7 @@ steps:
   - compile-backend
 
 - name: build-docker-image
-  image: grafana/scribe:latest
+  image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=8 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/basic
   volumes:
@@ -99,7 +99,7 @@ steps:
   - compile-frontend
 
 - name: publish
-  image: grafana/scribe:latest
+  image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=12 -arg=gcs-publish-key=$secret-gcs-publish-key -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/basic
   environment:

@@ -78,7 +78,7 @@ func (s *State) Exists(arg Argument) (bool, error) {
 // If there are Fallback readers and the state returned an error, then it will loop through each one, attempting to retrieve the value from the fallback state reader.
 // If no fallback reader returns the value, then the original error is returned.
 func (s *State) GetString(arg Argument) (string, error) {
-	if !ArgumentTypesEqual(arg, ArgumentTypeString) {
+	if !ArgumentTypesEqual(arg, ArgumentTypeString, ArgumentTypeSecret) {
 		return "", fmt.Errorf("attempted to get string from state for wrong argument type '%s'", arg.Type)
 	}
 
