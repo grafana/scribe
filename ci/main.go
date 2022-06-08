@@ -30,9 +30,9 @@ func main() {
 
 	sw.Run(
 		sw.New("publish docker images", func(sw *scribe.Scribe) {
-			sw.When(
-				pipeline.GitTagEvent(pipeline.GitTagFilters{}),
-			)
+			// sw.When(
+			// 	pipeline.GitTagEvent(pipeline.GitTagFilters{}),
+			// )
 
 			login := docker.Login(
 				pipeline.NewSecretArgument("docker_username"),
