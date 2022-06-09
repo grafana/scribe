@@ -23,6 +23,7 @@ type CommandOpts struct {
 	// State is an optional argument that is supplied as '-state'. It is a path to the JSON state file which allows steps to share data.
 	State string
 	// StateArgs pre-populate the state for a specific step. These strings can include references to environment variables using $.
+	// Environment variables are left as-is and are not substituted.
 	StateArgs map[string]string
 }
 
@@ -59,7 +60,7 @@ func StepCommand(c pipeline.Configurer, opts CommandOpts) ([]string, error) {
 
 	if len(opts.StateArgs) != 0 {
 		for k, v := range opts.StateArgs {
-			args = append(args, "-state-%s=%s", k, v)
+			args = append(args, fmt.Sprintf("-arg=%s=%s", k, v))
 		}
 	}
 

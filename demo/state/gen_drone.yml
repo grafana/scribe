@@ -24,7 +24,7 @@ steps:
   - name: scribe
     path: /var/scribe
 
-- name: test-1
+- name: create-random-int64
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=0 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/state
@@ -36,8 +36,8 @@ steps:
   depends_on:
   - builtin-compile-pipeline
 
-- name: test-2
-  image: test
+- name: create-random-float64
+  image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/state
   volumes:
@@ -46,7 +46,103 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - test-1
+  - create-random-int64
+
+- name: create-random-string
+  image: grafana/shipwright:latest
+  commands:
+  - /var/scribe/pipeline -step=2 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/state
+  volumes:
+  - name: scribe
+    path: /var/scribe
+  - name: scribe-state
+    path: /var/scribe-state
+  depends_on:
+  - create-random-float64
+
+- name: store-file
+  image: grafana/shipwright:latest
+  commands:
+  - /var/scribe/pipeline -step=3 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/state
+  volumes:
+  - name: scribe
+    path: /var/scribe
+  - name: scribe-state
+    path: /var/scribe-state
+  depends_on:
+  - create-random-string
+
+- name: store-directory
+  image: grafana/shipwright:latest
+  commands:
+  - /var/scribe/pipeline -step=4 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/state
+  volumes:
+  - name: scribe
+    path: /var/scribe
+  - name: scribe-state
+    path: /var/scribe-state
+  depends_on:
+  - store-file
+
+- name: print-random-int64
+  image: grafana/shipwright:latest
+  commands:
+  - /var/scribe/pipeline -step=10 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/state
+  volumes:
+  - name: scribe
+    path: /var/scribe
+  - name: scribe-state
+    path: /var/scribe-state
+  depends_on:
+  - store-directory
+
+- name: print-random-float64
+  image: grafana/shipwright:latest
+  commands:
+  - /var/scribe/pipeline -step=11 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/state
+  volumes:
+  - name: scribe
+    path: /var/scribe
+  - name: scribe-state
+    path: /var/scribe-state
+  depends_on:
+  - print-random-int64
+
+- name: print-random-string
+  image: grafana/shipwright:latest
+  commands:
+  - /var/scribe/pipeline -step=12 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/state
+  volumes:
+  - name: scribe
+    path: /var/scribe
+  - name: scribe-state
+    path: /var/scribe-state
+  depends_on:
+  - print-random-float64
+
+- name: print-file
+  image: grafana/shipwright:latest
+  commands:
+  - /var/scribe/pipeline -step=13 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/state
+  volumes:
+  - name: scribe
+    path: /var/scribe
+  - name: scribe-state
+    path: /var/scribe-state
+  depends_on:
+  - print-random-string
+
+- name: print-directory
+  image: grafana/shipwright:latest
+  commands:
+  - /var/scribe/pipeline -step=14 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/state
+  volumes:
+  - name: scribe
+    path: /var/scribe
+  - name: scribe-state
+    path: /var/scribe-state
+  depends_on:
+  - print-file
 
 volumes:
 - name: scribe

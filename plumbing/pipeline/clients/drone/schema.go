@@ -27,18 +27,24 @@ func secretEnv(key string) string {
 // HandleSecrets handles the different 'Secret' arguments that are defined in the pipeline step.
 // Secrets are given a generated value and placed in the 'environment', not a user-defined one. That value is then used when the pipeline attempts to retrieve the value in the argument.
 // String arguments are already provided in the command line arguments when `cmdutil.StepCommand'
-func HandleSecrets(c pipeline.Configurer, step pipeline.Step) map[string]*yaml.Variable {
-	env := map[string]*yaml.Variable{}
+func HandleSecrets(c pipeline.Configurer, step pipeline.Step) (map[string]*yaml.Variable, map[string]string) {
+	var (
+		env  = make(map[string]*yaml.Variable)
+		args = make(map[string]string)
+	)
+
 	for _, arg := range step.Arguments {
+		name := secretEnv(arg.Key)
 		switch arg.Type {
 		case pipeline.ArgumentTypeSecret:
-			env[secretEnv(arg.Key)] = &yaml.Variable{
+			env[name] = &yaml.Variable{
 				Secret: arg.Key,
 			}
+			args[arg.Key] = secretEnv(name)
 		}
 	}
 
-	return env
+	return env, args
 }
 
 func stepVolumes(c pipeline.Configurer, step pipeline.Step) []*yaml.VolumeMount {
@@ -76,9 +82,9 @@ func NewStep(c pipeline.Configurer, path, state string, step pipeline.Step) (*ya
 		name    = stringutil.Slugify(step.Name)
 		deps    = make([]string, len(step.Dependencies))
 		image   = step.Image
-		env     = map[string]*yaml.Variable{}
 		volumes = stepVolumes(c, step)
 	)
+	env, args := HandleSecrets(c, step)
 
 	for i, v := range step.Dependencies {
 		deps[i] = stringutil.Slugify(v.Name)
@@ -90,13 +96,12 @@ func NewStep(c pipeline.Configurer, path, state string, step pipeline.Step) (*ya
 		Step:             step,
 		BuildID:          "$DRONE_BUILD_NUMBER",
 		State:            state,
+		StateArgs:        args,
 	})
 
 	if err != nil {
 		return nil, err
 	}
-
-	env = combineVariables(env, HandleSecrets(c, step))
 
 	var cmds []string
 
