@@ -99,7 +99,7 @@ func (i Image) PushStep(sw *scribe.Scribe) pipeline.Step {
 			return err
 		}
 
-		opts.Logger.Infoln("Pushing", tag, "with creds", auth)
+		opts.Logger.Infoln("Pushing", tag)
 		return docker.Push(ctx, docker.PushOpts{
 			Name:      tag,
 			Registry:  plumbing.DefaultRegistry(),
