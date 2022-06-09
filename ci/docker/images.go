@@ -116,7 +116,7 @@ func (i Image) PushStep(sw *scribe.Scribe) pipeline.Step {
 
 // ScribeImage has to be built before its derivitive images.
 var ScribeImage = Image{
-	Name:       "scribe",
+	Name:       "",
 	Dockerfile: "./ci/docker/scribe.Dockerfile",
 	Context:    ".",
 }

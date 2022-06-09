@@ -5,10 +5,10 @@ COPY . .
 RUN go build \
     -ldflags \
     "-X main.Version=$(git describe --tags --dirty --always)" \
-    -o bin/shipwright ./plumbing/cmd
+    -o bin/scribe ./plumbing/cmd
 
 FROM alpine:edge
-COPY --from=builder /app/bin/shipwright /bin/shipwright
+COPY --from=builder /app/bin/scribe /bin/scribe
 RUN apk update && apk add --no-cache bash go
 
-WORKDIR /var/shipwright
+WORKDIR /var/scribe
