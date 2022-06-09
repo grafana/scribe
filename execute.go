@@ -83,6 +83,7 @@ func executeWithSteps(
 			}
 			collection = c
 		}
+
 		return ef(ctx, collection)
 	}
 }
@@ -109,6 +110,9 @@ func execute(ctx context.Context, collection *pipeline.Collection, name string, 
 
 	// Wrap with signals watching. If the user submits a SIGTERM/SIGINT/SIGKILL, this function will catch it and return an error.
 	wrapped := executeWithSignals(ef)
+
+	// If the user supplies a -step argument, reduce the collection
+	wrapped = executeWithSteps(opts.Args, name, n, ef)
 
 	// Add a root tracing span to the context, and end the span when the executeFunc is done.
 	wrapped = executeWithTracing(opts.Tracer, wrapped)
