@@ -1,4 +1,4 @@
-package docker
+package main
 
 import (
 	"context"
@@ -12,7 +12,7 @@ var (
 	ArgumentDockerAuthToken = pipeline.NewStringArgument("docker-auth-token")
 )
 
-func Login(username, password pipeline.Argument) pipeline.Step {
+func StepDockerLogin(username, password pipeline.Argument) pipeline.Step {
 	return pipeline.NewStep(func(ctx context.Context, opts pipeline.ActionOpts) error {
 		u, err := opts.State.GetString(username)
 		if err != nil {

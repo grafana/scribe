@@ -144,10 +144,11 @@ func (c *Client) runSteps(ctx context.Context, steps []pipeline.Step) error {
 	for _, v := range steps {
 		log := c.Log.WithField("step", v.Name)
 		wg.Add(v, pipeline.ActionOpts{
-			Path:   c.Opts.Args.Path,
-			State:  c.Opts.State,
-			Tracer: c.Opts.Tracer,
-			Logger: log,
+			Path:    c.Opts.Args.Path,
+			State:   c.Opts.State,
+			Tracer:  c.Opts.Tracer,
+			Version: c.Opts.Version,
+			Logger:  log,
 		})
 	}
 

@@ -40,6 +40,9 @@ type ActionOpts struct {
 
 	// Path is the path to the pipeline, typically provided via the `-path` argument, but automatically supplied if using the scribe CLI.
 	Path string
+	// Version refers to the version of Scribe that was used to run the pipeline.
+	// This value is set using the `-version` argument when running a pipeline, which is automatically set by the `scribe` command.
+	Version string
 }
 
 // A Step stores a Action and a name for use in pipelines.

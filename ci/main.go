@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/grafana/scribe"
-	"github.com/grafana/scribe/ci/docker"
 	"github.com/grafana/scribe/golang"
 	"github.com/grafana/scribe/plumbing"
 	"github.com/grafana/scribe/plumbing/pipeline"
@@ -20,11 +19,12 @@ func main() {
 		sw.New("test and build", func(sw *scribe.Scribe) {
 			// Test the Golang code and ensure that the build steps
 			sw.Run(
+				StepGetVersion(sw.Version).WithName("get version"),
 				golang.Test(sw, "./...").WithName("test"),
-				docker.ScribeImage.BuildStep(sw).WithName("build scribe docker image"),
+				StepBuildImage(sw.Version, ScribeImage).WithName("build scribe docker image"),
 			)
 
-			sw.Run(docker.BuildSteps(sw, docker.Images)...)
+			sw.Run(BuildSteps(sw.Version, Images)...)
 		}),
 	)
 
@@ -34,19 +34,22 @@ func main() {
 			// 	pipeline.GitTagEvent(pipeline.GitTagFilters{}),
 			// )
 
-			login := docker.Login(
+			login := StepDockerLogin(
 				pipeline.NewSecretArgument("docker_username"),
 				pipeline.NewSecretArgument("docker_password"),
 			).
 				WithName("docker login").
 				WithImage(plumbing.SubImage("docker", sw.Version))
 
-			sw.Run(login)
+			sw.Run(
+				login,
+				StepGetVersion(sw.Version).WithName("get version"),
+			)
 
-			sw.Run(docker.BuildSteps(sw, docker.Images)...)
-			sw.Run(docker.ListImages().WithName("list images"))
-			sw.Run(docker.ScribeImage.PushStep(sw).WithName("push scribe docker image"))
-			sw.Run(docker.PushSteps(sw, docker.Images)...)
+			sw.Run(BuildSteps(sw.Version, Images)...)
+			sw.Run(ListImages().WithName("list images"))
+			sw.Run(StepPushImage(sw.Version, ScribeImage).WithName("push scribe docker image"))
+			sw.Run(PushSteps(sw.Version, Images)...)
 		}),
 	)
 }

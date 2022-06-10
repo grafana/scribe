@@ -26,11 +26,15 @@ type CommandOpts struct {
 	// StateArgs pre-populate the state for a specific step. These strings can include references to environment variables using $.
 	// Environment variables are left as-is and are not substituted.
 	StateArgs map[string]string
+
+	// Version sets the `-version` argument, which is normally automatically set by the scribe CLI.
+	// This value is typically used to fetch a known good docker image.
+	Version string
 }
 
 // StepCommand returns the command string for running a single step.
 // The path argument can be omitted, which is particularly helpful if the current directory is a pipeline.
-func StepCommand(c pipeline.Configurer, opts CommandOpts) ([]string, error) {
+func StepCommand(opts CommandOpts) ([]string, error) {
 	args := []string{}
 
 	if opts.BuildID != "" {
@@ -43,6 +47,10 @@ func StepCommand(c pipeline.Configurer, opts CommandOpts) ([]string, error) {
 
 	if opts.LogLevel != "" {
 		args = append(args, fmt.Sprintf("-log-level=%s", opts.LogLevel))
+	}
+
+	if opts.Version != "" {
+		args = append(args, fmt.Sprintf("-version=%s", opts.Version))
 	}
 
 	if len(opts.StateArgs) != 0 {

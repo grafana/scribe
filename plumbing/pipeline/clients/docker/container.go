@@ -31,7 +31,7 @@ type CreateStepContainerOpts struct {
 }
 
 func CreateStepContainer(ctx context.Context, cli client.APIClient, opts CreateStepContainerOpts) (*docker.Container, error) {
-	cmd, err := cmdutil.StepCommand(opts.Configurer, cmdutil.CommandOpts{
+	cmd, err := cmdutil.StepCommand(cmdutil.CommandOpts{
 		CompiledPipeline: opts.Binary,
 		Path:             opts.Pipeline,
 		Step:             opts.Step,

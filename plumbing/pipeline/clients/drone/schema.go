@@ -77,7 +77,7 @@ func stepVolumes(c pipeline.Configurer, step pipeline.Step) []*yaml.VolumeMount 
 	return volumes
 }
 
-func NewStep(c pipeline.Configurer, path, state string, step pipeline.Step) (*yaml.Container, error) {
+func NewStep(c pipeline.Configurer, path, state, version string, step pipeline.Step) (*yaml.Container, error) {
 	var (
 		name    = stringutil.Slugify(step.Name)
 		deps    = make([]string, len(step.Dependencies))
@@ -90,7 +90,7 @@ func NewStep(c pipeline.Configurer, path, state string, step pipeline.Step) (*ya
 		deps[i] = stringutil.Slugify(v.Name)
 	}
 
-	cmd, err := cmdutil.StepCommand(c, cmdutil.CommandOpts{
+	cmd, err := cmdutil.StepCommand(cmdutil.CommandOpts{
 		CompiledPipeline: PipelinePath,
 		Path:             path,
 		Step:             step,
@@ -98,6 +98,7 @@ func NewStep(c pipeline.Configurer, path, state string, step pipeline.Step) (*ya
 		State:            state,
 		StateArgs:        args,
 		LogLevel:         "debug",
+		Version:          version,
 	})
 
 	if err != nil {

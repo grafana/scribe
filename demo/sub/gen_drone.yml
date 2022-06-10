@@ -27,7 +27,7 @@ steps:
 - name: step_1
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=7 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/sub
+  - /var/scribe/pipeline -step=7 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/sub
   volumes:
   - name: scribe
     path: /var/scribe
@@ -39,7 +39,7 @@ steps:
 - name: step_2
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=8 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/sub
+  - /var/scribe/pipeline -step=8 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/sub
   volumes:
   - name: scribe
     path: /var/scribe
@@ -51,7 +51,7 @@ steps:
 - name: step_3
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=9 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/sub
+  - /var/scribe/pipeline -step=9 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/sub
   volumes:
   - name: scribe
     path: /var/scribe
@@ -63,7 +63,7 @@ steps:
 - name: step_4
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=13 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/sub
+  - /var/scribe/pipeline -step=13 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/sub
   volumes:
   - name: scribe
     path: /var/scribe
@@ -75,7 +75,7 @@ steps:
 - name: step_5
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=14 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/sub
+  - /var/scribe/pipeline -step=14 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/sub
   volumes:
   - name: scribe
     path: /var/scribe
@@ -87,7 +87,7 @@ steps:
 - name: step_6
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=15 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/sub
+  - /var/scribe/pipeline -step=15 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/sub
   volumes:
   - name: scribe
     path: /var/scribe
@@ -134,7 +134,7 @@ steps:
 - name: sub_step_1
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/sub
+  - /var/scribe/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/sub
   volumes:
   - name: scribe
     path: /var/scribe
@@ -146,7 +146,7 @@ steps:
 - name: sub_step_2
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=3 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/sub
+  - /var/scribe/pipeline -step=3 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/sub
   volumes:
   - name: scribe
     path: /var/scribe
@@ -158,7 +158,7 @@ steps:
 - name: sub_step_3
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=4 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/sub
+  - /var/scribe/pipeline -step=4 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/sub
   volumes:
   - name: scribe
     path: /var/scribe

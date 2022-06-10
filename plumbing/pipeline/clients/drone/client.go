@@ -85,7 +85,7 @@ func (c *Client) StepWalkFunc(log logrus.FieldLogger, s *stepList, state string)
 		for _, v := range steps {
 			log := log.WithField("dependencies", stepsToNames(v.Dependencies))
 			log.Debugf("Processing step '%s'...", v.Name)
-			step, err := NewStep(c, c.Opts.Args.Path, state, v)
+			step, err := NewStep(c, c.Opts.Args.Path, state, c.Opts.Version, v)
 			if err != nil {
 				return err
 			}
@@ -106,8 +106,8 @@ func (c *Client) StepWalkFunc(log logrus.FieldLogger, s *stepList, state string)
 }
 
 var (
-	PipelinePath     = "/var/scribe/pipeline"
-	StatePath        = "/var/scribe-state"
+	PipelinePath = "/var/scribe/pipeline"
+	StatePath    = "/var/scribe-state"
 	ScribeVolume = &yaml.Volume{
 		Name:     "scribe",
 		EmptyDir: &yaml.VolumeEmptyDir{},
