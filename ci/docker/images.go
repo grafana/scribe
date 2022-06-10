@@ -173,7 +173,7 @@ func ListImages() pipeline.Step {
 		}
 
 		for _, v := range images {
-			opts.Logger.Infoln("Got image: %10s | %32v | %10d", v.ID, v.RepoTags, v.Size)
+			opts.Logger.Infof("Got image: %10s | %32v | %10d", v.ID, v.RepoTags, v.Size)
 		}
 
 		return nil
