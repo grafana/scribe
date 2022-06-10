@@ -24,7 +24,7 @@ func Login(username, password pipeline.Argument) pipeline.Step {
 			return err
 		}
 
-		auth := base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf(`{"username": "%s", "password": "%s"}`, u, p)))
+		auth := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf(`{"username": "%s", "password": "%s"}`, u, p)))
 
 		return opts.State.SetString(ArgumentDockerAuthToken, auth)
 	}).
