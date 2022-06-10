@@ -145,6 +145,8 @@ steps:
   image: grafana/shipwright:docker-v0.9.3-15-gc1d7775
   commands:
   - /var/scribe/pipeline -step=14 -arg=docker_username=$secret-docker_username -arg=docker_password=$secret-docker_password -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -arg=docker_username=$secret-$secret-docker_username -arg=docker_password=$secret-$secret-docker_password ./ci
+  - echo $secret-docker_username
+  - echo $secret-docker_password
   environment:
     $secret-docker_password:
       from_secret: docker_password
@@ -314,6 +316,6 @@ depends_on:
 
 ---
 kind: signature
-hmac: b82ce5bb69032e5db8ff19244c1bff517919d80fb24daac05e7ea4e91d5ea923
+hmac: fe7e401a3914b5ffcd124ba852eace8882201d1e4e4a8761b49002790f3d81db
 
 ...
