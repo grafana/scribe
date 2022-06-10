@@ -1,7 +1,7 @@
 ---
 kind: pipeline
 type: docker
-name: complex-pipeline
+name: complex_pipeline
 
 platform:
   os: linux
@@ -36,7 +36,7 @@ steps:
   depends_on:
   - builtin-compile-pipeline
 
-- name: build-backend
+- name: build_backend
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=4 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/complex
@@ -48,7 +48,7 @@ steps:
   depends_on:
   - initalize
 
-- name: build-frontend
+- name: build_frontend
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=5 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/complex
@@ -60,7 +60,7 @@ steps:
   depends_on:
   - initalize
 
-- name: build-documentation
+- name: build_documentation
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=6 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/complex
@@ -72,7 +72,7 @@ steps:
   depends_on:
   - initalize
 
-- name: test-backend
+- name: test_backend
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=8 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/complex
@@ -82,11 +82,11 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - build-backend
-  - build-frontend
-  - build-documentation
+  - build_backend
+  - build_frontend
+  - build_documentation
 
-- name: test-frontend
+- name: test_frontend
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=9 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/complex
@@ -96,11 +96,11 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - build-backend
-  - build-frontend
-  - build-documentation
+  - build_backend
+  - build_frontend
+  - build_documentation
 
-- name: integration-tests:-sqlite
+- name: integration_tests:_sqlite
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=11 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/complex
@@ -110,10 +110,10 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - test-backend
-  - test-frontend
+  - test_backend
+  - test_frontend
 
-- name: integration-tests:-postgres
+- name: integration_tests:_postgres
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=12 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/complex
@@ -123,9 +123,9 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - integration-tests:-sqlite
+  - integration_tests:_sqlite
 
-- name: integration-tests:-mysql
+- name: integration_tests:_mysql
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=13 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/complex
@@ -135,9 +135,9 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - integration-tests:-postgres
+  - integration_tests:_postgres
 
-- name: integration-tests:-mssql
+- name: integration_tests:_mssql
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=14 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/complex
@@ -147,7 +147,7 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - integration-tests:-mysql
+  - integration_tests:_mysql
 
 - name: package
   image: grafana/shipwright:latest
@@ -159,9 +159,9 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - integration-tests:-mssql
+  - integration_tests:_mssql
 
-- name: build-docker-image
+- name: build_docker_image
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=20 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/complex
@@ -173,7 +173,7 @@ steps:
   depends_on:
   - package
 
-- name: publish-documentation
+- name: publish_documentation
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=23 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/complex
@@ -183,9 +183,9 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - build-docker-image
+  - build_docker_image
 
-- name: publish-package
+- name: publish_package
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=24 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/complex
@@ -195,9 +195,9 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - build-docker-image
+  - build_docker_image
 
-- name: publish-docker-image
+- name: publish_docker_image
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=25 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/complex
@@ -207,9 +207,9 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - build-docker-image
+  - build_docker_image
 
-- name: notify-slack
+- name: notify_slack
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=27 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/complex
@@ -219,9 +219,9 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - publish-documentation
-  - publish-package
-  - publish-docker-image
+  - publish_documentation
+  - publish_package
+  - publish_docker_image
 
 services:
 - name: redis
@@ -232,7 +232,7 @@ volumes:
   temp: {}
 - name: scribe-state
   temp: {}
-- name: docker-socket
+- name: docker_socket
   host:
     path: /var/run/docker.sock
 

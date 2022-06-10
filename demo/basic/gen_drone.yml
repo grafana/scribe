@@ -1,7 +1,7 @@
 ---
 kind: pipeline
 type: docker
-name: basic-pipeline
+name: basic_pipeline
 
 platform:
   os: linux
@@ -24,7 +24,7 @@ steps:
   - name: scribe
     path: /var/scribe
 
-- name: install-frontend-dependencies
+- name: install_frontend_dependencies
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=0 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/basic
@@ -36,7 +36,7 @@ steps:
   depends_on:
   - builtin-compile-pipeline
 
-- name: install-backend-dependencies
+- name: install_backend_dependencies
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/basic
@@ -46,9 +46,9 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - install-frontend-dependencies
+  - install_frontend_dependencies
 
-- name: write-version-file
+- name: write_version_file
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=2 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/basic
@@ -58,9 +58,9 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - install-backend-dependencies
+  - install_backend_dependencies
 
-- name: compile-backend
+- name: compile_backend
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=6 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/basic
@@ -70,9 +70,9 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - write-version-file
+  - write_version_file
 
-- name: compile-frontend
+- name: compile_frontend
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=7 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/basic
@@ -82,28 +82,28 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - compile-backend
+  - compile_backend
 
-- name: build-docker-image
+- name: build_docker_image
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=8 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/basic
   volumes:
-  - name: docker-socket
+  - name: docker_socket
     path: /var/run/docker.sock
   - name: scribe
     path: /var/scribe
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - compile-frontend
+  - compile_frontend
 
 - name: publish
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=12 -arg=gcs-publish-key=$secret-gcs-publish-key -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -arg=gcs-publish-key=$secret-$secret-gcs-publish-key ./demo/basic
+  - /var/scribe/pipeline -step=12 -arg=gcs-publish-key=$secret_gcs_publish_key -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -arg=gcs-publish-key=$secret_$secret_gcs_publish_key ./demo/basic
   environment:
-    $secret-gcs-publish-key:
+    $secret_gcs_publish_key:
       from_secret: gcs-publish-key
   volumes:
   - name: scribe
@@ -111,14 +111,14 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - build-docker-image
+  - build_docker_image
 
 volumes:
 - name: scribe
   temp: {}
 - name: scribe-state
   temp: {}
-- name: docker-socket
+- name: docker_socket
   host:
     path: /var/run/docker.sock
 

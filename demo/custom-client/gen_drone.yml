@@ -1,7 +1,7 @@
 ---
 kind: pipeline
 type: docker
-name: custom-client
+name: custom_client
 
 platform:
   os: linux
@@ -24,7 +24,7 @@ steps:
   - name: scribe
     path: /var/scribe
 
-- name: step-1
+- name: step_1
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=0 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/custom-client
@@ -36,7 +36,7 @@ steps:
   depends_on:
   - builtin-compile-pipeline
 
-- name: step-2
+- name: step_2
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/custom-client
@@ -46,9 +46,9 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - step-1
+  - step_1
 
-- name: step-3
+- name: step_3
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=4 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/custom-client
@@ -58,9 +58,9 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - step-2
+  - step_2
 
-- name: step-4
+- name: step_4
   image: grafana/shipwright:latest
   commands:
   - /var/scribe/pipeline -step=5 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/custom-client
@@ -70,14 +70,14 @@ steps:
   - name: scribe-state
     path: /var/scribe-state
   depends_on:
-  - step-2
+  - step_2
 
 volumes:
 - name: scribe
   temp: {}
 - name: scribe-state
   temp: {}
-- name: docker-socket
+- name: docker_socket
   host:
     path: /var/run/docker.sock
 
