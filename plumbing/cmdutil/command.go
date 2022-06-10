@@ -1,10 +1,8 @@
 package cmdutil
 
 import (
-	"errors"
 	"fmt"
 
-	"github.com/grafana/scribe/plumbing"
 	"github.com/grafana/scribe/plumbing/pipeline"
 )
 
@@ -34,24 +32,6 @@ type CommandOpts struct {
 // The path argument can be omitted, which is particularly helpful if the current directory is a pipeline.
 func StepCommand(c pipeline.Configurer, opts CommandOpts) ([]string, error) {
 	args := []string{}
-
-	for _, arg := range opts.Step.Arguments {
-		if arg.Type != pipeline.ArgumentTypeString && arg.Type != pipeline.ArgumentTypeSecret {
-			continue
-		}
-
-		value, err := c.Value(arg)
-		if err != nil {
-			// If it wasn't found by the Configurer, then it's likely going to be provided in the state by another step.
-			// TODO: we could actually check this by searching the pipeline.
-			if errors.Is(err, plumbing.ErrorMissingArgument) {
-				continue
-			}
-			return nil, err
-		}
-
-		args = append(args, fmt.Sprintf("-arg=%s=%s", arg.Key, value))
-	}
 
 	if opts.BuildID != "" {
 		args = append(args, fmt.Sprintf("-build-id=%s", opts.BuildID))

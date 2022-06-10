@@ -217,7 +217,7 @@ steps:
 - name: publish
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=22 -arg=gcp-publish-key=secret_gcp_publish_key -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -arg=gcp-publish-key=$secret_secret_gcp_publish_key ./demo/multi-sub
+  - /var/scribe/pipeline -step=22 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -arg=gcp-publish-key=$secret_secret_gcp_publish_key ./demo/multi-sub
   environment:
     secret_gcp_publish_key:
       from_secret: gcp-publish-key
