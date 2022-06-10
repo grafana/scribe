@@ -298,4 +298,8 @@ volumes:
 depends_on:
 - test-and-build
 
+---
+kind: signature
+hmac: c04a131f39a696fab5632b95e3d72810a0144a8bc66913259622341caad40864
+
 ...
