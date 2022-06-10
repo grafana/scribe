@@ -1,1 +1,1 @@
-./ci/docker/shipwright.Dockerfile
+./ci/docker/scribe.Dockerfile

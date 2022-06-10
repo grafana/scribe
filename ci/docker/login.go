@@ -24,17 +24,7 @@ func Login(username, password pipeline.Argument) pipeline.Step {
 			return err
 		}
 
-		auth := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf(`{"username": "%s", "password": "%s"}`, u, p)))
-
-		// Bro this function (more specifically the one in 'github.com/docker/docker' literally doesn't do ANYTHING.
-		// res, err := swdocker.Login(ctx, types.AuthConfig{
-		// 	Auth:          auth,
-		// 	ServerAddress: r,
-		// })
-
-		// if err != nil {
-		// 	return err
-		// }
+		auth := base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf(`{"username": "%s", "password": "%s"}`, u, p)))
 
 		return opts.State.SetString(ArgumentDockerAuthToken, auth)
 	}).
