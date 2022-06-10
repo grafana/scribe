@@ -70,9 +70,11 @@ func (f *FilesystemState) setValue(arg Argument, value any) error {
 	}
 	r.Close()
 
-	if _, ok := state[arg.Key]; ok {
-		return ErrorKeyExists
-	}
+	// TODO: Do we really want to not allow overriding?
+	// hmm
+	// if _, ok := state[arg.Key]; ok {
+	// 	return ErrorKeyExists
+	// }
 
 	w, err := f.openw()
 	if err != nil {
