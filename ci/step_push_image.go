@@ -30,7 +30,7 @@ func StepPushImage(version string, image Image) pipeline.Step {
 	}
 
 	return pipeline.NewStep(action).
-		WithArguments(pipeline.ArgumentSourceFS, pipeline.ArgumentDockerSocketFS, ArgumentDockerAuthToken).
+		WithArguments(pipeline.ArgumentSourceFS, pipeline.ArgumentDockerSocketFS, ArgumentDockerAuthToken, ArgumentVersion).
 		WithImage(plumbing.SubImage("docker", version))
 }
 
