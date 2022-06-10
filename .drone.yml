@@ -9,7 +9,7 @@ platform:
 
 steps:
 - name: builtin-compile-pipeline
-  image: grafana/shipwright:go-v0.9.3-11-g93a63fa
+  image: grafana/shipwright:go-v0.9.3-15-gc1d7775
   command:
   - go
   - build
@@ -25,7 +25,7 @@ steps:
     path: /var/scribe
 
 - name: test
-  image: grafana/shipwright:go-v0.9.3-11-g93a63fa
+  image: grafana/shipwright:go-v0.9.3-15-gc1d7775
   commands:
   - /var/scribe/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
   volumes:
@@ -37,7 +37,7 @@ steps:
   - builtin-compile-pipeline
 
 - name: build-scribe-docker-image
-  image: grafana/shipwright:docker-v0.9.3-11-g93a63fa
+  image: grafana/shipwright:docker-v0.9.3-15-gc1d7775
   commands:
   - /var/scribe/pipeline -step=2 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
   volumes:
@@ -51,7 +51,7 @@ steps:
   - test
 
 - name: build-git-image
-  image: grafana/shipwright:docker-v0.9.3-11-g93a63fa
+  image: grafana/shipwright:docker-v0.9.3-15-gc1d7775
   commands:
   - /var/scribe/pipeline -step=5 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
   volumes:
@@ -65,7 +65,7 @@ steps:
   - build-scribe-docker-image
 
 - name: build-go-image
-  image: grafana/shipwright:docker-v0.9.3-11-g93a63fa
+  image: grafana/shipwright:docker-v0.9.3-15-gc1d7775
   commands:
   - /var/scribe/pipeline -step=6 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
   volumes:
@@ -79,7 +79,7 @@ steps:
   - build-git-image
 
 - name: build-node-image
-  image: grafana/shipwright:docker-v0.9.3-11-g93a63fa
+  image: grafana/shipwright:docker-v0.9.3-15-gc1d7775
   commands:
   - /var/scribe/pipeline -step=7 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
   volumes:
@@ -93,7 +93,7 @@ steps:
   - build-go-image
 
 - name: build-docker-image
-  image: grafana/shipwright:docker-v0.9.3-11-g93a63fa
+  image: grafana/shipwright:docker-v0.9.3-15-gc1d7775
   commands:
   - /var/scribe/pipeline -step=8 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
   volumes:
@@ -126,7 +126,7 @@ platform:
 
 steps:
 - name: builtin-compile-pipeline
-  image: grafana/shipwright:go-v0.9.3-11-g93a63fa
+  image: grafana/shipwright:go-v0.9.3-15-gc1d7775
   command:
   - go
   - build
@@ -142,7 +142,7 @@ steps:
     path: /var/scribe
 
 - name: docker-login
-  image: grafana/shipwright:docker-v0.9.3-11-g93a63fa
+  image: grafana/shipwright:docker-v0.9.3-15-gc1d7775
   commands:
   - /var/scribe/pipeline -step=14 -arg=docker_username=$secret-docker_username -arg=docker_password=$secret-docker_password -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -arg=docker_username=$secret-$secret-docker_username -arg=docker_password=$secret-$secret-docker_password ./ci
   environment:
@@ -161,7 +161,7 @@ steps:
   - builtin-compile-pipeline
 
 - name: build-git-image
-  image: grafana/shipwright:docker-v0.9.3-11-g93a63fa
+  image: grafana/shipwright:docker-v0.9.3-15-gc1d7775
   commands:
   - /var/scribe/pipeline -step=16 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
   volumes:
@@ -175,7 +175,7 @@ steps:
   - docker-login
 
 - name: build-go-image
-  image: grafana/shipwright:docker-v0.9.3-11-g93a63fa
+  image: grafana/shipwright:docker-v0.9.3-15-gc1d7775
   commands:
   - /var/scribe/pipeline -step=17 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
   volumes:
@@ -189,7 +189,7 @@ steps:
   - build-git-image
 
 - name: build-node-image
-  image: grafana/shipwright:docker-v0.9.3-11-g93a63fa
+  image: grafana/shipwright:docker-v0.9.3-15-gc1d7775
   commands:
   - /var/scribe/pipeline -step=18 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
   volumes:
@@ -203,7 +203,7 @@ steps:
   - build-go-image
 
 - name: build-docker-image
-  image: grafana/shipwright:docker-v0.9.3-11-g93a63fa
+  image: grafana/shipwright:docker-v0.9.3-15-gc1d7775
   commands:
   - /var/scribe/pipeline -step=19 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
   volumes:
@@ -216,8 +216,8 @@ steps:
   depends_on:
   - build-node-image
 
-- name: push-scribe-docker-image
-  image: grafana/shipwright:docker-v0.9.3-11-g93a63fa
+- name: list-images
+  image: grafana/shipwright:v0.9.3-15-gc1d7775
   commands:
   - /var/scribe/pipeline -step=24 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
   volumes:
@@ -230,10 +230,24 @@ steps:
   depends_on:
   - build-docker-image
 
-- name: push-git
-  image: grafana/shipwright:docker-v0.9.3-11-g93a63fa
+- name: push-scribe-docker-image
+  image: grafana/shipwright:docker-v0.9.3-15-gc1d7775
   commands:
   - /var/scribe/pipeline -step=26 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
+  volumes:
+  - name: docker-socket
+    path: /var/run/docker.sock
+  - name: scribe
+    path: /var/scribe
+  - name: scribe-state
+    path: /var/scribe-state
+  depends_on:
+  - list-images
+
+- name: push-git
+  image: grafana/shipwright:docker-v0.9.3-15-gc1d7775
+  commands:
+  - /var/scribe/pipeline -step=28 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
   volumes:
   - name: docker-socket
     path: /var/run/docker.sock
@@ -245,9 +259,9 @@ steps:
   - push-scribe-docker-image
 
 - name: push-go
-  image: grafana/shipwright:docker-v0.9.3-11-g93a63fa
+  image: grafana/shipwright:docker-v0.9.3-15-gc1d7775
   commands:
-  - /var/scribe/pipeline -step=27 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
+  - /var/scribe/pipeline -step=29 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
   volumes:
   - name: docker-socket
     path: /var/run/docker.sock
@@ -259,9 +273,9 @@ steps:
   - push-git
 
 - name: push-node
-  image: grafana/shipwright:docker-v0.9.3-11-g93a63fa
+  image: grafana/shipwright:docker-v0.9.3-15-gc1d7775
   commands:
-  - /var/scribe/pipeline -step=28 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
+  - /var/scribe/pipeline -step=30 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
   volumes:
   - name: docker-socket
     path: /var/run/docker.sock
@@ -273,9 +287,9 @@ steps:
   - push-go
 
 - name: push-docker
-  image: grafana/shipwright:docker-v0.9.3-11-g93a63fa
+  image: grafana/shipwright:docker-v0.9.3-15-gc1d7775
   commands:
-  - /var/scribe/pipeline -step=29 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
+  - /var/scribe/pipeline -step=31 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./ci
   volumes:
   - name: docker-socket
     path: /var/run/docker.sock
@@ -300,6 +314,6 @@ depends_on:
 
 ---
 kind: signature
-hmac: c04a131f39a696fab5632b95e3d72810a0144a8bc66913259622341caad40864
+hmac: b82ce5bb69032e5db8ff19244c1bff517919d80fb24daac05e7ea4e91d5ea923
 
 ...
