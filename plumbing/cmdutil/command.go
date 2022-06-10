@@ -20,6 +20,9 @@ type CommandOpts struct {
 	Path string
 	// BuildID is an optional argument that will be supplied to the 'scribe' command as '-build-id'.
 	BuildID string
+
+	LogLevel string
+
 	// State is an optional argument that is supplied as '-state'. It is a path to the JSON state file which allows steps to share data.
 	State string
 	// StateArgs pre-populate the state for a specific step. These strings can include references to environment variables using $.
@@ -56,6 +59,10 @@ func StepCommand(c pipeline.Configurer, opts CommandOpts) ([]string, error) {
 
 	if opts.State != "" {
 		args = append(args, fmt.Sprintf("-state=%s", opts.State))
+	}
+
+	if opts.LogLevel != "" {
+		args = append(args, fmt.Sprintf("-log-level=%s", opts.LogLevel))
 	}
 
 	if len(opts.StateArgs) != 0 {

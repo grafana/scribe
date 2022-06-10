@@ -97,6 +97,7 @@ func NewStep(c pipeline.Configurer, path, state string, step pipeline.Step) (*ya
 		BuildID:          "$DRONE_BUILD_NUMBER",
 		State:            state,
 		StateArgs:        args,
+		LogLevel:         "debug",
 	})
 
 	if err != nil {
