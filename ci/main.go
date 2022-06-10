@@ -44,6 +44,7 @@ func main() {
 			sw.Run(login)
 
 			sw.Run(docker.BuildSteps(sw, docker.Images)...)
+			sw.Run(docker.ListImages().WithName("list images"))
 			sw.Run(docker.ScribeImage.PushStep(sw).WithName("push scribe docker image"))
 			sw.Run(docker.PushSteps(sw, docker.Images)...)
 		}),

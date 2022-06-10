@@ -164,3 +164,20 @@ func PushSteps(sw *scribe.Scribe, images []Image) []pipeline.Step {
 
 	return steps
 }
+
+func ListImages() pipeline.Step {
+	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
+		images, err := docker.ListImages(ctx)
+		if err != nil {
+			return err
+		}
+
+		for _, v := range images {
+			opts.Logger.Infoln("Got image: %10s | %32v | %10d", v.ID, v.RepoTags, v.Size)
+		}
+
+		return nil
+	}
+
+	return pipeline.NewStep(action).WithArguments(pipeline.ArgumentDockerSocketFS)
+}
