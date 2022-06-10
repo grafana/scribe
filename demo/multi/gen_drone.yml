@@ -27,7 +27,7 @@ steps:
 - name: install-frontend-dependencies
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/multi
+  - /var/scribe/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/multi
   volumes:
   - name: scribe
     path: /var/scribe
@@ -39,7 +39,7 @@ steps:
 - name: install-backend-dependencies
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=2 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/multi
+  - /var/scribe/pipeline -step=2 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/multi
   volumes:
   - name: scribe
     path: /var/scribe
@@ -51,7 +51,7 @@ steps:
 - name: test-backend
   image: grafana/shipwright:go-latest
   commands:
-  - /var/scribe/pipeline -step=5 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/multi
+  - /var/scribe/pipeline -step=5 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/multi
   volumes:
   - name: scribe
     path: /var/scribe
@@ -63,7 +63,7 @@ steps:
 - name: test-frontend
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=6 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/multi
+  - /var/scribe/pipeline -step=6 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/multi
   volumes:
   - name: scribe
     path: /var/scribe
@@ -110,7 +110,7 @@ steps:
 - name: install-frontend-dependencies
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=9 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/multi
+  - /var/scribe/pipeline -step=9 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/multi
   volumes:
   - name: scribe
     path: /var/scribe
@@ -122,7 +122,7 @@ steps:
 - name: install-backend-dependencies
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=10 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/multi
+  - /var/scribe/pipeline -step=10 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/multi
   volumes:
   - name: scribe
     path: /var/scribe
@@ -134,7 +134,7 @@ steps:
 - name: compile-backend
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=13 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/multi
+  - /var/scribe/pipeline -step=13 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/multi
   volumes:
   - name: scribe
     path: /var/scribe
@@ -146,7 +146,7 @@ steps:
 - name: compile-frontend
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=14 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json ./demo/multi
+  - /var/scribe/pipeline -step=14 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug ./demo/multi
   volumes:
   - name: scribe
     path: /var/scribe
@@ -158,7 +158,7 @@ steps:
 - name: publish
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=16 -arg=gcp-publish-key=$secret-gcp-publish-key -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -arg=gcp-publish-key=$secret-$secret-gcp-publish-key ./demo/multi
+  - /var/scribe/pipeline -step=16 -arg=gcp-publish-key=$secret-gcp-publish-key -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -arg=gcp-publish-key=$secret-$secret-gcp-publish-key ./demo/multi
   environment:
     $secret-gcp-publish-key:
       from_secret: gcp-publish-key
