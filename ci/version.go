@@ -40,7 +40,9 @@ func getVersion(ctx context.Context, opts pipeline.ActionOpts) error {
 
 func StepGetVersion(version string) pipeline.Step {
 	return pipeline.NewStep(getVersion).
-		WithArguments(pipeline.ArgumentSourceFS).
+		WithArguments(
+			pipeline.ArgumentSourceFS,
+		).
 		Provides(ArgumentVersion).
 		WithImage(plumbing.SubImage("git", version))
 }
