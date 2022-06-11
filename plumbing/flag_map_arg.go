@@ -15,16 +15,16 @@ func (a *ArgMap) String() string {
 func (a *ArgMap) Set(val string) error {
 	p := strings.Split(val, "=")
 
-	if len(p) != 2 {
+	if len(p) < 2 {
 		return errors.New("invalid value")
 	}
 
 	var (
 		k = p[0]
-		v = p[1]
+		v = p[1:]
 	)
 
-	(*a)[k] = v
+	(*a)[k] = strings.Join(v, "=")
 
 	return nil
 }
