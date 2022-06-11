@@ -101,7 +101,7 @@ steps:
 - name: publish
   image: grafana/shipwright:latest
   commands:
-  - /var/scribe/pipeline -step=12 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest -arg=gcs-publish-key=$secret_secret_gcs_publish_key ./demo/basic
+  - /var/scribe/pipeline -step=12 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest -arg=gcs-publish-key=$secret_gcs_publish_key ./demo/basic
   environment:
     secret_gcs_publish_key:
       from_secret: gcs-publish-key
