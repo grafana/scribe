@@ -40,7 +40,7 @@ func HandleSecrets(c pipeline.Configurer, step pipeline.Step) (map[string]*yaml.
 			env[name] = &yaml.Variable{
 				Secret: arg.Key,
 			}
-			args[arg.Key] = "$" + secretEnv(name)
+			args[arg.Key] = "$" + name
 		}
 	}
 
