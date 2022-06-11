@@ -20,7 +20,6 @@ func StepPushImage(version string, image Image) pipeline.Step {
 		}
 
 		opts.Logger.Infoln("Pushing", tag)
-		opts.Logger.Infoln("Credentials", auth)
 		return docker.Push(ctx, docker.PushOpts{
 			Name:      tag,
 			Registry:  plumbing.DefaultRegistry(),
