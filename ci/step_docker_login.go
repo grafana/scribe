@@ -25,6 +25,7 @@ func StepDockerLogin(username, password pipeline.Argument) pipeline.Step {
 		}
 
 		authString := base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf(`{"username": "%s", "password": "%s"}`, u, p)))
+		opts.Logger.Infoln("with auth", authString)
 		return opts.State.SetString(ArgumentDockerAuthToken, authString)
 	}).
 		WithArguments(username, password, pipeline.ArgumentDockerSocketFS).
