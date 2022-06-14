@@ -10,7 +10,7 @@ platform:
 steps:
 - name: builtin-compile-pipeline
   image: grafana/shipwright:go-latest
-  command:
+  commands:
   - go
   - build
   - -o
@@ -69,7 +69,7 @@ platform:
 steps:
 - name: builtin-compile-pipeline
   image: grafana/shipwright:go-latest
-  command:
+  commands:
   - go
   - build
   - -o
@@ -152,7 +152,7 @@ platform:
 steps:
 - name: builtin-compile-pipeline
   image: grafana/shipwright:go-latest
-  command:
+  commands:
   - go
   - build
   - -o
