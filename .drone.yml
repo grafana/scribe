@@ -360,4 +360,8 @@ trigger:
 depends_on:
 - test_and_build
 
+---
+kind: signature
+hmac: 11d7a61a1407898f5f721dcc8136272b9261717cb41623e4995269c3d2466c8f
+
 ...
