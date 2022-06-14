@@ -10,7 +10,7 @@ platform:
 steps:
 - name: builtin-compile-pipeline
   image: grafana/shipwright:go-v0.9.3-42-gf893689
-  commands:
+  command:
   - go
   - build
   - -o
@@ -139,7 +139,7 @@ platform:
 steps:
 - name: builtin-compile-pipeline
   image: grafana/shipwright:go-v0.9.3-42-gf893689
-  commands:
+  command:
   - go
   - build
   - -o
@@ -252,7 +252,7 @@ steps:
 - name: push_scribe_docker_image
   image: grafana/shipwright:docker-v0.9.3-42-gf893689
   commands:
-  - /var/scribe/pipeline -step=30 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=v0.9.3-42-gf893689 -arg=docker_password=$secret_docker_password -arg=docker_username=$secret_docker_username ./ci
+  - /var/scribe/pipeline -step=30 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=v0.9.3-42-gf893689 -arg=docker_username=$secret_docker_username -arg=docker_password=$secret_docker_password ./ci
   environment:
     secret_docker_password:
       from_secret: docker_password
@@ -328,7 +328,7 @@ steps:
 - name: push_docker
   image: grafana/shipwright:docker-v0.9.3-42-gf893689
   commands:
-  - /var/scribe/pipeline -step=35 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=v0.9.3-42-gf893689 -arg=docker_username=$secret_docker_username -arg=docker_password=$secret_docker_password ./ci
+  - /var/scribe/pipeline -step=35 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=v0.9.3-42-gf893689 -arg=docker_password=$secret_docker_password -arg=docker_username=$secret_docker_username ./ci
   environment:
     secret_docker_password:
       from_secret: docker_password
@@ -362,6 +362,6 @@ depends_on:
 
 ---
 kind: signature
-hmac: 11d7a61a1407898f5f721dcc8136272b9261717cb41623e4995269c3d2466c8f
+hmac: b898913b1d5a96d9b49fb7a574cb3dc4e1848cfe8acfb92c92302acc1becfd24
 
 ...

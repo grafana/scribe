@@ -146,9 +146,9 @@ func (c *Client) newPipeline(opts newPipelineOpts, pipelineOpts pipeline.CommonO
 	})
 
 	build := &yaml.Container{
-		Name:     "builtin-compile-pipeline",
-		Image:    plumbing.SubImage("go", c.Opts.Version),
-		Commands: command.Args,
+		Name:    "builtin-compile-pipeline",
+		Image:   plumbing.SubImage("go", c.Opts.Version),
+		Command: command.Args,
 		Environment: map[string]*yaml.Variable{
 			"GOOS": {
 				Value: "linux",
