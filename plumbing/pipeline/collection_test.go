@@ -10,6 +10,50 @@ import (
 	"github.com/grafana/scribe/plumbing/testutil"
 )
 
+func TestCollectionAddEvents(t *testing.T) {
+	t.Run("AddEvents should add an event to the pipeline", func(t *testing.T) {
+		col := scribe.NewDefaultCollection(pipeline.CommonOpts{
+			Name: "test",
+		})
+		events := []pipeline.Event{
+			pipeline.GitCommitEvent(pipeline.GitCommitFilters{}),
+			pipeline.GitTagEvent(pipeline.GitTagFilters{}),
+		}
+
+		testutil.EnsureError(t, col.AddEvents(scribe.DefaultPipelineID, events...), nil)
+
+		node, err := col.Graph.Node(scribe.DefaultPipelineID)
+		testutil.EnsureError(t, err, nil)
+		if len(node.Value.Events) != len(events) {
+			t.Fatalf("Unexpected number of events in pipeline. Expected '%d', found '%d", len(events), len(node.Value.Events))
+		}
+	})
+	t.Run("Walking a pipeline should have the pipeline events", func(t *testing.T) {
+		col := scribe.NewDefaultCollection(pipeline.CommonOpts{
+			Name: "test",
+		})
+		events := []pipeline.Event{
+			pipeline.GitCommitEvent(pipeline.GitCommitFilters{}),
+			pipeline.GitTagEvent(pipeline.GitTagFilters{}),
+		}
+
+		testutil.EnsureError(t, col.AddEvents(scribe.DefaultPipelineID, events...), nil)
+
+		col.WalkPipelines(context.Background(), func(ctx context.Context, p ...pipeline.Pipeline) error {
+			for _, v := range p {
+				if len(v.Events) != len(events) {
+					t.Fatalf("Expected '%d' events but found '%d' in pipeline", len(events), len(v.Events))
+				}
+			}
+
+			return nil
+		})
+	})
+}
+
+func TestCollectionAddPipeline(t *testing.T) {
+}
+
 func TestCollectionAddSteps(t *testing.T) {
 	t.Run("AddSteps should add steps to the graph", func(t *testing.T) {
 		col := scribe.NewDefaultCollection(pipeline.CommonOpts{

@@ -170,8 +170,9 @@ func (c *Collection) AddEvents(pipelineID int64, events ...Event) error {
 		return err
 	}
 
-	node.Value.Events = append(node.Value.Events, events...)
-
+	pipeline := node.Value
+	pipeline.Events = append(node.Value.Events, events...)
+	node.Value = pipeline
 	return nil
 }
 
@@ -345,7 +346,7 @@ func (c *Collection) ByName(ctx context.Context, name string) ([]Step, error) {
 // }
 
 // NewCollectinoWithSteps creates a new Collection with a single pipeline from a list of Steps.
-func NewCollectinoWithSteps(pipelineName string, steps ...StepList) (*Collection, error) {
+func NewCollectionWithSteps(pipelineName string, steps ...StepList) (*Collection, error) {
 	var (
 		col       = NewCollection()
 		id  int64 = 1

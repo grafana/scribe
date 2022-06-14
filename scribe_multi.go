@@ -142,13 +142,6 @@ func (s *ScribeMulti) Done() {
 	}
 }
 
-// When allows users to define when this pipeline is executed, especially in the remote environment.
-func (s *ScribeMulti) When(events ...pipeline.Event) {
-	if err := s.Collection.AddEvents(s.pipeline, events...); err != nil {
-		s.Log.WithError(err).Fatalln("Failed to add events to graph")
-	}
-}
-
 // NewMulti is the equivalent of `scribe.New`, but for building a pipeline made of multiple pipelines.
 // Pipelines can behave in the same way that a step does. They can be ran in parallel using the Parallel function, or ran in a series using the Run function.
 // To add new pipelines to execution, use the `(*scribe.ScribeMulti).New(...)` function.
@@ -231,9 +224,10 @@ func (s *ScribeMulti) New(name string, mf MultiFunc) pipeline.Pipeline {
 	}).Debugln("Graph populated")
 
 	return pipeline.Pipeline{
-		Name:  name,
-		ID:    s.serial(),
-		Graph: node.Value.Graph,
+		Name:   name,
+		Events: node.Value.Events,
+		ID:     s.serial(),
+		Graph:  node.Value.Graph,
 	}
 }
 

@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/grafana/scribe"
 	"github.com/grafana/scribe/golang"
+	"github.com/grafana/scribe/plumbing/pipeline"
 )
 
 // "main" defines our program pipeline.
@@ -28,9 +29,9 @@ func main() {
 
 	sw.Run(
 		sw.New("publish docker images", func(sw *scribe.Scribe) {
-			// sw.When(
-			// 	pipeline.GitTagEvent(pipeline.GitTagFilters{}),
-			// )
+			sw.When(
+				pipeline.GitTagEvent(pipeline.GitTagFilters{}),
+			)
 
 			sw.Run(
 				StepGetVersion(sw.Version).WithName("get version"),

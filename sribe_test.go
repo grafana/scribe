@@ -177,3 +177,26 @@ func TestBasicPipelineWithBackground(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestWithEvent(t *testing.T) {
+	t.Run("Once adding an event, it should be present in the collection", func(t *testing.T) {
+		ens := newEnsurer()
+		sw := scribe.NewWithClient(testOpts, ens)
+
+		sw.When(
+			pipeline.GitTagEvent(pipeline.GitTagFilters{}),
+		)
+
+		sw.Parallel(pipeline.NoOpStep.WithName("step 1"))
+
+		sw.Collection.WalkPipelines(context.Background(), func(ctx context.Context, pipelines ...pipeline.Pipeline) error {
+			for _, v := range pipelines {
+				if len(v.Events) != 1 {
+					t.Fatal("Expected 1 pipeline event, but found", len(v.Events))
+				}
+			}
+
+			return nil
+		})
+	})
+}

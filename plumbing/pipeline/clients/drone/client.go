@@ -214,11 +214,15 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 				Services:  sl.services,
 				DependsOn: pipelinesToNames(v.Dependencies),
 			}, c.Opts)
-
+			if len(v.Events) == 0 {
+				log.Debugf("Pipeline '%d' / '%s' has 0 events", v.ID, v.Name)
+			} else {
+				log.Debugf("Pipeline '%d' / '%s' has '%d events", v.ID, v.Name, len(v.Events))
+			}
 			events := v.Events
 			if len(events) != 0 {
 				log.Debugf("Generating with %d event filters...", len(events))
-				cond, err := c.Events(events)
+				cond, err := Events(events)
 				if err != nil {
 					return err
 				}

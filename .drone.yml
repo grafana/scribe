@@ -328,7 +328,7 @@ steps:
 - name: push_docker
   image: grafana/shipwright:docker-v0.9.3-42-gf893689
   commands:
-  - /var/scribe/pipeline -step=35 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=v0.9.3-42-gf893689 -arg=docker_password=$secret_docker_password -arg=docker_username=$secret_docker_username ./ci
+  - /var/scribe/pipeline -step=35 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=v0.9.3-42-gf893689 -arg=docker_username=$secret_docker_username -arg=docker_password=$secret_docker_password ./ci
   environment:
     secret_docker_password:
       from_secret: docker_password
@@ -353,11 +353,11 @@ volumes:
   host:
     path: /var/run/docker.sock
 
+trigger:
+  event:
+  - tag
+
 depends_on:
 - test_and_build
-
----
-kind: signature
-hmac: 6e389ef5987ed684d7e2e97dbd89b3914fd5093762adfaf26dfadd48ce8fa6c4
 
 ...

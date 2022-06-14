@@ -180,6 +180,15 @@ volumes:
   host:
     path: /var/run/docker.sock
 
+trigger:
+  branch:
+  - main
+  event:
+  - branch
+  - tag
+  ref:
+  - refs/tags/v*
+
 depends_on:
 - test
 

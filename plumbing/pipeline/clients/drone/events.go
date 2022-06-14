@@ -24,7 +24,9 @@ func addEvent(c yaml.Conditions, e pipeline.Event) (yaml.Conditions, error) {
 	return c, nil
 }
 
-func (c *Client) Events(events []pipeline.Event) (yaml.Conditions, error) {
+// Events converts the list of pipeline.Events to a list of drone 'Conditions'.
+// Drone conditions are what prevents pipelines from running whenever certain certain conditions are met, or what runs pipelines only when certain conditions are met.
+func Events(events []pipeline.Event) (yaml.Conditions, error) {
 	conditions := yaml.Conditions{}
 	for _, event := range events {
 		c, err := addEvent(conditions, event)
