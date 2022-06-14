@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 )
 
 type buildLogs struct {
@@ -15,6 +16,7 @@ func WriteBuildLogs(body io.Reader, out io.Writer) error {
 	scanner := bufio.NewScanner(body)
 	for scanner.Scan() {
 		l := &buildLogs{}
+		log.Println(string(scanner.Bytes()))
 		if err := json.Unmarshal(scanner.Bytes(), l); err != nil {
 			return err
 		}

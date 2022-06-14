@@ -3,8 +3,6 @@ package main
 import (
 	"github.com/grafana/scribe"
 	"github.com/grafana/scribe/golang"
-	"github.com/grafana/scribe/plumbing"
-	"github.com/grafana/scribe/plumbing/pipeline"
 )
 
 // "main" defines our program pipeline.
@@ -34,20 +32,18 @@ func main() {
 			// 	pipeline.GitTagEvent(pipeline.GitTagFilters{}),
 			// )
 
-			login := StepDockerLogin(
-				pipeline.NewSecretArgument("docker_username"),
-				pipeline.NewSecretArgument("docker_password"),
-			).
-				WithName("docker login").
-				WithImage(plumbing.SubImage("docker", sw.Version))
-
 			sw.Run(
-				login,
 				StepGetVersion(sw.Version).WithName("get version"),
 			)
 
+			// Build the docker images
+			sw.Run(StepBuildImage(sw.Version, ScribeImage).WithName("build scribe docker image"))
 			sw.Run(BuildSteps(sw.Version, Images)...)
+
+			// Show the images that were built
 			sw.Run(ListImages().WithName("list images"))
+
+			// Publish them
 			sw.Run(StepPushImage(sw.Version, ScribeImage).WithName("push scribe docker image"))
 			sw.Run(PushSteps(sw.Version, Images)...)
 		}),

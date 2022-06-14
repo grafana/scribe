@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/grafana/scribe/docker"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/grafana/scribe/plumbing"
 	"github.com/grafana/scribe/plumbing/pipeline"
 )
@@ -21,18 +21,27 @@ func BuildSteps(version string, images []Image) []pipeline.Step {
 
 func StepBuildImage(version string, image Image) pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
+		client := Client()
 		version := opts.State.MustGetString(ArgumentVersion)
 		tag := image.Tag(version)
 
 		opts.Logger.Infoln("Building", image.Dockerfile, "with tag", tag)
-		return docker.Build(ctx, docker.BuildOptions{
-			Names:      []string{tag},
+
+		return client.BuildImage(docker.BuildImageOptions{
+			Context:    ctx,
+			Name:       tag,
 			Dockerfile: image.Dockerfile,
 			ContextDir: image.Context,
-			Args: map[string]*string{
-				"VERSION": &version,
+			BuildArgs: []docker.BuildArg{
+				{
+					Name:  "VERSION",
+					Value: version,
+				},
 			},
-			Stdout: opts.Stdout,
+			Labels: map[string]string{
+				"source": "scribe",
+			},
+			OutputStream: opts.Stdout,
 		})
 	}
 

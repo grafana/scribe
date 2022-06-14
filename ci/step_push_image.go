@@ -3,34 +3,47 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/grafana/scribe/docker"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/grafana/scribe/plumbing"
 	"github.com/grafana/scribe/plumbing/pipeline"
-	"github.com/sirupsen/logrus"
+)
+
+var (
+	ArgumentDockerUsername = pipeline.NewSecretArgument("docker_username")
+	ArgumentDockerPassword = pipeline.NewSecretArgument("docker_password")
 )
 
 func StepPushImage(version string, image Image) pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
-		tag := image.Tag(opts.State.MustGetString(ArgumentVersion))
+		var (
+			client       = Client()
+			imageWithTag = image.Tag(opts.State.MustGetString(ArgumentVersion))
+			username     = opts.State.MustGetString(ArgumentDockerUsername)
+			password     = opts.State.MustGetString(ArgumentDockerPassword)
 
-		auth, err := opts.State.GetString(ArgumentDockerAuthToken)
-		if err != nil {
-			return err
-		}
+			s    = strings.Split(imageWithTag, ":")
+			name = s[0]
+			tag  = s[1]
+		)
 
-		opts.Logger.Infoln("Pushing", tag)
-		return docker.Push(ctx, docker.PushOpts{
-			Name:      tag,
-			Registry:  plumbing.DefaultRegistry(),
-			AuthToken: auth,
-			InfoOut:   opts.Stdout,
-			DebugOut:  opts.Logger.WithField("action", "push").WriterLevel(logrus.DebugLevel),
+		opts.Logger.Infoln("Pushing", name, "with tag", tag)
+
+		return client.PushImage(docker.PushImageOptions{
+			Name:          name,
+			Tag:           tag,
+			Registry:      plumbing.DefaultRegistry(),
+			RawJSONStream: false,
+			OutputStream:  opts.Stdout,
+		}, docker.AuthConfiguration{
+			Username: username,
+			Password: password,
 		})
 	}
 
 	return pipeline.NewStep(action).
-		WithArguments(pipeline.ArgumentSourceFS, pipeline.ArgumentDockerSocketFS, ArgumentDockerAuthToken, ArgumentVersion).
+		WithArguments(pipeline.ArgumentSourceFS, pipeline.ArgumentDockerSocketFS, ArgumentDockerUsername, ArgumentDockerPassword, ArgumentVersion).
 		WithImage(plumbing.SubImage("docker", version))
 }
 
