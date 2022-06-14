@@ -13,7 +13,7 @@ func ListImages() pipeline.Step {
 		images, err := client.ListImages(docker.ListImagesOptions{
 			Context: ctx,
 			Filters: map[string][]string{
-				"source": {"scribe"},
+				"label": {"source=scribe"},
 			},
 		})
 		if err != nil {
