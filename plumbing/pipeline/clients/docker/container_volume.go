@@ -1,21 +1,29 @@
 package docker
 
 import (
-	"os"
-
-	"github.com/docker/docker/api/types/mount"
-	"github.com/grafana/scribe/docker"
+	docker "github.com/fsouza/go-dockerclient"
 )
 
-func DefaultMounts(v *docker.Volume) ([]mount.Mount, error) {
-	return []mount.Mount{
+func DefaultMounts(v *docker.Volume) ([]docker.HostMount, error) {
+	return []docker.HostMount{
 		{
-			Type:   mount.TypeVolume,
+			Type:   "volume",
 			Source: v.Name,
 			Target: "/opt/scribe",
-			TmpfsOptions: &mount.TmpfsOptions{
-				Mode: os.FileMode(0777),
+			TempfsOptions: &docker.TempfsOptions{
+				Mode: 777,
 			},
 		},
 	}, nil
+}
+
+func MountAt(v *docker.Volume, target string, mode int) docker.HostMount {
+	return docker.HostMount{
+		Type:   "volume",
+		Source: v.Name,
+		Target: target,
+		TempfsOptions: &docker.TempfsOptions{
+			Mode: mode,
+		},
+	}
 }

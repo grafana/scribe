@@ -205,6 +205,8 @@ func (s *ScribeMulti) New(name string, mf MultiFunc) pipeline.Pipeline {
 		log.WithError(err).Fatalln("Failed to clone pipeline for use in multi-pipeline")
 	}
 
+	sw.Opts.Name = name
+
 	// This function adds the pipeline the way the user specified. It should look exactly like a normal scribe pipeline.
 	// This collection will be populated with a collection of Steps with actions.
 	wrapped := MultiFuncWithLogging(log, mf)

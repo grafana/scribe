@@ -1,7 +1,7 @@
 package scribe
 
 import (
-	"github.com/docker/docker/client"
+	dockerclient "github.com/fsouza/go-dockerclient"
 	"github.com/grafana/scribe/plumbing/pipeline"
 	"github.com/grafana/scribe/plumbing/pipeline/clients/cli"
 	"github.com/grafana/scribe/plumbing/pipeline/clients/docker"
@@ -67,7 +67,7 @@ func NewCLIClient(opts pipeline.CommonOpts) pipeline.Client {
 }
 
 func NewDockerClient(opts pipeline.CommonOpts) pipeline.Client {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, err := dockerclient.NewClientFromEnv()
 	if err != nil {
 		panic(err)
 	}

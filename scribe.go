@@ -363,7 +363,6 @@ func NewClient(c pipeline.CommonOpts, collection *pipeline.Collection) *Scribe {
 		c.Log.Fatalln("Could not initialize scribe. Could not find initializer for mode", c.Args.Client)
 		return nil
 	}
-
 	sw.Client = initializer(c)
 	sw.Collection = collection
 

@@ -13,7 +13,8 @@ var (
 
 	// Standard pipeline arguments
 	ArgumentWorkingDir = NewStringArgument("workdir")
-	ArgumentSourceFS   = NewUnpackagedDirectoryArgument("source")
+	// ArgumentSourceFS is the path to the root of the source code for this project.
+	ArgumentSourceFS = NewUnpackagedDirectoryArgument("source")
 
 	// CI service arguments
 	ArgumentBuildID = NewStringArgument("build-id")

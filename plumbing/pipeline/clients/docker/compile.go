@@ -3,10 +3,11 @@ package docker
 import (
 	"context"
 	"fmt"
-	"os"
+	"path/filepath"
+	"strings"
 
-	"github.com/docker/docker/api/types/mount"
-	"github.com/grafana/scribe/docker"
+	docker "github.com/fsouza/go-dockerclient"
+	"github.com/grafana/scribe/plumbing/pipeline"
 	"github.com/grafana/scribe/plumbing/pipelineutil"
 )
 
@@ -15,14 +16,16 @@ import (
 func (c *Client) compilePipeline(ctx context.Context, id string, network *docker.Network) (*docker.Volume, error) {
 	log := c.Log
 
-	volume, err := docker.CreateVolume(ctx, c.Client, docker.CreateVolumeOpts{
-		Name: fmt.Sprintf("scribe-%s", id),
+	volume, err := c.Client.CreateVolume(docker.CreateVolumeOptions{
+		Context: ctx,
+		Name:    fmt.Sprintf("scribe-%s", id),
 	})
 
 	if err != nil {
 		return nil, fmt.Errorf("error creating docker volume: %w", err)
 	}
 
+	// Compile the pipeline, mounted in /var/scribe, to `/opt/scribe/pipeline`, which is where the volume should be mounted.
 	cmd := pipelineutil.GoBuild(ctx, pipelineutil.GoBuildOpts{
 		Pipeline: c.Opts.Args.Path,
 		Module:   "/var/scribe",
@@ -33,46 +36,61 @@ func (c *Client) compilePipeline(ctx context.Context, id string, network *docker
 	if err != nil {
 		return nil, err
 	}
-	wd, err := os.Getwd()
+
+	src, err := c.Opts.State.GetDirectoryString(pipeline.ArgumentSourceFS)
 	if err != nil {
 		return nil, err
 	}
 
-	mounts = append(mounts, mount.Mount{
-		Type:   mount.TypeBind,
-		Source: wd,
+	srcAbs, err := filepath.Abs(src)
+	if err != nil {
+		return nil, err
+	}
+
+	// Mount the path provided via the '-path' argument to /var/scribe.
+	mounts = append(mounts, docker.HostMount{
+		Type:   "bind",
+		Source: srcAbs,
 		Target: "/var/scribe",
-		TmpfsOptions: &mount.TmpfsOptions{
-			Mode: os.FileMode(0755),
+		TempfsOptions: &docker.TempfsOptions{
+			Mode: 755,
 		},
 	})
 
-	opts := docker.CreateContainerOpts{
-		Name:    fmt.Sprintf("compile-%s", volume.Name),
-		Image:   "golang:1.18",
-		Command: cmd.Args,
-		Mounts:  mounts,
-		Workdir: "/var/scribe",
-		Env: []string{
-			"GOOS=linux",
-			"GOARCH=amd64",
-			"CGO_ENABLED=0",
+	opts := docker.CreateContainerOptions{
+		Name: fmt.Sprintf("compile-%s", volume.Name),
+		Config: &docker.Config{
+			Image:      "golang:1.18",
+			Cmd:        []string{"/bin/sh", "-c", fmt.Sprintf("ls -al && %s", strings.Join(cmd.Args, " "))},
+			WorkingDir: "/var/scribe",
+			Env: []string{
+				"GOOS=linux",
+				"GOARCH=amd64",
+				"CGO_ENABLED=0",
+			},
 		},
-		Out: log.Writer(),
+		HostConfig: &docker.HostConfig{
+			Mounts: mounts,
+		},
 	}
 
-	container, err := docker.CreateContainer(ctx, c.Client, opts)
+	container, err := c.Client.CreateContainer(opts)
 	if err != nil {
 		return nil, err
 	}
 
 	log.Warnf("Building pipeline binary '%s' in docker volume...", c.Opts.Args.Path)
+	var (
+		stdout = log.WithField("stream", "stdout")
+		stderr = log.WithField("stream", "stderr")
+	)
 	// This should run a command very similar to this:
 	// docker run --rm -v $TMPDIR:/var/scribe scribe/go:{version} go build -o /var/scribe/pipeline ./{pipeline}
-	if err := docker.RunContainer(ctx, c.Client, docker.RunContainerOpts{
-		Container: container,
-		Stdout:    log.WithField("stream", "stdout").Writer(),
-		Stderr:    log.WithField("stream", "stderr").Writer(),
+	if err := RunContainer(ctx, c.Client, RunOpts{
+		Container:  container,
+		Stdout:     stdout.Writer(),
+		Stderr:     stderr.Writer(),
+		HostConfig: &docker.HostConfig{},
 	}); err != nil {
 		return nil, err
 	}

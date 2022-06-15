@@ -4,11 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
-	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/client"
-	"github.com/grafana/scribe/docker"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/grafana/scribe/plumbing"
 	"github.com/grafana/scribe/plumbing/pipeline"
 	"github.com/grafana/scribe/plumbing/plog"
@@ -21,7 +18,7 @@ import (
 // In order to emulate what happens in a remote environment, the steps are put into a queue before being ran.
 // Each step is ran in its own docker container.
 type Client struct {
-	Client client.APIClient
+	Client *docker.Client
 	Opts   pipeline.CommonOpts
 
 	Log *logrus.Logger
@@ -49,11 +46,18 @@ type walkOpts struct {
 func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 	id := stringutil.Random(8)
 
-	network, err := docker.CreateNetwork(ctx, c.Client, docker.CreateNetworkOpts{
-		Name: c.networkName(id),
-	})
-
 	logger := c.Log.WithFields(plog.PipelineFields(c.Opts))
+
+	logger.Infof("Creating docker network '%s'...", c.networkName(id))
+	network, err := c.Client.CreateNetwork(docker.CreateNetworkOptions{
+		Context: ctx,
+		Name:    c.networkName(id),
+	})
+	if err != nil {
+		return err
+	}
+
+	logger.Infoln("Created docker network", c.networkName(id))
 
 	logger.Infoln("Compiling pipeline in docker volume...")
 	// Every step needs a compiled version of the pipeline in order to know what to do
@@ -92,6 +96,12 @@ func (c *Client) stepWalkFunc(opts walkOpts) pipeline.StepWalkFunc {
 			})
 
 			log.Infoln("Creating container for step. Image:", step.Image)
+			log.Debugf("With state volume: %+v", opts.stateVolume)
+			log.Debugf("With binary volume: %+v", opts.volume)
+			log.Debugf("With network: %+v", opts.network)
+			log.Debugf("With compiled mount: %+v", MountAt(opts.volume, "/var/scribe", 777))
+			log.Debugf("With state mount: %+v", MountAt(opts.stateVolume, "/var/scribe-state", 666))
+
 			container, err := CreateStepContainer(ctx, c.Client, CreateStepContainerOpts{
 				Configurer: c,
 				Step:       step,
@@ -100,34 +110,43 @@ func (c *Client) stepWalkFunc(opts walkOpts) pipeline.StepWalkFunc {
 				Pipeline:   c.Opts.Args.Path,
 				BuildID:    c.Opts.Args.BuildID,
 				Volumes: []*docker.Volume{
-					opts.volume,
-					opts.stateVolume,
+					{
+						Name: opts.volume.Name,
+					},
+					{
+						Name: opts.stateVolume.Name,
+					},
 				},
-				Mounts: []mount.Mount{
-					opts.volume.MountAt("/var/scribe", os.FileMode(0777)),
-					opts.stateVolume.MountAt("/var/scribe-state", os.FileMode(0666)),
+				Mounts: []docker.HostMount{
+					// Mount the volume containing the compiled pipeline (`pipeline`) to /opt/scribe.
+					MountAt(opts.volume, "/opt/scribe", 777),
+					// Mount the scribe-state in the state volume.
+					MountAt(opts.stateVolume, "/var/scribe-state", 666),
 				},
 				Out: log.Writer(),
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("Error creating container for step: '%s', error: %w", step.Name, err)
 			}
-			log.Debugf("Container created for step '%s' with image '%s' and command '%v'", container.CreateOpts.Name, container.CreateOpts.Image, container.CreateOpts.Command)
+
+			log.Debugf("Container created for step '%s' with image '%s'", container.Name, container.Image)
 
 			wg.Add(func(ctx context.Context) error {
-				log = log.WithField("container", container.CreateOpts.Name)
+				log = log.WithField("container", container.Name)
 				var (
 					stdout = log.WithField("stream", "stdout").Writer()
 					stderr = log.WithField("stream", "stderr").Writer()
 				)
 
-				opts := docker.RunContainerOpts{
-					Container: container,
-					Stdout:    stdout,
-					Stderr:    stderr,
+				opts := RunOpts{
+					Container:  container,
+					HostConfig: &docker.HostConfig{},
+					Stdout:     stdout,
+					Stderr:     stderr,
 				}
+
 				log.Debugln("Running container...")
-				return docker.RunContainer(ctx, c.Client, opts)
+				return RunContainer(ctx, c.Client, opts)
 			})
 		}
 
