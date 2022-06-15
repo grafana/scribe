@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/grafana/scribe/plumbing/pipeline"
@@ -61,7 +60,7 @@ func (c *Client) compilePipeline(ctx context.Context, id string, network *docker
 		Name: fmt.Sprintf("compile-%s", volume.Name),
 		Config: &docker.Config{
 			Image:      "golang:1.18",
-			Cmd:        []string{"/bin/sh", "-c", fmt.Sprintf("ls -al && %s", strings.Join(cmd.Args, " "))},
+			Cmd:        cmd.Args,
 			WorkingDir: "/var/scribe",
 			Env: []string{
 				"GOOS=linux",
