@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path/filepath"
 
 	"github.com/sirupsen/logrus"
 )
@@ -91,6 +92,9 @@ func (s *State) GetString(arg Argument) (string, error) {
 		s.Log.WithError(err).Debugln("state returned an error; attempting fallback state")
 		val, err := v.GetString(arg)
 		if err == nil {
+			if err := s.SetString(arg, val); err != nil {
+				return "", err
+			}
 			return val, nil
 		}
 
@@ -126,6 +130,9 @@ func (s *State) GetInt64(arg Argument) (int64, error) {
 		s.Log.WithError(err).Debugln("state returned an error; attempting fallback state")
 		val, err := v.GetInt64(arg)
 		if err == nil {
+			if err := s.SetInt64(arg, value); err != nil {
+				return 0, err
+			}
 			return val, nil
 		}
 
@@ -162,6 +169,9 @@ func (s *State) GetFloat64(arg Argument) (float64, error) {
 		s.Log.WithError(err).Debugln("state returned an error; attempting fallback state")
 		val, err := v.GetFloat64(arg)
 		if err == nil {
+			if err := s.SetFloat64(arg, val); err != nil {
+				return 0, err
+			}
 			return val, nil
 		}
 
@@ -223,16 +233,23 @@ func (s *State) GetDirectory(arg Argument) (fs.FS, error) {
 		return nil, fmt.Errorf("attempted to get directory from state for wrong argument type '%s'", arg.Type)
 	}
 
-	dir, err := s.Handler.GetDirectory(arg)
+	dir, err := s.Handler.GetDirectoryString(arg)
 	if err == nil {
-		return dir, nil
+		return os.DirFS(dir), nil
 	}
 
 	for _, v := range s.Fallback {
 		s.Log.WithError(err).Debugln("state returned an error; attempting fallback state")
-		dir, err := v.GetDirectory(arg)
+		dir, err := v.GetDirectoryString(arg)
 		if err == nil {
-			return dir, nil
+			dirAbs, err := filepath.Abs(dir)
+			if err != nil {
+				return nil, err
+			}
+			if err := s.SetDirectory(arg, dirAbs); err != nil {
+				return nil, err
+			}
+			return os.DirFS(dir), nil
 		}
 
 		s.Log.WithError(err).Debugln("fallback state reader returned an error")
@@ -258,6 +275,13 @@ func (s *State) GetDirectoryString(arg Argument) (string, error) {
 		s.Log.WithError(err).Debugln("state returned an error; attempting fallback state")
 		dir, err := v.GetDirectoryString(arg)
 		if err == nil {
+			dirAbs, err := filepath.Abs(dir)
+			if err != nil {
+				return "", fmt.Errorf("error getting absolute path from state value '%s': %w", dir, err)
+			}
+			if err := s.SetDirectory(arg, dirAbs); err != nil {
+				return "", err
+			}
 			return dir, nil
 		}
 

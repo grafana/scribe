@@ -12,19 +12,18 @@ import (
 )
 
 type CreateStepContainerOpts struct {
-	Configurer pipeline.Configurer
-	Step       pipeline.Step
-	Env        []string
-	Network    *docker.Network
-	Volumes    []*docker.Volume
-	Mounts     []docker.HostMount
-	Binary     string
-	Pipeline   string
-	BuildID    string
-	Out        io.Writer
+	Step     pipeline.Step
+	Env      []string
+	Network  *docker.Network
+	Volumes  []*docker.Volume
+	Mounts   []docker.HostMount
+	Binary   string
+	Pipeline string
+	BuildID  string
+	Out      io.Writer
 }
 
-func CreateStepContainer(ctx context.Context, client *docker.Client, opts CreateStepContainerOpts) (*docker.Container, error) {
+func CreateStepContainer(ctx context.Context, state *pipeline.State, client *docker.Client, opts CreateStepContainerOpts) (*docker.Container, error) {
 	cmd, err := cmdutil.StepCommand(cmdutil.CommandOpts{
 		CompiledPipeline: opts.Binary,
 		Path:             opts.Pipeline,
@@ -37,15 +36,13 @@ func CreateStepContainer(ctx context.Context, client *docker.Client, opts Create
 		return nil, err
 	}
 
-	createOpts, err := applyArguments(opts.Configurer, docker.CreateContainerOptions{
+	createOpts, err := applyKnownArguments(state, docker.CreateContainerOptions{
 		Context: ctx,
 		Name:    strings.Join([]string{"scribe", stringutil.Slugify(opts.Step.Name), stringutil.Random(8)}, "-"),
 		Config: &docker.Config{
-			Image:        opts.Step.Image,
-			Cmd:          cmd,
-			AttachStdout: true,
-			AttachStderr: true,
-			Env:          append(opts.Env, "GIT_CEILING_DIRECTORIES=/var/scribe"),
+			Image: opts.Step.Image,
+			Cmd:   cmd,
+			Env:   append(opts.Env, "GIT_CEILING_DIRECTORIES=/var/scribe"),
 		},
 		HostConfig: &docker.HostConfig{
 			NetworkMode: opts.Network.Name,

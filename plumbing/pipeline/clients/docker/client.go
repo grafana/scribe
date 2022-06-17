@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	docker "github.com/fsouza/go-dockerclient"
-	"github.com/grafana/scribe/plumbing"
 	"github.com/grafana/scribe/plumbing/pipeline"
 	"github.com/grafana/scribe/plumbing/plog"
 	"github.com/grafana/scribe/plumbing/stringutil"
@@ -102,13 +101,12 @@ func (c *Client) stepWalkFunc(opts walkOpts) pipeline.StepWalkFunc {
 			log.Debugf("With compiled mount: %+v", MountAt(opts.volume, "/var/scribe", 777))
 			log.Debugf("With state mount: %+v", MountAt(opts.stateVolume, "/var/scribe-state", 666))
 
-			container, err := CreateStepContainer(ctx, c.Client, CreateStepContainerOpts{
-				Configurer: c,
-				Step:       step,
-				Network:    opts.network,
-				Binary:     "/opt/scribe/pipeline",
-				Pipeline:   c.Opts.Args.Path,
-				BuildID:    c.Opts.Args.BuildID,
+			container, err := CreateStepContainer(ctx, c.Opts.State, c.Client, CreateStepContainerOpts{
+				Step:     step,
+				Network:  opts.network,
+				Binary:   "/opt/scribe/pipeline",
+				Pipeline: c.Opts.Args.Path,
+				BuildID:  c.Opts.Args.BuildID,
 				Volumes: []*docker.Volume{
 					{
 						Name: opts.volume.Name,
@@ -201,33 +199,4 @@ func (c *Client) walkPipelines(opts walkOpts) pipeline.PipelineWalkFunc {
 
 func (c *Client) Walk(ctx context.Context, opts walkOpts) error {
 	return opts.walker.WalkPipelines(ctx, c.walkPipelines(opts))
-}
-
-// KnownVolumes is a map of default argument to a function used to retrieve the volume the value represents.
-// For example, we know that every pipeline is ran alongisde source code.
-// The user can supply a "-arg=source={path-to-source}" argument, or we can just
-var KnownVolumes = map[pipeline.Argument]func(*plumbing.PipelineArgs) (string, error){
-	pipeline.ArgumentSourceFS: func(args *plumbing.PipelineArgs) (string, error) {
-		return ".", nil
-	},
-	pipeline.ArgumentDockerSocketFS: func(*plumbing.PipelineArgs) (string, error) {
-		return "/var/run/docker.sock", nil
-	},
-}
-
-// GetVolumeValue will attempt to find the appropriate volume to mount based on the argument provided.
-// Some arguments have known or knowable values, like "ArgumentSourceFS".
-func GetVolumeValue(args *plumbing.PipelineArgs, arg pipeline.Argument) (string, error) {
-	// If an applicable argument is provided, then we should use that, even if it's a known value.
-	if val, err := args.ArgMap.Get(arg.Key); err == nil {
-		return val, nil
-	}
-
-	// See if we can find a known value for this FS...
-	if f, ok := KnownVolumes[arg]; ok {
-		return f(args)
-	}
-
-	// TODO: Should we request via stdin?
-	return "", nil
 }
