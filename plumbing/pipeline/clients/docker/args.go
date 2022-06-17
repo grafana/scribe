@@ -48,7 +48,7 @@ func applyKnownArguments(state *pipeline.State, opts docker.CreateContainerOptio
 	// If it is a predefined string argument, like ArgumentBuildID, then it may need to be included as a `-arg` flag.
 	for _, arg := range args {
 		switch arg.Type {
-		case pipeline.ArgumentTypeFS:
+		case pipeline.ArgumentTypeUnpackagedFS:
 			if val, ok := KnownVolumes[arg]; ok {
 				mount, err := val(state)
 				if err != nil {
