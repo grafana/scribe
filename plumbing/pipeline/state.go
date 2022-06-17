@@ -311,7 +311,7 @@ func (s *State) MustGetDirectoryString(arg Argument) string {
 
 // SetString attempts to set the string into the state.
 func (s *State) SetString(arg Argument, value string) error {
-	if !ArgumentTypesEqual(arg, ArgumentTypeString) {
+	if !ArgumentTypesEqual(arg, ArgumentTypeString, ArgumentTypeSecret) {
 		return fmt.Errorf("attempted to set string in state for wrong argument type '%s'", arg.Type)
 	}
 
