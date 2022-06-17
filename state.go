@@ -35,11 +35,11 @@ func GetState(val string, log logrus.FieldLogger, args *plumbing.PipelineArgs) (
 	}
 
 	fallback := []pipeline.StateReader{
-		pipeline.NewArgMapReader(args.ArgMap),
+		pipeline.StateReaderWithLogs(log.WithField("state", "arguments"), pipeline.NewArgMapReader(args.ArgMap)),
 	}
 
 	if args.CanStdinPrompt {
-		fallback = append(fallback, pipeline.NewStdinReader(os.Stdin, os.Stdout))
+		fallback = append(fallback, pipeline.StateReaderWithLogs(log.WithField("state", "stdin"), pipeline.NewStdinReader(os.Stdin, os.Stdout)))
 	}
 
 	if v, ok := states[u.Scheme]; ok {
@@ -49,7 +49,7 @@ func GetState(val string, log logrus.FieldLogger, args *plumbing.PipelineArgs) (
 		}
 
 		return &pipeline.State{
-			Handler:  handler,
+			Handler:  pipeline.StateHandlerWithLogs(log.WithField("state", u.Scheme), handler),
 			Fallback: fallback,
 			Log:      log,
 		}, nil
