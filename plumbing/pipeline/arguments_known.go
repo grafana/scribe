@@ -2,7 +2,6 @@ package pipeline
 
 // These arguments are the pre-defined ones and are mostly used in events.
 var (
-	ArgumentDockerSocketFS = NewUnpackagedDirectoryArgument("docker-socket")
 
 	// Git arguments
 	ArgumentCommitSHA = NewStringArgument("git-commit-sha")
@@ -14,7 +13,8 @@ var (
 	// Standard pipeline arguments
 	ArgumentWorkingDir = NewStringArgument("workdir")
 	// ArgumentSourceFS is the path to the root of the source code for this project.
-	ArgumentSourceFS = NewUnpackagedDirectoryArgument("source")
+	ArgumentSourceFS       = NewUnpackagedDirectoryArgument("source")
+	ArgumentDockerSocketFS = NewUnpackagedDirectoryArgument("docker-socket")
 
 	// CI service arguments
 	ArgumentBuildID = NewStringArgument("build-id")

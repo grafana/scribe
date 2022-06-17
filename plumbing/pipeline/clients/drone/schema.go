@@ -52,7 +52,7 @@ func stepVolumes(c pipeline.Configurer, step pipeline.Step) []*yaml.VolumeMount 
 	// TODO: It's unlikely that we want to actually associate volume mounts with "FS" type arguments.
 	// We will probably want to zip those up and place them in the state volume or something...
 	for _, v := range step.Arguments {
-		if v.Type != pipeline.ArgumentTypeFS {
+		if v.Type != pipeline.ArgumentTypeFS && v.Type != pipeline.ArgumentTypeUnpackagedFS {
 			continue
 		}
 

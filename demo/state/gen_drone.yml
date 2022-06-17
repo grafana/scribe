@@ -137,6 +137,7 @@ steps:
   commands:
   - /var/scribe/pipeline -step=14 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/state
   volumes:
+  - name: example_directory
   - name: scribe
     path: /var/scribe
   - name: scribe-state

@@ -75,7 +75,7 @@ func NewFileArgument(key string) Argument {
 
 func NewDirectoryArgument(key string) Argument {
 	return Argument{
-		Type: ArgumentTypeUnpackagedFS,
+		Type: ArgumentTypeFS,
 		Key:  key,
 	}
 }

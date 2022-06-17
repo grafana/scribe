@@ -31,7 +31,7 @@ func (c *Client) Value(arg pipeline.Argument) (string, error) {
 	switch arg.Type {
 	case pipeline.ArgumentTypeSecret:
 		return secretEnv(arg.Key), nil
-	case pipeline.ArgumentTypeFS:
+	case pipeline.ArgumentTypeUnpackagedFS:
 		if val, ok := argVolumeMap[arg]; ok {
 			return val, nil
 		}
