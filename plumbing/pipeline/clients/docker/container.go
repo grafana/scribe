@@ -54,10 +54,10 @@ func CreateStepContainer(ctx context.Context, state *pipeline.State, client *doc
 	}, opts.Step.Arguments)
 
 	// TODO: We should support more docker auth config options
-	authConfig, err := docker.NewAuthConfigurationsFromDockerCfg()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get auth settings from docker config: %w", err)
-	}
+	authConfig, _ := docker.NewAuthConfigurationsFromDockerCfg()
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to get auth settings from docker config: %w", err)
+	// }
 
 	var (
 		auth      docker.AuthConfiguration
@@ -73,8 +73,10 @@ func CreateStepContainer(ctx context.Context, state *pipeline.State, client *doc
 		}
 	}
 
-	if cfg, ok := authConfig.Configs[registry]; ok {
-		auth = cfg
+	if authConfig != nil {
+		if cfg, ok := authConfig.Configs[registry]; ok {
+			auth = cfg
+		}
 	}
 
 	if err := client.PullImage(docker.PullImageOptions{
@@ -109,6 +111,7 @@ func RunContainer(ctx context.Context, client *docker.Client, opts RunOpts) erro
 		Stream:       true,
 		Stdout:       true,
 		Stderr:       true,
+		Logs:         true,
 	}); err != nil {
 		return err
 	}

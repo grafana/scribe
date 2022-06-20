@@ -24,13 +24,6 @@ func (c *Client) compilePipeline(ctx context.Context, id string, network *docker
 		return nil, fmt.Errorf("error creating docker volume: %w", err)
 	}
 
-	// Compile the pipeline, mounted in /var/scribe, to `/opt/scribe/pipeline`, which is where the volume should be mounted.
-	cmd := pipelineutil.GoBuild(ctx, pipelineutil.GoBuildOpts{
-		Pipeline: c.Opts.Args.Path,
-		Module:   "/var/scribe",
-		Output:   "/opt/scribe/pipeline",
-	})
-
 	mounts, err := DefaultMounts(volume)
 	if err != nil {
 		return nil, err
@@ -45,6 +38,23 @@ func (c *Client) compilePipeline(ctx context.Context, id string, network *docker
 	if err != nil {
 		return nil, err
 	}
+
+	gomod, err := c.Opts.State.GetDirectoryString(pipeline.ArgumentPipelineGoModFS)
+	if err != nil {
+		return nil, err
+	}
+
+	pipelineGoMod, err := filepath.Rel(src, gomod)
+	if err != nil {
+		return nil, err
+	}
+
+	// Compile the pipeline, mounted in /var/scribe, to `/opt/scribe/pipeline`, which is where the volume should be mounted.
+	cmd := pipelineutil.GoBuild(ctx, pipelineutil.GoBuildOpts{
+		Pipeline: c.Opts.Args.Path,
+		Module:   pipelineGoMod,
+		Output:   "/opt/scribe/pipeline",
+	})
 
 	// Mount the path provided via the '-path' argument to /var/scribe.
 	mounts = append(mounts, docker.HostMount{

@@ -13,8 +13,9 @@ var (
 	// Standard pipeline arguments
 	ArgumentWorkingDir = NewStringArgument("workdir")
 	// ArgumentSourceFS is the path to the root of the source code for this project.
-	ArgumentSourceFS       = NewUnpackagedDirectoryArgument("source")
-	ArgumentDockerSocketFS = NewUnpackagedDirectoryArgument("docker-socket")
+	ArgumentSourceFS        = NewUnpackagedDirectoryArgument("source")
+	ArgumentPipelineGoModFS = NewUnpackagedDirectoryArgument("pipeline-go-mod")
+	ArgumentDockerSocketFS  = NewUnpackagedDirectoryArgument("docker-socket")
 
 	// CI service arguments
 	ArgumentBuildID = NewStringArgument("build-id")
