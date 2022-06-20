@@ -2,8 +2,11 @@ package docker
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"net/url"
 	"strings"
+	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/grafana/scribe/plumbing/cmdutil"
@@ -49,6 +52,40 @@ func CreateStepContainer(ctx context.Context, state *pipeline.State, client *doc
 			Mounts:      opts.Mounts,
 		},
 	}, opts.Step.Arguments)
+
+	// TODO: We should support more docker auth config options
+	authConfig, err := docker.NewAuthConfigurationsFromDockerCfg()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get auth settings from docker config: %w", err)
+	}
+
+	var (
+		auth      docker.AuthConfiguration
+		registry  = "https://index.docker.io/v1/"
+		repo, tag = docker.ParseRepositoryTag(opts.Step.Image)
+	)
+
+	// Important note here: The returned URL will have an empty "Host" if the image repo does not begin with a URL scheme.
+	// We could / should mitigate this with more parsing logic.
+	if u, err := url.Parse(repo); err == nil {
+		if u.Host != "" {
+			registry = u.Host
+		}
+	}
+
+	if cfg, ok := authConfig.Configs[registry]; ok {
+		auth = cfg
+	}
+
+	if err := client.PullImage(docker.PullImageOptions{
+		Context:           ctx,
+		Repository:        repo,
+		Tag:               tag,
+		OutputStream:      opts.Out,
+		InactivityTimeout: time.Minute,
+	}, auth); err != nil {
+		return nil, fmt.Errorf("error pulling image: %w", err)
+	}
 
 	return client.CreateContainer(createOpts)
 }
