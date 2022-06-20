@@ -121,7 +121,6 @@ func (c *Client) stepWalkFunc(opts walkOpts) pipeline.StepWalkFunc {
 					// Mount the scribe-state in the state volume.
 					MountAt(opts.stateVolume, "/var/scribe-state", 666),
 				},
-				Out: log.Writer(),
 			})
 			if err != nil {
 				return fmt.Errorf("Error creating container for step: '%s', error: %w", step.Name, err)
