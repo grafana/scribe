@@ -10,8 +10,8 @@ import (
 
 func echo(ctx context.Context, opts pipeline.ActionOpts) error {
 	return exec.RunCommandWithOpts(ctx, exec.RunOpts{
-		Name:   "echo",
-		Args:   []string{"\"hello ?\""},
+		Name:   "/bin/sh",
+		Args:   []string{"-c", `sleep 10; echo "hello ?"`},
 		Stdout: opts.Stdout,
 		Stderr: opts.Stderr,
 	})
