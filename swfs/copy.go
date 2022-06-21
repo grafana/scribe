@@ -36,7 +36,7 @@ func CopyFileReader(r io.Reader, to string) error {
 		}
 	}
 
-	w, err := os.Create(to)
+	w, err := os.OpenFile(to, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
 		return err
 	}

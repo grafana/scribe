@@ -107,6 +107,7 @@ func (c *Client) stepWalkFunc(opts walkOpts) pipeline.StepWalkFunc {
 				Binary:   "/opt/scribe/pipeline",
 				Pipeline: c.Opts.Args.Path,
 				BuildID:  c.Opts.Args.BuildID,
+				Out:      log.Writer(),
 				Volumes: []*docker.Volume{
 					{
 						Name: opts.volume.Name,
