@@ -145,6 +145,21 @@ steps:
   depends_on:
   - print_file
 
+- name: print_secret
+  image: grafana/shipwright:latest
+  commands:
+  - /var/scribe/pipeline -step=15 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest -arg=secret_string=$secret_secret_string ./demo/state
+  environment:
+    secret_secret_string:
+      from_secret: secret_string
+  volumes:
+  - name: scribe
+    path: /var/scribe
+  - name: scribe-state
+    path: /var/scribe-state
+  depends_on:
+  - print_directory
+
 volumes:
 - name: scribe
   temp: {}

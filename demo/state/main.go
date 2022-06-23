@@ -13,6 +13,7 @@ import (
 )
 
 var (
+	ArgumentSecret        = pipeline.NewSecretArgument("secret_string")
 	ArgumentRandomString  = pipeline.NewStringArgument("random_string")
 	ArgumentRandomInt     = pipeline.NewInt64Argument("random_int")
 	ArgumentRandomFloat64 = pipeline.NewFloat64Argument("random_float")
@@ -160,6 +161,22 @@ func StepPrintDirectory() pipeline.Step {
 	return step.WithArguments(ArgumentDirectory)
 }
 
+func StepPrintSecret() pipeline.Step {
+	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
+		str, err := opts.State.GetString(ArgumentSecret)
+		if err != nil {
+			return err
+		}
+
+		opts.Logger.Println("Got secret string", str)
+
+		return nil
+	}
+
+	step := pipeline.NewStep(action)
+	return step.WithArguments(ArgumentSecret)
+}
+
 // func init() {
 // 	rand.Seed(time.Now().Unix())
 // }
@@ -182,5 +199,6 @@ func main() {
 		StepPrintRandomString().WithName("print random string"),
 		StepPrintFile().WithName("print file"),
 		StepPrintDirectory().WithName("print directory"),
+		StepPrintSecret().WithName("print secret"),
 	)
 }

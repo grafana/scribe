@@ -132,7 +132,7 @@ This program creates a very simple pipeline which demostrates setting and gettin
 - [x] Running steps in sequence
 - [ ] Running steps in parallel
 - [ ] Running steps with the default `ENTRYPOINT` / `CMD`
-- [ ] Secrets
+- [x] Secrets
 - [ ] Sub-pipelines
 - [x] Step Arguments
 - [x] State Management / Sharing data between steps
