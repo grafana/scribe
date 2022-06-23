@@ -149,12 +149,15 @@ func (s *Starlark) MarshalMap(v reflect.Value) {
 		value := v.MapIndex(key)
 		s.MarshalMapKey(key.String())
 		if value.Type().String() == "*yaml.Variable" {
-			v2 := value.Elem().FieldByName("Value")
-			s.MarshalString(v2)
-
-		} else {
-			s.MarshalField(value)
+			secretVal := value.Elem().FieldByName("Secret")
+			if secretVal.String() == "" {
+				envVal := value.Elem().FieldByName("Value")
+				s.MarshalString(envVal)
+				continue
+			}
 		}
+
+		s.MarshalField(value)
 	}
 	s.EndDict(true)
 }

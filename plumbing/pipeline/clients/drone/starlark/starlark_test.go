@@ -57,7 +57,6 @@ func samplePipeline() (*yaml.Pipeline, string) {
 }
 
 func sampleStep() (*yaml.Container, string) {
-
 	expected := Expected{}
 	expected.Add(`def sample_step():`)
 	expected.Add(`  return {`)
@@ -69,6 +68,9 @@ func sampleStep() (*yaml.Container, string) {
 	expected.Add(`    ],`)
 	expected.Add(`    "environment": {`)
 	expected.Add(`      "KEY": "this-value",`)
+	expected.Add(`      "SECRET": {`)
+	expected.Add(`        "from_secret": "secret",`)
+	expected.Add(`      },`)
 	expected.Add(`    },`)
 	expected.Add(`    "name": "sample-step",`)
 	expected.Add(`  }`)
@@ -80,6 +82,9 @@ func sampleStep() (*yaml.Container, string) {
 		Environment: map[string]*yaml.Variable{
 			"KEY": {
 				Value: "this-value",
+			},
+			"SECRET": {
+				Secret: "secret",
 			},
 		},
 	}, expected.String()
