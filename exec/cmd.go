@@ -3,6 +3,7 @@ package exec
 import (
 	"context"
 	"io"
+	"os"
 	"os/exec"
 
 	"github.com/grafana/scribe/plumbing/pipeline"
@@ -30,7 +31,7 @@ func CommandWithOpts(ctx context.Context, opts RunOpts) *exec.Cmd {
 		c.Stderr = opts.Stderr
 	}
 
-	c.Env = opts.Env
+	c.Env = append(os.Environ(), opts.Env...)
 
 	return c
 }
