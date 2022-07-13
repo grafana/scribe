@@ -281,11 +281,6 @@ func (c *Collection) ByID(ctx context.Context, id int64) ([]Step, error) {
 	// Search every pipeline and step for the listed IDs
 	if err := c.WalkPipelines(ctx, func(ctx context.Context, pipelines ...Pipeline) error {
 		for _, pipeline := range pipelines {
-			if pipeline.ID == id {
-				// uhhh.. todo
-				continue
-			}
-
 			return c.WalkSteps(ctx, pipeline.ID, func(ctx context.Context, s ...Step) error {
 				for i, step := range s {
 					if step.ID == id {

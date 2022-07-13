@@ -74,7 +74,7 @@ func executeWithSteps(
 		if args.Step != nil {
 			step, err := collection.ByID(ctx, *args.Step)
 			if err != nil {
-				return fmt.Errorf("could not find step with id '%d'. Error: %w", args.Step, err)
+				return fmt.Errorf("could not find step with id '%d'. Error: %w", *args.Step, err)
 			}
 			l := pipeline.NewStepList(n.Next(), step...)
 			c, err := pipeline.NewCollectionWithSteps(name, l)
