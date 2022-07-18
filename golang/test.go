@@ -8,7 +8,7 @@ import (
 )
 
 func Test(sw *scribe.Scribe, pkg string) pipeline.Step {
-	return pipeline.NewStep(exec.Run("go", "test", pkg)).
+	return pipeline.NewStep(exec.RunAction("go", "test", pkg)).
 		WithImage(plumbing.SubImage("go", sw.Opts.Version)).
 		WithArguments(pipeline.ArgumentSourceFS)
 }

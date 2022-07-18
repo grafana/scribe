@@ -60,9 +60,9 @@ func RunCommand(ctx context.Context, stdout, stderr io.Writer, name string, arg 
 	return RunCommandAt(ctx, stdout, stderr, ".", name, arg...)
 }
 
-// Run returns an action that runs a given command and set of arguments.
+// RunAction returns an action that runs a given command and set of arguments.
 // The command's stdout and stderr are assigned the systems' stdout/stderr streams.
-func Run(name string, arg ...string) pipeline.Action {
+func RunAction(name string, arg ...string) pipeline.Action {
 	return func(ctx context.Context, opts pipeline.ActionOpts) error {
 		return RunCommand(ctx, opts.Stdout, opts.Stderr, name, arg...)
 	}
@@ -74,4 +74,13 @@ func RunAt(path string, name string, arg ...string) pipeline.Action {
 	return func(ctx context.Context, opts pipeline.ActionOpts) error {
 		return RunCommandAt(ctx, opts.Stdout, opts.Stderr, path, name, arg...)
 	}
+}
+
+func Run(ctx context.Context, opts pipeline.ActionOpts, name string, args ...string) error {
+	return RunCommandWithOpts(ctx, RunOpts{
+		Name:   name,
+		Args:   args,
+		Stdout: opts.Stdout,
+		Stderr: opts.Stderr,
+	})
 }
