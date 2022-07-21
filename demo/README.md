@@ -1,6 +1,6 @@
 # Demo pipelines
 
-These demo pipelines are available to demosntrate a valuable structure of a pipeline.
+These demo pipelines are available to demonstrate a valuable structure of a pipeline.
 
 Running a demo pipeline with the Scribe CLI utility (requires `mage`):
 
@@ -115,7 +115,7 @@ This program creates multiple pipelines which run in sequence, and one pipeline 
 
 ## [`./state`](./sub)
 
-This program creates a very simple pipeline which demostrates setting and getting all different kinds of arguments from the state, including files, directories, strings, integers, and floating points.
+This program creates a very simple pipeline which demonstrates setting and getting all different kinds of arguments from the state, including files, directories, strings, integers, and floating points.
 
 ### Features
 
