@@ -49,7 +49,7 @@ func main() {
 	// The cache should invalidate if the yarn.lock or go.sum files have changed
 	sw.Run(
 		pipeline.NamedStep("install frontend dependencies", sw.Cache(
-			yarn.Install(),
+			yarn.InstallAction(),
 			fs.Cache("node_modules", fs.FileHasChanged("yarn.lock")),
 		)),
 		pipeline.NamedStep("install backend dependencies", sw.Cache(

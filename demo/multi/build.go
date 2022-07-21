@@ -31,7 +31,7 @@ func writeVersion(sw *scribe.Scribe) pipeline.Step {
 func installDependencies(sw *scribe.Scribe) {
 	sw.Run(
 		pipeline.NamedStep("install frontend dependencies", sw.Cache(
-			yarn.Install(),
+			yarn.InstallAction(),
 			fs.Cache("node_modules", fs.FileHasChanged("yarn.lock")),
 		)),
 		pipeline.NamedStep("install backend dependencies", sw.Cache(
