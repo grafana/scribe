@@ -6,6 +6,7 @@ require (
 	github.com/drone/drone-yaml v1.2.3
 	github.com/fsouza/go-dockerclient v1.8.1
 	github.com/google/go-cmp v0.5.8
+	github.com/google/go-jsonnet v0.18.0
 	github.com/magefile/mage v1.12.1
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/sirupsen/logrus v1.8.1
@@ -39,4 +40,6 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/sys v0.0.0-20220610221304-9f5ed59c137d // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
+	sigs.k8s.io/yaml v1.3.0 // indirect
 )
