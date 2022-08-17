@@ -48,6 +48,15 @@ func (s *ArgMapReader) GetFloat64(arg Argument) (float64, error) {
 	return strconv.ParseFloat(val, 10)
 }
 
+func (s *ArgMapReader) GetBool(arg Argument) (bool, error) {
+	val, err := s.defaults.Get(arg.Key)
+	if err != nil {
+		return false, err
+	}
+
+	return strconv.ParseBool(val)
+}
+
 func (s *ArgMapReader) GetFile(arg Argument) (*os.File, error) {
 	val, err := s.defaults.Get(arg.Key)
 	if err != nil {

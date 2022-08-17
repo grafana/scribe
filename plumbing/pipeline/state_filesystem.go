@@ -155,6 +155,19 @@ func (f *FilesystemState) SetFloat64(arg Argument, value float64) error {
 	return f.setValue(arg, value)
 }
 
+func (f *FilesystemState) GetBool(arg Argument) (bool, error) {
+	v, err := f.getValue(arg)
+	if err != nil {
+		return false, err
+	}
+
+	return v.(bool), nil
+}
+
+func (f *FilesystemState) SetBool(arg Argument, value bool) error {
+	return f.setValue(arg, value)
+}
+
 func (f *FilesystemState) GetFile(arg Argument) (*os.File, error) {
 	v, err := f.getValue(arg)
 	if err != nil {
