@@ -23,6 +23,7 @@ type StateReader interface {
 	GetString(Argument) (string, error)
 	GetInt64(Argument) (int64, error)
 	GetFloat64(Argument) (float64, error)
+	GetBool(Argument) (bool, error)
 	GetFile(Argument) (*os.File, error)
 	GetDirectory(Argument) (fs.FS, error)
 	GetDirectoryString(Argument) (string, error)
@@ -32,6 +33,7 @@ type StateWriter interface {
 	SetString(Argument, string) error
 	SetInt64(Argument, int64) error
 	SetFloat64(Argument, float64) error
+	SetBool(Argument, bool) error
 	SetFile(Argument, string) error
 	SetFileReader(Argument, io.Reader) error
 	SetDirectory(Argument, string) error
@@ -190,6 +192,45 @@ func (s *State) MustGetFloat64(arg Argument) float64 {
 	return val
 }
 
+// GetBool attempts to get the bool from the state.
+// If there are Fallback readers and the state returned an error, then it will loop through each one, attempting to retrieve the value from the fallback state reader.
+// If no fallback reader returns the value, then the original error is returned.
+func (s *State) GetBool(arg Argument) (bool, error) {
+	if !ArgumentTypesEqual(arg, ArgumentTypeBool) {
+		return false, fmt.Errorf("attempted to get bool from state for wrong argument type '%s'", arg.Type)
+	}
+
+	s.Log.Debugln("Getting bool argument", arg.Key, "from state")
+	value, err := s.Handler.GetBool(arg)
+	if err == nil {
+		return value, nil
+	}
+
+	for _, v := range s.Fallback {
+		s.Log.WithError(err).Debugln("state returned an error; attempting fallback state")
+		val, err := v.GetBool(arg)
+		if err == nil {
+			if err := s.SetBool(arg, val); err != nil {
+				return false, err
+			}
+			return val, nil
+		}
+
+		s.Log.WithError(err).Debugln("fallback state reader returned an error")
+	}
+
+	return false, err
+}
+
+func (s *State) MustGetBool(arg Argument) bool {
+	val, err := s.GetBool(arg)
+	if err != nil {
+		panic(err)
+	}
+
+	return val
+}
+
 // GetFile attempts to get the file from the state.
 // If there are Fallback readers and the state returned an error, then it will loop through each one, attempting to retrieve the value from the fallback state reader.
 // If no fallback reader returns the value, then the original error is returned.
@@ -334,6 +375,15 @@ func (s *State) SetFloat64(arg Argument, value float64) error {
 	}
 
 	return s.Handler.SetFloat64(arg, value)
+}
+
+// SetBool attempts to set the bool into the state.
+func (s *State) SetBool(arg Argument, value bool) error {
+	if !ArgumentTypesEqual(arg, ArgumentTypeBool) {
+		return fmt.Errorf("attempted to set bool in state for wrong argument type '%s'", arg.Type)
+	}
+
+	return s.Handler.SetBool(arg, value)
 }
 
 // SetFile attempts to set the file into the state.

@@ -6,6 +6,7 @@ const (
 	ArgumentTypeString ArgumentType = iota
 	ArgumentTypeInt64
 	ArgumentTypeFloat64
+	ArgumentTypeBool
 	ArgumentTypeSecret
 	ArgumentTypeFile
 	ArgumentTypeFS
@@ -16,7 +17,7 @@ const (
 	ArgumentTypeUnpackagedFS
 )
 
-var argumentTypeStr = []string{"string", "int", "float", "secret", "file", "directory", "unpackaged-directory"}
+var argumentTypeStr = []string{"string", "int", "float", "bool", "secret", "file", "directory", "unpackaged-directory"}
 
 func (a ArgumentType) String() string {
 	i := int(a)
@@ -62,6 +63,13 @@ func NewInt64Argument(key string) Argument {
 func NewFloat64Argument(key string) Argument {
 	return Argument{
 		Type: ArgumentTypeFloat64,
+		Key:  key,
+	}
+}
+
+func NewBoolArgument(key string) Argument {
+	return Argument{
+		Type: ArgumentTypeBool,
 		Key:  key,
 	}
 }
