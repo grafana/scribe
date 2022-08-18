@@ -98,13 +98,17 @@ func ParseArguments(args []string) (*PipelineArgs, error) {
 	flagSet.StringVar(&client, "mode", "cli", "cli|docker|drone|drone-starlark. Default: cli")
 	flagSet.Var(&step, "step", "A number that defines what specific step to run")
 	flagSet.StringVar(&logLevel, "log-level", "info", "The level of detail in the pipeline's log output. Default: 'warn'. Options: [trace, debug, info, warn, error]")
+	flagSet.StringVar(&logLevel, "l", "info", "The level of detail in the pipeline's log output. Default: 'warn'. Options: [trace, debug, info, warn, error]")
 	flagSet.Var(&argMap, "arg", "Provide pre-available arguments for use in pipeline steps. This argument can be provided multiple times. Format: '-arg={key}={value}")
 	flagSet.BoolVar(&noStdinPrompt, "no-stdin", false, "If this flag is provided, then the CLI pipeline will not request absent arguments via stdin")
 	flagSet.StringVar(&pathOverride, "path", "", "Providing the path argument overrides the $PWD of the pipeline for generation")
 	flagSet.StringVar(&version, "version", "latest", "The version is provided by the 'scribe' command, however if only using 'go run', it can be provided here")
 	flagSet.StringVar(&buildID, "build-id", stringutil.Random(12), "A unique identifier typically assigned by a build system. Defaults to a random string if no build ID is provided")
+	flagSet.StringVar(&buildID, "b", stringutil.Random(12), "A unique identifier typically assigned by a build system. Defaults to a random string if no build ID is provided")
 	flagSet.StringVar(&state, "state", defaultState.String(), "A URI that refers to a state file or directory where state between steps is stored. Must include a protocol, like 'file://', 'gcs://', or 's3://'")
-	flagSet.Var(&pipelineName, "pipeline", "A pipeline name, giving a value for this flag will result in only the pipeline of the specified name being executed. The default empty string will run all pipelines")
+	flagSet.StringVar(&state, "s", defaultState.String(), "A URI that refers to a state file or directory where state between steps is stored. Must include a protocol, like 'file://', 'gcs://', or 's3://'")
+	flagSet.Var(&pipelineName, "pipeline", "A pipeline name, giving a value for this flag will result in only the pipeline of the specified name being executed. The default empty string will run all pipelines.")
+	flagSet.Var(&pipelineName, "p", "A pipeline name, giving a value for this flag will result in only the pipeline of the specified name being executed. The default empty string will run all pipelines.")
 	if err := flagSet.Parse(args); err != nil {
 		return nil, err
 	}
