@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/grafana/scribe/plumbing/stringutil"
@@ -40,7 +41,7 @@ type PipelineArgs struct {
 	// Example usage: `-arg={key}={value}
 	ArgMap ArgMap
 
-	// LogLvel defines how detailed the output logs in the pipeline should be.
+	// LogLevel defines how detailed the output logs in the pipeline should be.
 	// Possible options are [debug, info, warn, error].
 	// The default value is warn.
 	LogLevel logrus.Level
@@ -55,6 +56,21 @@ type PipelineArgs struct {
 	// * 'gcs://bucket-name/path'
 	// If 'State' is not provided, then one is created using os.Tmpdir.
 	State string
+
+	PipelineName []string
+}
+
+type pipelineNames struct {
+	names []string
+}
+
+func (p *pipelineNames) String() string {
+	return strings.Join(p.names, ",")
+}
+
+func (p *pipelineNames) Set(value string) error {
+	p.names = append(p.names, value)
+	return nil
 }
 
 func ParseArguments(args []string) (*PipelineArgs, error) {
@@ -74,6 +90,7 @@ func ParseArguments(args []string) (*PipelineArgs, error) {
 		noStdinPrompt bool
 		argMap        = ArgMap(map[string]string{})
 		state         string
+		pipelineName  pipelineNames
 	)
 
 	flagSet.Usage = usage(flagSet)
@@ -87,7 +104,7 @@ func ParseArguments(args []string) (*PipelineArgs, error) {
 	flagSet.StringVar(&version, "version", "latest", "The version is provided by the 'scribe' command, however if only using 'go run', it can be provided here")
 	flagSet.StringVar(&buildID, "build-id", stringutil.Random(12), "A unique identifier typically assigned by a build system. Defaults to a random string if no build ID is provided")
 	flagSet.StringVar(&state, "state", defaultState.String(), "A URI that refers to a state file or directory where state between steps is stored. Must include a protocol, like 'file://', 'gcs://', or 's3://'")
-
+	flagSet.Var(&pipelineName, "pipeline", "A pipeline name, giving a value for this flag will result in only the pipeline of the specified name being executed. The default empty string will run all pipelines")
 	if err := flagSet.Parse(args); err != nil {
 		return nil, err
 	}
@@ -104,6 +121,7 @@ func ParseArguments(args []string) (*PipelineArgs, error) {
 		LogLevel:       level,
 		BuildID:        buildID,
 		State:          state,
+		PipelineName:   pipelineName.names,
 	}
 
 	if step.Valid {

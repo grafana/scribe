@@ -48,8 +48,22 @@ func (s *ScribeMulti) runPipelines(pipelines ...pipeline.Pipeline) error {
 }
 
 func (s *ScribeMulti) Run(steps ...pipeline.Pipeline) {
-	if err := s.runPipelines(steps...); err != nil {
+	var runSteps []pipeline.Pipeline
+	if s.Opts.Args.PipelineName != nil {
+		for _, sName := range s.Opts.Args.PipelineName {
+			for _, s := range steps {
+				if s.Name == sName {
+					runSteps = append(runSteps, s)
+				}
+			}
+		}
+	} else {
+		runSteps = steps
+	}
+	s.Opts.Log.Debugln("executing steps: ", runSteps)
+	if err := s.runPipelines(runSteps...); err != nil {
 		s.Log.Fatalln(err)
+		return
 	}
 }
 
