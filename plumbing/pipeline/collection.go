@@ -347,6 +347,7 @@ func (c *Collection) PipelinesByName(ctx context.Context, names []string) ([]Pip
 		for i, argPipeline := range names {
 			for _, pipeline := range pipelines {
 				if pipeline.Name == argPipeline {
+					pipeline.Dependencies = []Pipeline{}
 					retP[i] = pipeline
 					found = true
 					break
