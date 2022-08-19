@@ -102,8 +102,7 @@ func executeWithPipelines(
 				return fmt.Errorf("could not find any pipelines that match '%v'. Error: %w", args.PipelineName, err)
 			}
 			c := pipeline.NewCollection()
-			c.AddPipelines(pipelines...)
-			if err != nil {
+			if err := c.AddPipelines(pipelines...); err != nil {
 				return err
 			}
 			collection = c
