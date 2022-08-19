@@ -1,6 +1,7 @@
 package plumbing
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"math/rand"
@@ -116,6 +117,11 @@ func ParseArguments(args []string) (*PipelineArgs, error) {
 	level, err := logrus.ParseLevel(logLevel)
 	if err != nil {
 		return nil, err
+	}
+
+	// Validation: `-step` is mutually exclusive with `-p`.
+	if step.Value != 0 && len(pipelineName.names) != 0 {
+		return nil, errors.New("both '-step' and '-pipeline' (-p) can not be provided at the same time")
 	}
 
 	arguments := &PipelineArgs{

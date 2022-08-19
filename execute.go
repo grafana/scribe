@@ -99,7 +99,7 @@ func executeWithPipelines(
 		if len(args.PipelineName) != 0 {
 			pipelines, err := collection.PipelinesByName(ctx, args.PipelineName)
 			if err != nil {
-				return fmt.Errorf("could not find pipeline with name '%d'. Error: %w", *args.Step, err)
+				return fmt.Errorf("could not find any pipelines that match '%v'. Error: %w", args.PipelineName, err)
 			}
 			c := pipeline.NewCollection()
 			c.AddPipelines(pipelines...)
@@ -140,7 +140,7 @@ func execute(ctx context.Context, collection *pipeline.Collection, name string, 
 	wrapped = executeWithSteps(opts.Args, name, n, ef)
 
 	// If the user supplies a --pipeline argument, reduce the collection
-	wrapped = executeWithPipelines(opts.Args, name, n, ef)
+	wrapped = executeWithPipelines(opts.Args, name, n, wrapped)
 
 	// Add a root tracing span to the context, and end the span when the executeFunc is done.
 	wrapped = executeWithTracing(opts.Tracer, wrapped)
