@@ -43,10 +43,10 @@ func Client() *docker.Client {
 	return client
 }
 
-func BuildImage(image Image, arg pipeline.Argument) pipeline.Step {
+func BuildImage(image Image, versionArg pipeline.Argument) pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		client := Client()
-		version := opts.State.MustGetString(arg)
+		version := opts.State.MustGetString(versionArg)
 
 		opts.Logger.Infoln("Building", image.Dockerfile, "with tag", version)
 
@@ -69,5 +69,5 @@ func BuildImage(image Image, arg pipeline.Argument) pipeline.Step {
 	}
 
 	return pipeline.NewStep(action).
-		WithArguments(pipeline.ArgumentSourceFS, pipeline.ArgumentDockerSocketFS, arg)
+		WithArguments(pipeline.ArgumentSourceFS, pipeline.ArgumentDockerSocketFS, versionArg)
 }
