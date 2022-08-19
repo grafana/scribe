@@ -100,13 +100,13 @@ func TestMarshalString(t *testing.T) {
 	assertString(t, sl.String(), `"pipeline",`+"\n")
 }
 
-func TestMarshalStep(t *testing.T) {
-	step, expectedStep := sampleStep()
-
-	s := NewStarlark()
-	s.MarshalStep(step)
-	assertString(t, s.String(), expectedStep)
-}
+// func TestMarshalStep(t *testing.T) {
+// 	step, expectedStep := sampleStep()
+//
+// 	s := NewStarlark()
+// 	s.MarshalStep(step)
+// 	assertString(t, s.String(), expectedStep)
+// }
 
 func TestMarshalPipeline(t *testing.T) {
 	pipeline, expectedPipeline := samplePipeline()
@@ -117,6 +117,7 @@ func TestMarshalPipeline(t *testing.T) {
 }
 
 func assertString(t *testing.T, got, expected string) {
+	t.Helper()
 	if got != expected {
 		t.Errorf("Expected: <%s>\nGot: <%s>", expected, got)
 	}

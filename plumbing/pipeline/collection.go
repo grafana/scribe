@@ -335,10 +335,34 @@ func (c *Collection) ByName(ctx context.Context, name string) ([]Step, error) {
 	return steps, nil
 }
 
-// // Pipeline should return the pipeline that corresponds to a specific name
-// func (c *Collection) Pipeline(string) (Step[StepList], error) {
-// 	return Step[StepList]{}, nil
-// }
+// PipelinesByName should return the Pipelines that corresponds with a specified names
+func (c *Collection) PipelinesByName(ctx context.Context, names []string) ([]Pipeline, error) {
+	var (
+		retP  = make([]Pipeline, len(names))
+		found = false
+	)
+
+	// Search every pipeline for the listed names
+	if err := c.WalkPipelines(ctx, func(ctx context.Context, pipelines ...Pipeline) error {
+		for i, argPipeline := range names {
+			for _, pipeline := range pipelines {
+				if pipeline.Name == argPipeline {
+					retP[i] = pipeline
+					found = true
+					break
+				}
+			}
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	if !found {
+		return nil, errors.New("no matching pipelines found")
+	}
+	return retP, nil
+}
 
 // NewCollectinoWithSteps creates a new Collection with a single pipeline from a list of Steps.
 func NewCollectionWithSteps(pipelineName string, steps ...StepList) (*Collection, error) {

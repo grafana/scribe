@@ -88,6 +88,31 @@ func executeWithSteps(
 	}
 }
 
+func executeWithPipelines(
+	args *plumbing.PipelineArgs,
+	name string,
+	n *counter,
+	ef executeFunc,
+) executeFunc {
+	return func(ctx context.Context, collection *pipeline.Collection) error {
+		// If the user has specified specific pipelines, then cut the "Collection" to only include those pipelines.
+		if len(args.PipelineName) != 0 {
+			pipelines, err := collection.PipelinesByName(ctx, args.PipelineName)
+			if err != nil {
+				return fmt.Errorf("could not find any pipelines that match '%v'. Error: %w", args.PipelineName, err)
+			}
+			c := pipeline.NewCollection()
+			c.AddPipelines(pipelines...)
+			if err != nil {
+				return err
+			}
+			collection = c
+		}
+
+		return ef(ctx, collection)
+	}
+}
+
 func executeWithSignals(
 	ef executeFunc,
 ) executeFunc {
@@ -113,6 +138,9 @@ func execute(ctx context.Context, collection *pipeline.Collection, name string, 
 
 	// If the user supplies a -step argument, reduce the collection
 	wrapped = executeWithSteps(opts.Args, name, n, ef)
+
+	// If the user supplies a --pipeline argument, reduce the collection
+	wrapped = executeWithPipelines(opts.Args, name, n, wrapped)
 
 	// Add a root tracing span to the context, and end the span when the executeFunc is done.
 	wrapped = executeWithTracing(opts.Tracer, wrapped)
