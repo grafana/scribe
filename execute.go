@@ -95,9 +95,8 @@ func executeWithPipelines(
 	ef executeFunc,
 ) executeFunc {
 	return func(ctx context.Context, collection *pipeline.Collection) error {
-		fmt.Println("pipeline names: ", args.PipelineName)
 		// If the user has specified specific pipelines, then cut the "Collection" to only include those pipelines.
-		if args.PipelineName != nil {
+		if len(args.PipelineName) != 0 {
 			pipelines, err := collection.PipelinesByName(ctx, args.PipelineName)
 			if err != nil {
 				return fmt.Errorf("could not find pipeline with name '%d'. Error: %w", *args.Step, err)
