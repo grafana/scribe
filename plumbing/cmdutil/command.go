@@ -72,3 +72,48 @@ func StepCommand(opts CommandOpts) ([]string, error) {
 
 	return cmd, nil
 }
+
+type PipelineCommandOpts struct {
+	CommandOpts
+	Pipeline pipeline.Pipeline
+}
+
+func PipelineCommand(opts PipelineCommandOpts) ([]string, error) {
+	args := []string{}
+
+	if opts.BuildID != "" {
+		args = append(args, fmt.Sprintf("-build-id=%s", opts.BuildID))
+	}
+
+	if opts.State != "" {
+		args = append(args, fmt.Sprintf("-state=%s", opts.State))
+	}
+
+	if opts.LogLevel != "" {
+		args = append(args, fmt.Sprintf("-log-level=%s", opts.LogLevel))
+	}
+
+	if opts.Version != "" {
+		args = append(args, fmt.Sprintf("-version=%s", opts.Version))
+	}
+
+	if len(opts.StateArgs) != 0 {
+		for k, v := range opts.StateArgs {
+			args = append(args, fmt.Sprintf("-arg=%s=%s", k, v))
+		}
+	}
+
+	name := "scribe"
+
+	if p := opts.CompiledPipeline; p != "" {
+		name = p
+	}
+
+	cmd := append([]string{name, fmt.Sprintf("-pipeline=%s", opts.Pipeline.Name)}, args...)
+	if opts.Path != "" {
+		cmd = append(cmd, opts.Path)
+	}
+
+	return cmd, nil
+
+}

@@ -4,8 +4,10 @@ import (
 	dockerclient "github.com/fsouza/go-dockerclient"
 	"github.com/grafana/scribe/plumbing/pipeline"
 	"github.com/grafana/scribe/plumbing/pipeline/clients/cli"
+	"github.com/grafana/scribe/plumbing/pipeline/clients/dagger"
 	"github.com/grafana/scribe/plumbing/pipeline/clients/docker"
 	"github.com/grafana/scribe/plumbing/pipeline/clients/drone"
+	"github.com/grafana/scribe/plumbing/pipeline/clients/dronedagger"
 )
 
 var (
@@ -14,10 +16,14 @@ var (
 
 	// ClientDrone is set when a pipeline is ran in Drone mode, which is used to generate a Drone config from a Scribe pipeline
 	ClientDrone         = "drone"
+	ClientDroneDagger   = "drone-dagger"
 	ClientDroneStarlark = "drone-starlark"
 
-	// RunModeDocker runs the pipeline using the Docker CLI for each step
+	// ClientDocker runs the pipeline using the Docker CLI for each step
 	ClientDocker = "docker"
+
+	// ClientDagger
+	ClientDagger = "dagger"
 )
 
 func NewDefaultCollection(opts pipeline.CommonOpts) *pipeline.Collection {
@@ -40,7 +46,9 @@ var ClientInitializers = map[string]InitializerFunc{
 	ClientCLI:           NewCLIClient,
 	ClientDrone:         NewDroneClient,
 	ClientDroneStarlark: NewDroneStarlarkClient,
+	ClientDroneDagger:   NewDroneDaggerClient,
 	ClientDocker:        NewDockerClient,
+	ClientDagger:        NewDaggerClient,
 }
 
 func NewDroneClient(opts pipeline.CommonOpts) pipeline.Client {
@@ -48,6 +56,13 @@ func NewDroneClient(opts pipeline.CommonOpts) pipeline.Client {
 		Opts:     opts,
 		Log:      opts.Log,
 		Language: drone.LanguageYAML,
+	}
+}
+
+func NewDroneDaggerClient(opts pipeline.CommonOpts) pipeline.Client {
+	return &dronedagger.Client{
+		Opts: opts,
+		Log:  opts.Log,
 	}
 }
 
@@ -76,6 +91,13 @@ func NewDockerClient(opts pipeline.CommonOpts) pipeline.Client {
 		Client: cli,
 		Opts:   opts,
 		Log:    opts.Log,
+	}
+}
+
+func NewDaggerClient(opts pipeline.CommonOpts) pipeline.Client {
+	return &dagger.Client{
+		Opts: opts,
+		Log:  opts.Log,
 	}
 }
 
