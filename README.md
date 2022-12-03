@@ -10,9 +10,9 @@ This is still in beta. Expect breaking changes and incomplete features.
 
 With Scribe you can:
 
-- Run pipelines locally for testing.
+- Run pipelines locally for testing using [dagger](github.com/dagger/dagger).
 - Generate configurations for existing CI tools.
-- Use Go to debug your pipelines.
+- Use tools like delve to debug your pipelines.
 - Use existing Go tools to make complex pipelines easier to develop and maintain.
 
 ## Running Locally / testing
@@ -21,22 +21,20 @@ With Scribe you can:
 
 ### With the `scribe` CLI
 
-|                                             |                                              |
-| ------------------------------------------- | -------------------------------------------- |
-| Compile the Scribe utility                  | `mage build`                                 |
-| Run the local pipeline in the current shell | `./bin/scribe ./ci`                          |
-| Run the local pipeline in docker            | `./bin/scribe -mode=docker ./ci`             |
-| Generate the drone                          | `./bin/scribe -mode=drone ./ci`              |
-| Generate the drone and write it to a file   | `./bin/scribe -mode=drone ./ci > .drone.yml` |
+|                                             |                                                |
+| ------------------------------------------- | ---------------------------------------------- |
+| Compile the Scribe utility                  | `mage build`                                   |
+| Run the local pipeline with Dagger          | `./bin/scribe ./ci`                            |
+| Generate the drone                          | `./bin/scribe -client=drone ./ci`              |
+| Generate the drone and write it to a file   | `./bin/scribe -client=drone ./ci > .drone.yml` |
 
 ### Without the `scribe` CLI
 
-|                                             |                                        |
-| ------------------------------------------- | -------------------------------------- |
-| Run the local pipeline in the current shell | `go run ./ci`                          |
-| Run the local pipeline in docker            | `go run ./ci -mode=docker`             |
-| Generate the drone                          | `go run ./ci -mode=drone`              |
-| Generate the drone and write it to a file   | `go run ./ci -mode=drone > .drone.yml` |
+|                                             |                                          |
+| ------------------------------------------- | ---------------------------------------- |
+| Run the local pipeline with Dagger          | `go run ./ci`                            |
+| Generate the drone                          | `go run ./ci -client=drone`              |
+| Generate the drone and write it to a file   | `go run ./ci -client=drone > .drone.yml` |
 
 ## How?
 
@@ -53,7 +51,7 @@ With Scribe you can:
 
 4. It is recommended to create a Go workspace for your CI pipeline with `go work init {directory}`.
 
-   - This will keep the larger and irrelevant modules like `docker` out of your project.
+   - This will keep the larger and irrelevant modules  out of your project.
 
 ### Examples
 
@@ -63,7 +61,7 @@ To view examples of pipelines, visit the [demo](./demo) folder. These demos are 
 
 - **Why use Go and not `JavaScript/TypeScript/Python/Java`?**
 
-We use Go pretty ubiquitously at Grafana, especially in our server code. Go also allows you to easily compile a static binary for Linux from any platform which helps a lot with the portability of Scribe, especially in Docker mode.
+We use Go pretty ubiquitously at Grafana, especially in our server code. Go also allows you to easily compile a static binary for Linux from any platform which helps a lot with the portability of Scribe, especially with the dagger client.
 
 - **Will there be support for any other languages?**
 
@@ -71,12 +69,11 @@ Given the current design, it would be very difficult and there are no concrete p
 
 - **What clients are available?**
 
-- `cli`, which runs the pipeline in the current shell. This mode is easy to use and fast, however it may not be indicative of how the pipeline will run in a remote context.
-- `docker`, which runs the pipeline using the docker daemon (configured via the Docker environment variables). When developing a pipeline, this is the recommended way to run it.
+- `dagger`, which runs the pipeline using [Dagger](github.com/dagger/dagger). Dagger allows us to reproducibly run the pipeline using Docker BuildKit and Docker containers. This is the recommended way to run pipelines locally.
 - `drone`, which produces a .drone.yml file in the standard output stream (`stdout`) that will run the pipeline in Drone.
-- `drone-starlark`, which produces a `.star` / starlark-compatible file in the standard output stream (`stdout`) for use in Drone pipelines.
+- `cli`, which runs the pipeline in the current shell. This mode is not recommended to be used outside of a docker container.
 
-The current list of clients can always be obtained using the `scribe -help` command.
+The current list of clients can always be obtained using the `scribe --help` command.
 
 - **How can I use unsupported clients or make my own?**
 

@@ -36,3 +36,7 @@ func (a *ArgMap) Get(key string) (string, error) {
 
 	return "", errors.New("value not found")
 }
+
+func (a *ArgMap) Type() string {
+	return "string"
+}

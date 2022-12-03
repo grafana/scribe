@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/grafana/scribe"
 	"github.com/grafana/scribe/golang"
 	"github.com/grafana/scribe/plumbing/pipeline"
@@ -16,37 +18,22 @@ func main() {
 
 	sw.Run(
 		sw.New("test and build", func(sw *scribe.Scribe) {
-			// Test the Golang code and ensure that the build steps
-			sw.Run(
-				StepGetVersion(sw.Version).WithName("get version"),
-				golang.Test(sw, "./...").WithName("test"),
-				StepBuildImage(sw.Version, ScribeImage).WithName("build scribe docker image"),
-			)
-
-			sw.Run(BuildSteps(sw.Version, Images)...)
+			sw.Run(golang.Test(sw, "./...").WithName("test"))
 		}),
 	)
 
 	sw.Run(
-		sw.New("publish docker images", func(sw *scribe.Scribe) {
+		sw.New("create github release", func(sw *scribe.Scribe) {
 			sw.When(
 				pipeline.GitTagEvent(pipeline.GitTagFilters{}),
 			)
 
-			sw.Run(
-				StepGetVersion(sw.Version).WithName("get version"),
-			)
-
-			// Build the docker images
-			sw.Run(StepBuildImage(sw.Version, ScribeImage).WithName("build scribe docker image"))
-			sw.Run(BuildSteps(sw.Version, Images)...)
-
-			// Show the images that were built
-			sw.Run(ListImages().WithName("list images"))
-
-			// Publish them
-			sw.Run(StepPushImage(sw.Version, ScribeImage).WithName("push scribe docker image"))
-			sw.Run(PushSteps(sw.Version, Images)...)
+			sw.Run(pipeline.NamedStep("am I on a tag event?", func(ctx context.Context, opts pipeline.ActionOpts) error {
+				opts.Logger.Infoln("1. I'm on a tag event.")
+				opts.Logger.Infoln("2. I'm on a tag event.")
+				opts.Logger.Infoln("3. I'm on a tag event.")
+				return nil
+			}).WithImage("alpine:latest"))
 		}),
 	)
 }

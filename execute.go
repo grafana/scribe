@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -16,6 +18,24 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/uber/jaeger-client-go"
 )
+
+var ArgDefaults = map[string]func(context.Context) *exec.Cmd{
+	pipeline.ArgumentCommitRef.Key: func(ctx context.Context) *exec.Cmd {
+		return exec.CommandContext(ctx, "git", "rev-parse", "HEAD")
+	},
+	pipeline.ArgumentCommitSHA.Key: func(ctx context.Context) *exec.Cmd {
+		return exec.CommandContext(ctx, "git", "rev-parse", "HEAD")
+	},
+	pipeline.ArgumentRemoteURL.Key: func(ctx context.Context) *exec.Cmd {
+		return exec.CommandContext(ctx, "git", "remote", "get-url", "origin")
+	},
+	pipeline.ArgumentBranch.Key: func(ctx context.Context) *exec.Cmd {
+		return exec.CommandContext(ctx, "git", "rev-parse", "--abbrev-ref", "HEAD")
+	},
+	pipeline.ArgumentTagName.Key: func(ctx context.Context) *exec.Cmd {
+		return exec.CommandContext(ctx, "git", "describe", "--tags")
+	},
+}
 
 // executeFunc is shared between the Scribe and ScribeMulti types.
 // Because the behavior of processing the pipeline is essentially the same, and they should behave the same in perpituity,
@@ -112,6 +132,79 @@ func executeWithPipelines(
 	}
 }
 
+// executeWithEvent uses the provided '-event' argument which will populate the state with data that represents the event.
+func executeWithEvent(
+	args *plumbing.PipelineArgs,
+	opts pipeline.CommonOpts,
+	ef executeFunc,
+) executeFunc {
+	log := opts.Log
+	return func(ctx context.Context, collection *pipeline.Collection) error {
+		type event struct {
+			Args     []pipeline.Argument
+			Pipeline int64
+		}
+
+		var (
+			pipelineList = map[string]event{}
+		)
+
+		// For every pipeline, set the arguments that each event requires into the pipeline.
+		if err := collection.WalkPipelines(ctx, func(ctx context.Context, pipelines ...pipeline.Pipeline) error {
+			for _, v := range pipelines {
+				// By default assume the user has selected the git-commit event
+				pipelineList["git-commit"] = event{
+					Args:     pipeline.GitCommitEventArgs,
+					Pipeline: v.ID,
+				}
+
+				// However, still add every event found in the pipelines. This gives us a list of possible events that the user could have selected which we can present to them.
+				for _, e := range v.Events {
+					// Nailvely add each event to the list. It doesn't matter if we overwrite what's already there because event name collisions shouldn't happen.
+					pipelineList[e.Name] = event{
+						Args:     e.Provides,
+						Pipeline: v.ID,
+					}
+				}
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+
+		if len(pipelineList) == 0 {
+			return ef(ctx, collection)
+		}
+
+		e := opts.Args.Event
+		// If the user has not provided an event argument, then set a default and warn them.
+		if e == "" {
+			log.Warnln("No event was selected; assuming event is 'git-commit'")
+			keys := make([]string, len(pipelineList))
+			i := 0
+			for k := range pipelineList {
+				keys[i] = "'" + k + "'"
+				i++
+			}
+
+			log.Warnln("Other possible events for this program are:", strings.Join(keys, " "))
+			e = "git-commit"
+		}
+
+		pipelines, err := collection.PipelinesByEvent(ctx, e)
+		if err != nil {
+			return fmt.Errorf("error finding pipeline by event '%s': '%w'", e, err)
+		}
+
+		c := pipeline.NewCollection()
+		if err := c.AddPipelines(pipelines...); err != nil {
+			return err
+		}
+
+		return ef(ctx, c)
+	}
+}
+
 func executeWithSignals(
 	ef executeFunc,
 ) executeFunc {
@@ -135,10 +228,13 @@ func execute(ctx context.Context, collection *pipeline.Collection, name string, 
 	// Wrap with signals watching. If the user submits a SIGTERM/SIGINT/SIGKILL, this function will catch it and return an error.
 	wrapped := executeWithSignals(ef)
 
-	// If the user supplies a -step argument, reduce the collection
-	wrapped = executeWithSteps(opts.Args, name, n, ef)
+	// If the user supplies a --event or -e argument, check the arguments for the event and reduce the collection
+	wrapped = executeWithEvent(opts.Args, opts, wrapped)
 
-	// If the user supplies a --pipeline argument, reduce the collection
+	// If the user supplies a --step argument, reduce the collection
+	wrapped = executeWithSteps(opts.Args, name, n, wrapped)
+
+	// If the user supplies a --pipeline or -p argument, reduce the collection
 	wrapped = executeWithPipelines(opts.Args, name, n, wrapped)
 
 	// Add a root tracing span to the context, and end the span when the executeFunc is done.

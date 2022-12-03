@@ -65,9 +65,8 @@ func (f *FilesystemState) setValue(arg Argument, value any) error {
 
 	state := map[string]stateValue{}
 
-	if err := json.NewDecoder(r).Decode(&state); err != nil {
-		// Do nothing, it's likely that the file is empty. We'll overwrite it.
-	}
+	// Error ignored intentionally. If there's an error, it's likely that the file is empty. We'll overwrite it.
+	json.NewDecoder(r).Decode(&state)
 	r.Close()
 
 	// TODO: Do we really want to not allow overriding?

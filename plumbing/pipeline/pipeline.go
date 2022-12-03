@@ -21,6 +21,9 @@ func New(name string, id int64) Pipeline {
 		Name:  name,
 		ID:    id,
 		Graph: graph,
+		Events: []Event{
+			GitCommitEvent(GitCommitFilters{}),
+		},
 	}
 }
 

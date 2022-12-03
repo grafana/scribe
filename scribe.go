@@ -56,6 +56,8 @@ func nameOrDefault(name string) string {
 }
 
 // When allows users to define when this pipeline is executed, especially in the remote environment.
+// Users can execute the pipeline as if it was triggered from the event by supplying the `-e` or `--event` argument.
+// This function will overwrite any other events that were added to the pipeline.
 func (s *Scribe) When(events ...pipeline.Event) {
 	if err := s.Collection.AddEvents(s.pipeline, events...); err != nil {
 		s.Log.WithError(err).Fatalln("Failed to add events to graph")
@@ -149,7 +151,7 @@ func (s *Scribe) setup(steps ...pipeline.Step) []pipeline.Step {
 		// Set a default image for steps that don't provide one.
 		// Most pre-made steps like `yarn`, `node`, `go` steps should provide a separate default image with those utilities installed.
 		if step.Image == "" {
-			image := plumbing.DefaultImage(s.Version)
+			image := "go:1.19"
 			steps[i] = step.WithImage(image)
 		}
 
@@ -350,17 +352,17 @@ func NewWithClient(opts pipeline.CommonOpts, client pipeline.Client) *Scribe {
 	}
 }
 
-// NewClient creates a new Scribe client based on the commonopts (mostly the mode).
+// NewClient creates a new Scribe client based on the commonopts.
 // It does not check for a non-nil "Args" field.
 func NewClient(c pipeline.CommonOpts, collection *pipeline.Collection) *Scribe {
-	c.Log.Infof("Initializing Scribe client with mode '%s'", c.Args.Client)
+	c.Log.Infof("Initializing Scribe client '%s'", c.Args.Client)
 	sw := &Scribe{
 		n: &counter{},
 	}
 
 	initializer, ok := ClientInitializers[c.Args.Client]
 	if !ok {
-		c.Log.Fatalln("Could not initialize scribe. Could not find initializer for mode", c.Args.Client)
+		c.Log.Fatalf("Could not initialize scribe. Could not find initializer for client '%s'", c.Args.Client)
 		return nil
 	}
 	sw.Client = initializer(c)

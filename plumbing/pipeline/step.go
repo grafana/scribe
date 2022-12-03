@@ -58,7 +58,7 @@ type Step struct {
 	Type StepType
 
 	// Name is a string that represents or describes the step, essentially the identifier.
-	// Not all run modes will support using the name.
+	// Not all clients will support using the name for anything beyond logging.
 	Name string
 
 	// Image is an optional value that can be assigned to a step.

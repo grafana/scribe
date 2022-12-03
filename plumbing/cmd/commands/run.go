@@ -31,7 +31,7 @@ type RunOpts struct {
 	// If it is not provided, it defaults to "os.Stderr"
 	Stderr io.Writer
 	// Stdin is the stdin stream of the "go run" command that runs the pipeline.
-	// The stdin stream is used to accept arguments in docker or cli mode that were not provided in command-line arguments.
+	// The stdin stream is used to accept arguments in docker or cli client that were not provided in command-line arguments.
 	// If it is not provided, it defaults to "os.Stdin"
 	Stdin io.Reader
 
@@ -73,18 +73,18 @@ func Run(ctx context.Context, opts *RunOpts) *exec.Cmd {
 	logger := plog.New(opts.Args.LogLevel)
 
 	// This will run a weird looking command, like this:
-	//   go run ./demo/basic -mode drone -path ./demo/basic
+	//   go run ./demo/basic -client drone -path ./demo/basic
 	// But it's important to note that a lot happens before it actually reaches the pipeline code and produces a command like this:
-	//   /tmp/random-string -mode drone -path ./demo/basic
+	//   /tmp/random-string -client drone -path ./demo/basic
 	// So the path to the pipeline is not preserved, which is why we have to provide the path as an argument
-	cmdArgs := []string{"run", path, "-mode", args.Client, "-log-level", args.LogLevel.String(), "-path", args.Path, "-version", version, "-build-id", args.BuildID}
+	cmdArgs := []string{"run", path, "--client", args.Client, "--log-level", args.LogLevel.String(), "--path", args.Path, "--version", version, "--build-id", args.BuildID, "--event", args.Event}
 
 	for k, v := range args.ArgMap {
-		cmdArgs = append(cmdArgs, "-arg", fmt.Sprintf("%s=%s", k, v))
+		cmdArgs = append(cmdArgs, "--arg", fmt.Sprintf("%s=%s", k, v))
 	}
 
 	if args.Step != nil {
-		cmdArgs = append(cmdArgs, "-step", strconv.FormatInt(*args.Step, 10))
+		cmdArgs = append(cmdArgs, "--step", strconv.FormatInt(*args.Step, 10))
 	}
 
 	logger.Infoln("Running scribe pipeline with command", append([]string{"go"}, cmdArgs...))

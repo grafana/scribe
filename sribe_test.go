@@ -9,6 +9,7 @@ import (
 	"github.com/grafana/scribe/plumbing"
 	"github.com/grafana/scribe/plumbing/pipeline"
 	"github.com/grafana/scribe/plumbing/pipeline/clients/cli"
+	"github.com/grafana/scribe/plumbing/pipeline/clients/dagger"
 	"github.com/grafana/scribe/plumbing/pipeline/clients/drone"
 	"github.com/grafana/scribe/plumbing/pipeline/dag"
 	"github.com/grafana/scribe/plumbing/plog"
@@ -29,8 +30,30 @@ var testOpts = pipeline.CommonOpts{
 }
 
 func TestNew(t *testing.T) {
-	t.Run("New should return a CLIClient when provided the -mode=cli flag", func(t *testing.T) {
-		cliArgs := []string{"-mode", "cli"}
+	t.Run("New should return a Dagger client when provided no client flag", func(t *testing.T) {
+		cliArgs := []string{}
+		args, err := plumbing.ParseArguments(cliArgs)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		opts := pipeline.CommonOpts{
+			Log:  plog.New(logrus.DebugLevel),
+			Args: args,
+		}
+		sw := scribe.NewClient(opts, scribe.NewDefaultCollection(testOpts))
+
+		if reflect.TypeOf(sw.Client) != reflect.TypeOf(&dagger.Client{}) {
+			t.Fatalf("scribe.Client is '%v', not a DaggerClient", reflect.TypeOf(sw.Client))
+		}
+
+		// Because reflect feels iffy to me, also make sure that it does not equal the same type as a different client
+		if reflect.TypeOf(sw.Client) == reflect.TypeOf(&drone.Client{}) {
+			t.Fatalf("scribe.Client is '%v', not a DaggerClient", reflect.TypeOf(&drone.Client{}))
+		}
+	})
+	t.Run("New should return a CLIClient when provided the --client=cli flag", func(t *testing.T) {
+		cliArgs := []string{"--client", "cli"}
 		args, err := plumbing.ParseArguments(cliArgs)
 		if err != nil {
 			t.Fatal(err)
@@ -52,8 +75,8 @@ func TestNew(t *testing.T) {
 		}
 	})
 
-	t.Run("New should return a DroneClient when provided the -mode=drone flag", func(t *testing.T) {
-		cliArgs := []string{"-mode", "drone"}
+	t.Run("New should return a DroneClient when provided the --client=drone flag", func(t *testing.T) {
+		cliArgs := []string{"--client", "drone"}
 		args, err := plumbing.ParseArguments(cliArgs)
 		if err != nil {
 			t.Fatal(err)

@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	ErrorCLIStepHasImage = errors.New("step has a docker image specified. This may cause unexpected results if ran in CLI mode. The `-mode=docker` flag is likely more suitable")
+	ErrorCLIStepHasImage = errors.New("step has a docker image specified. This may cause unexpected results if ran with the CLI client. The `-client=docker` flag is likely more suitable")
 )
 
 // PipelineWalkFunc walks through the pipelines that the collection provides. Each pipeline is a pipeline of steps, so each will walk through the list of steps using the StepWalkFunc.

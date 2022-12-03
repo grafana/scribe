@@ -2,8 +2,10 @@ package dagger
 
 import (
 	"context"
+	"strings"
 
 	"dagger.io/dagger"
+	"github.com/grafana/scribe/plumbing"
 	"github.com/grafana/scribe/plumbing/cmdutil"
 	"github.com/grafana/scribe/plumbing/pipeline"
 	"github.com/grafana/scribe/plumbing/syncutil"
@@ -25,40 +27,39 @@ func (c *Client) StepWalkFunc(d *dagger.Client, bin *dagger.Directory, src *dagg
 			log := c.Log.WithFields(logrus.Fields{
 				"step": step.Name,
 			})
+
 			log.Infoln("Running steps using dagger client...")
-
-			binMount := "/opt/scribe/pipeline"
-
+			binPath := "/opt/scribe/pipeline"
 			runner := d.Container().From(step.Image).
 				WithMountedDirectory("/opt/scribe", bin).
 				WithMountedDirectory("/var/scribe", src).
 				WithMountedCache("/var/scribe-state", state, dagger.ContainerWithMountedCacheOpts{}).
+				WithEntrypoint([]string{}).
 				WithWorkdir("/var/scribe")
 
 			cmd, err := cmdutil.StepCommand(cmdutil.CommandOpts{
-				CompiledPipeline: binMount,
-				Path:             path,
+				CompiledPipeline: binPath,
 				Step:             step,
-				State:            "file:///var/scribe-state/state.json",
+				PipelineArgs: plumbing.PipelineArgs{
+					Path:  path,
+					State: "file:///var/scribe-state/state.json",
+				},
 			})
 			if err != nil {
 				return err
 			}
 
-			runner = runner.Exec(dagger.ContainerExecOpts{
-				Args: cmd,
-			})
+			// Some containers have entrypoints that can make `Exec` inconsistent. This attempts to disable / override that behavior.
+			//runner = runner.WithEntrypoint([]string{})
+			log.WithField("command", strings.Join(cmd, " ")).Debugln("Registering container with command...")
+			runner = runner.WithExec(cmd)
 
-			if stdout, err := runner.Stderr().Contents(ctx); err == nil {
+			if stdout, err := runner.Stderr(ctx); err == nil {
 				log.WithField("stream", "stdout").Infoln(stdout)
-			} else {
-				log.Infoln("Error getting stdout from container", err)
 			}
 
-			if stderr, err := runner.Stderr().Contents(ctx); err == nil {
+			if stderr, err := runner.Stderr(ctx); err == nil {
 				log.WithField("stream", "stderr").Infoln(stderr)
-			} else {
-				log.Infoln("Error getting stderr from container", err)
 			}
 
 			if _, err := runner.ExitCode(ctx); err != nil {
@@ -79,7 +80,6 @@ func (c *Client) PipelineWalkFunc(w pipeline.Walker, d *dagger.Client, cache *da
 		if err != nil {
 			return err
 		}
-
 		// Some projects might not have the go.mod in the root or might have a separate go.mod for the pipeline itself.
 		// If that's the case, then we need to provide that to the go build command.
 		gomod, err := c.Opts.State.GetDirectoryString(pipeline.ArgumentPipelineGoModFS)
@@ -87,11 +87,20 @@ func (c *Client) PipelineWalkFunc(w pipeline.Walker, d *dagger.Client, cache *da
 			return err
 		}
 
+		log := c.Log.WithFields(logrus.Fields{
+			"source":   src,
+			"go.mod":   gomod,
+			"pipeline": c.Opts.Args.Path,
+		})
+
+		log.Infoln("Compiling pipeline...")
 		// Compile the pipeline so that individual steps can be ran in each container
 		bin, err := CompilePipeline(ctx, d, src, gomod, c.Opts.Args.Path)
 		if err != nil {
 			return err
 		}
+
+		log.Infoln("Done compiling pipeline")
 
 		wg := syncutil.NewPipelineWaitGroup()
 		for _, pipeline := range pipelines {

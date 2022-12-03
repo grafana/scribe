@@ -30,3 +30,7 @@ func (o *OptionalInt) Set(v string) error {
 
 	return nil
 }
+
+func (o *OptionalInt) Type() string {
+	return "integer"
+}

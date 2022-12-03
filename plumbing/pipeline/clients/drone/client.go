@@ -2,7 +2,6 @@ package drone
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"path"
 
@@ -10,7 +9,6 @@ import (
 	"github.com/drone/drone-yaml/yaml/pretty"
 	"github.com/grafana/scribe/plumbing"
 	"github.com/grafana/scribe/plumbing/pipeline"
-	"github.com/grafana/scribe/plumbing/pipeline/clients/drone/starlark"
 	"github.com/grafana/scribe/plumbing/pipelineutil"
 	"github.com/grafana/scribe/plumbing/stringutil"
 	"github.com/sirupsen/logrus"
@@ -25,15 +23,6 @@ type Client struct {
 	Opts pipeline.CommonOpts
 
 	Log *logrus.Logger
-
-	// Language defines the language of the pipeline that will be generated.
-	// For example, if Language is LanguageYAML, then the generated pipeline
-	// will be the yaml that will tell drone to run the pipeline as it is written.
-	//
-	// Other languages will be generated using functions that you can use within
-	// your own pipelines in those other languages. They are intended to facilitate
-	// transitions between other systems and Scribe.
-	Language DroneLanguage
 }
 
 func (c *Client) Validate(step pipeline.Step) error {
@@ -79,30 +68,12 @@ func (s *stepList) AddService(step *yaml.Container) {
 	s.services = append(s.services, step)
 }
 
-func (c *Client) StepWalkFunc(log logrus.FieldLogger, s *stepList, state string) func(ctx context.Context, steps ...pipeline.Step) error {
-	return func(ctx context.Context, steps ...pipeline.Step) error {
-		log.Debugf("Processing '%d' steps...", len(steps))
-		for _, v := range steps {
-			log := log.WithField("dependencies", stepsToNames(v.Dependencies))
-			log.Debugf("Processing step '%s'...", v.Name)
-			step, err := NewStep(c, c.Opts.Args.Path, state, c.Opts.Version, v)
-			if err != nil {
-				return err
-			}
-
-			if v.IsBackground() {
-				s.AddService(step)
-				log.Debugf("Done Processing background step '%s'.", v.Name)
-				continue
-			}
-
-			step.DependsOn = stepsToNames(v.Dependencies)
-			s.AddStep(step)
-			log.Debugf("Done Processing step '%s'.", v.Name)
-		}
-		log.Debugf("Done processing '%d' steps...", len(steps))
-		return nil
+func (c *Client) Step(v pipeline.Pipeline, state string) (*yaml.Container, error) {
+	step, err := NewDaggerStep(c, c.Opts.Args.Path, state, c.Opts.Version, v)
+	if err != nil {
+		return nil, err
 	}
+	return step, nil
 }
 
 var (
@@ -147,7 +118,7 @@ func (c *Client) newPipeline(opts newPipelineOpts, pipelineOpts pipeline.CommonO
 
 	build := &yaml.Container{
 		Name:    "builtin-compile-pipeline",
-		Image:   plumbing.SubImage("go", c.Opts.Version),
+		Image:   "go:1.19",
 		Command: command.Args,
 		Environment: map[string]*yaml.Variable{
 			"GOOS": {
@@ -203,15 +174,15 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 		log.Debugf("Walking '%d' pipelines...", len(pipelines))
 		for _, v := range pipelines {
 			log.Debugf("Processing pipeline '%s'...", v.Name)
-			sl := &stepList{}
-			if err := w.WalkSteps(ctx, v.ID, c.StepWalkFunc(log, sl, state.String())); err != nil {
+
+			s, err := c.Step(v, state.String())
+			if err != nil {
 				return err
 			}
 
 			pipeline := c.newPipeline(newPipelineOpts{
 				Name:      stringutil.Slugify(v.Name),
-				Steps:     sl.steps,
-				Services:  sl.services,
+				Steps:     []*yaml.Container{s},
 				DependsOn: pipelinesToNames(v.Dependencies),
 			}, c.Opts)
 			if len(v.Events) == 0 {
@@ -240,37 +211,10 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 		return err
 	}
 
-	switch c.Language {
-	case LanguageYAML:
-		manifest := &yaml.Manifest{
-			Resources: cfg,
-		}
-		pretty.Print(c.Opts.Output, manifest)
-
-	case LanguageStarlark:
-		if err := c.renderStarlark(cfg); err != nil {
-			c.Log.WithError(err).Warn("error rendering starlark")
-		}
-
-	default:
-		return fmt.Errorf("unknown Drone language: %d", c.Language)
+	manifest := &yaml.Manifest{
+		Resources: cfg,
 	}
+	pretty.Print(c.Opts.Output, manifest)
 
-	return nil
-}
-
-func (c *Client) renderStarlark(cfg []yaml.Resource) error {
-	sl := starlark.NewStarlark()
-	for _, resource := range cfg {
-		switch t := resource.(type) {
-		case *yaml.Pipeline:
-			sl.MarshalPipeline(t)
-
-		default:
-			return fmt.Errorf("unrecognized type: %s: resource %v", t, resource)
-		}
-	}
-
-	fmt.Fprint(c.Opts.Output, sl.String())
 	return nil
 }

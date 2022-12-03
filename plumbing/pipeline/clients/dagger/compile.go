@@ -21,7 +21,7 @@ func CompilePipeline(ctx context.Context, d *dagger.Client, src, gomod, pipeline
 	cmd := pipelineutil.GoBuild(ctx, pipelineutil.GoBuildOpts{
 		Pipeline: pipeline,
 		Module:   path,
-		Output:   "/bin/scribe/pipeline",
+		Output:   "/opt/scribe/pipeline",
 	})
 
 	builder = builder.WithEnvVariable("GOOS", "linux")
@@ -33,5 +33,5 @@ func CompilePipeline(ctx context.Context, d *dagger.Client, src, gomod, pipeline
 		Args: cmd.Args,
 	})
 
-	return builder.Directory("/bin/scribe"), nil
+	return builder.Directory("/opt/scribe"), nil
 }

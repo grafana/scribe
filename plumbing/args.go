@@ -2,13 +2,13 @@ package plumbing
 
 import (
 	"errors"
-	"flag"
-	"fmt"
 	"math/rand"
 	"net/url"
 	"os"
 	"strings"
 	"time"
+
+	flag "github.com/spf13/pflag"
 
 	"github.com/grafana/scribe/plumbing/stringutil"
 	"github.com/sirupsen/logrus"
@@ -32,7 +32,7 @@ type PipelineArgs struct {
 	Step *int64
 
 	// BuildID is a unique identifier typically assigned by a CI system.
-	// In Docker / CLI mode, this will likely be populated by a random UUID if not provided.
+	// In Dagger / CLI clients, this will likely be populated by a random UUID if not provided.
 	BuildID string
 
 	// CanStdinPrompt is true if the pipeline can prompt for absent arguments via stdin
@@ -58,7 +58,11 @@ type PipelineArgs struct {
 	// If 'State' is not provided, then one is created using os.Tmpdir.
 	State string
 
+	// PipelineName can be provided in a multi-pipeline setup to run an entire pipeline rather than the entire suite of pipelines.
 	PipelineName []string
+
+	// Event can be provided in a multi-pipeline setup locally to simulate an event.
+	Event string
 }
 
 type pipelineNames struct {
@@ -72,6 +76,10 @@ func (p *pipelineNames) String() string {
 func (p *pipelineNames) Set(value string) error {
 	p.names = append(p.names, value)
 	return nil
+}
+
+func (p *pipelineNames) Type() string {
+	return "[]string"
 }
 
 func ParseArguments(args []string) (*PipelineArgs, error) {
@@ -91,25 +99,24 @@ func ParseArguments(args []string) (*PipelineArgs, error) {
 		noStdinPrompt bool
 		argMap        = ArgMap(map[string]string{})
 		state         string
+		event         string
 		pipelineName  pipelineNames
 	)
 
-	flagSet.Usage = usage(flagSet)
+	// Flags with shorthand options
+	flagSet.StringVarP(&client, "client", "c", "dagger", "dagger|drone. Default: dagger")
+	flagSet.StringVarP(&logLevel, "log-level", "l", "info", "The level of detail in the pipeline's log output. Default: 'warn'. Options: [trace, debug, info, warn, error]")
+	flagSet.StringVarP(&buildID, "build-id", "b", stringutil.Random(12), "A unique identifier typically assigned by a build system. Defaults to a random string if no build ID is provided")
+	flagSet.StringVarP(&state, "state", "s", defaultState.String(), "A URI that refers to a state file or directory where state between steps is stored. Must include a protocol, like 'file://', 'gcs://', or 's3://'")
+	flagSet.StringVarP(&event, "event", "e", "git-commit", "The name of an event to run. The default behavior is to run all pipelines that do not have a source event")
+	flagSet.VarP(&pipelineName, "pipeline", "p", "A pipeline name, giving a value for this flag will result in only the pipeline of the specified name being executed. The default empty string will run all pipelines.")
 
-	flagSet.StringVar(&client, "mode", "cli", "cli|docker|drone|drone-starlark. Default: cli")
 	flagSet.Var(&step, "step", "A number that defines what specific step to run")
-	flagSet.StringVar(&logLevel, "log-level", "info", "The level of detail in the pipeline's log output. Default: 'warn'. Options: [trace, debug, info, warn, error]")
-	flagSet.StringVar(&logLevel, "l", "info", "The level of detail in the pipeline's log output. Default: 'warn'. Options: [trace, debug, info, warn, error]")
 	flagSet.Var(&argMap, "arg", "Provide pre-available arguments for use in pipeline steps. This argument can be provided multiple times. Format: '-arg={key}={value}")
 	flagSet.BoolVar(&noStdinPrompt, "no-stdin", false, "If this flag is provided, then the CLI pipeline will not request absent arguments via stdin")
 	flagSet.StringVar(&pathOverride, "path", "", "Providing the path argument overrides the $PWD of the pipeline for generation")
 	flagSet.StringVar(&version, "version", "latest", "The version is provided by the 'scribe' command, however if only using 'go run', it can be provided here")
-	flagSet.StringVar(&buildID, "build-id", stringutil.Random(12), "A unique identifier typically assigned by a build system. Defaults to a random string if no build ID is provided")
-	flagSet.StringVar(&buildID, "b", stringutil.Random(12), "A unique identifier typically assigned by a build system. Defaults to a random string if no build ID is provided")
-	flagSet.StringVar(&state, "state", defaultState.String(), "A URI that refers to a state file or directory where state between steps is stored. Must include a protocol, like 'file://', 'gcs://', or 's3://'")
-	flagSet.StringVar(&state, "s", defaultState.String(), "A URI that refers to a state file or directory where state between steps is stored. Must include a protocol, like 'file://', 'gcs://', or 's3://'")
-	flagSet.Var(&pipelineName, "pipeline", "A pipeline name, giving a value for this flag will result in only the pipeline of the specified name being executed. The default empty string will run all pipelines.")
-	flagSet.Var(&pipelineName, "p", "A pipeline name, giving a value for this flag will result in only the pipeline of the specified name being executed. The default empty string will run all pipelines.")
+
 	if err := flagSet.Parse(args); err != nil {
 		return nil, err
 	}
@@ -132,6 +139,7 @@ func ParseArguments(args []string) (*PipelineArgs, error) {
 		BuildID:        buildID,
 		State:          state,
 		PipelineName:   pipelineName.names,
+		Event:          event,
 	}
 
 	if step.Valid {
@@ -151,23 +159,4 @@ func ParseArguments(args []string) (*PipelineArgs, error) {
 	arguments.Path = path
 	arguments.ArgMap = argMap
 	return arguments, nil
-}
-
-var examples = `Examples:
-  scribe # Runs the pipeline located in $PWD
-  scribe path/to/pipeline # Runs the pipeline located in path/to/pipeline
-  scribe -mode=drone path/to/pipeline # Generates a Drone config using the pipeline defined at the specified path`
-
-func usage(f *flag.FlagSet) func() {
-	return func() {
-		fmt.Fprintln(f.Output(), "Usage of scribe: scribe [-arg=...] [-mode=run|drone|docker] [path]")
-		f.PrintDefaults()
-		fmt.Fprintln(f.Output(), examples)
-		if f.ErrorHandling() == flag.ExitOnError {
-			os.Exit(1)
-		}
-		if f.ErrorHandling() == flag.PanicOnError {
-			panic("invalid argument(s)")
-		}
-	}
 }

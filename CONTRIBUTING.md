@@ -9,23 +9,6 @@ This project is designed with two main elements in mind:
 
 It is important that the "pipeline-developer-facing" stays as readable and minimal as possible and doesn't contain excessive implementation details.
 
-```
-.
-|─./scribe.go
-├── ci
-├── demo
-├── {package}
-│   └── x
-└── plumbing
-    ├── cmd
-    │   └── commands
-    ├── pipeline
-    │   └── clients
-    ├── plog
-    ├── schemas
-    └── {x}util
-```
-
 | directory / format            | description                                                                                                                                                                     |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `./initializers.go`           | Defines functions and logic for initializing different clients.                                                                                                                 |
@@ -34,14 +17,13 @@ It is important that the "pipeline-developer-facing" stays as readable and minim
 | `./demo`                      | Demo pipelines. Each sub-directory should be a separate pipeline that introduces a new / separate concept.                                                                      |
 | `./.compose`                  | Contains configuration files for the different services in 'docker-compose'                                                                                                     |
 | `./{package}`                 | Represents a Go package that should contain only definitions for **Steps** or **Actions** for use in Scribe pipelines.                                                      |
-| `./{package}/x`               | The small, unit-testable functions that power the actions used in `{package}`.                                                                                                  |
 | `./plumbing`                  | The packages that power the pipeline logic including asyncronous / goroutine handling and client code.                                                                          |
 | `./plumbing/cmd`              | The `main` package and commands that make up the `scribe` binary.                                                                                                           |
 | `./plumbing/pipeline`         | The types that make up a Pipeline, regardless of client. Primarily `Collection`, `Step` and `Action`.                                                                           |
 | `./plumbing/pipeline/clients` | The Clients that satisfy the `Client` interface. These Clients can run the pipeline in an environment of some kind, or can generate configuration that represents the pipeline. |
 | `./plumbing/plog`             | The Logger that is used in Scribe Clients.                                                                                                                                  |
 | `./plumbing/schemas`          | Strictly contains types that represent third-party configuration schemas that Clients will use for generation. (TODO: Maybe those schemas should live next to the clients?      |
-| `./plumbing/{x}util`          | Specific utility packages that help with {x}. For example, {sync}util helps with using the {sync} package.                                                                      |
+| `./plumbing/{x}util`          | Specific utility packages that help with {x} stdlib package. For example, {sync}util helps with using the {sync} package.                                                                      |
 
 Important notes:
 
@@ -128,7 +110,7 @@ mage build
 Then, run the pipeline:
 
 ```
-./bin/scribe -mode=cli -log-level=info ./ci
+./bin/scribe -client=cli -log-level=info ./ci
 ```
 
 To also send the logs of the pipeline to Loki, direct the stderr to stdout, and pipe the output to `lokitee`.

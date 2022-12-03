@@ -82,7 +82,7 @@ func codeqlPipeline(sw *scribe.Scribe) {
 // "main" defines our program pipeline.
 // "main" defines our program pipeline.
 // Every pipeline step should be instantiated using the scribe client (sw).
-// This allows the various client modes to work properly in different scenarios, like in a CI environment or locally.
+// This allows the various clients to work properly in different scenarios, like in a CI environment or locally.
 // Logic and processing done outside of the `sw.*` family of functions may not be included in the resulting pipeline.
 func main() {
 	sw := scribe.NewMulti()

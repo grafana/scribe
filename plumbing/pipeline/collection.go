@@ -164,6 +164,8 @@ func (c *Collection) WalkSteps(ctx context.Context, pipelineID int64, wf StepWal
 	return nil
 }
 
+// AddEvents adds the list of events to the pipeline with 'pipelineID'.
+// Events are not unique themselves are really only a list of arguments.
 func (c *Collection) AddEvents(pipelineID int64, events ...Event) error {
 	node, err := c.Graph.Node(pipelineID)
 	if err != nil {
@@ -171,7 +173,7 @@ func (c *Collection) AddEvents(pipelineID int64, events ...Event) error {
 	}
 
 	pipeline := node.Value
-	pipeline.Events = append(node.Value.Events, events...)
+	pipeline.Events = events
 	node.Value = pipeline
 	return nil
 }
@@ -363,6 +365,32 @@ func (c *Collection) PipelinesByName(ctx context.Context, names []string) ([]Pip
 		return nil, errors.New("no matching pipelines found")
 	}
 	return retP, nil
+}
+
+func (c *Collection) PipelinesByEvent(ctx context.Context, name string) ([]Pipeline, error) {
+	ret := []Pipeline{}
+
+	// Search every pipeline for the event
+	if err := c.WalkPipelines(ctx, func(ctx context.Context, pipelines ...Pipeline) error {
+		for _, pipeline := range pipelines {
+			for _, event := range pipeline.Events {
+				if event.Name == name {
+					pipeline.Dependencies = []Pipeline{}
+					ret = append(ret, pipeline)
+					break
+				}
+			}
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	if len(ret) == 0 {
+		return nil, errors.New("no matching pipelines found")
+	}
+
+	return ret, nil
 }
 
 // NewCollectinoWithSteps creates a new Collection with a single pipeline from a list of Steps.

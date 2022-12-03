@@ -25,12 +25,12 @@ func writeVersion(sw *scribe.Scribe) pipeline.Step {
 		return fs.ReplaceString(".version", version)(ctx, opts)
 	}
 
-	return pipeline.NewStep(action)
+	return pipeline.NewStep(action).WithImage("alpine:latest")
 }
 
 // "main" defines our program pipeline.
 // Every pipeline step should be instantiated using the scribe client (sw).
-// This allows the various client modes to work properly in different scenarios, like in a CI environment or locally.
+// This allows the various clients to work properly in different scenarios, like in a CI environment or locally.
 // Logic and processing done outside of the `sw.*` family of functions may not be included in the resulting pipeline.
 func main() {
 	sw := scribe.New("basic pipeline")
@@ -51,18 +51,18 @@ func main() {
 		pipeline.NamedStep("install frontend dependencies", sw.Cache(
 			yarn.InstallAction(),
 			fs.Cache("node_modules", fs.FileHasChanged("yarn.lock")),
-		)),
+		)).WithImage("node:latest"),
 		pipeline.NamedStep("install backend dependencies", sw.Cache(
 			golang.ModDownload(),
 			fs.Cache("$GOPATH/pkg", fs.FileHasChanged("go.sum")),
-		)),
+		)).WithImage("node:latest"),
 		writeVersion(sw).WithName("write-version-file"),
 	)
 
 	sw.Run(
-		pipeline.NamedStep("compile backend", makefile.Target("build")),
-		pipeline.NamedStep("compile frontend", makefile.Target("package")),
-		pipeline.NamedStep("build docker image", makefile.Target("build")).WithArguments(pipeline.ArgumentDockerSocketFS),
+		pipeline.NamedStep("compile backend", makefile.Target("build")).WithImage("alpine:latest"),
+		pipeline.NamedStep("compile frontend", makefile.Target("package")).WithImage("alpine:latest"),
+		pipeline.NamedStep("build docker image", makefile.Target("build")).WithArguments(pipeline.ArgumentDockerSocketFS).WithImage("alpine:latest"),
 	)
 
 	sw.Run(

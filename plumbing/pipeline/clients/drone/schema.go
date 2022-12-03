@@ -2,12 +2,13 @@ package drone
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/drone/drone-yaml/yaml"
+	"github.com/grafana/scribe/plumbing"
 	"github.com/grafana/scribe/plumbing/cmdutil"
 	"github.com/grafana/scribe/plumbing/pipeline"
 	"github.com/grafana/scribe/plumbing/stringutil"
+	"github.com/sirupsen/logrus"
 )
 
 func combineVariables(a map[string]*yaml.Variable, b map[string]*yaml.Variable) map[string]*yaml.Variable {
@@ -62,11 +63,11 @@ func stepVolumes(c pipeline.Configurer, step pipeline.Step) []*yaml.VolumeMount 
 		}
 
 		// If it's a known argument...
-		value, err := c.Value(v)
-		if err != nil {
-			// Skip this then because it's not known. It should be provided by a different step ran previously.
-			// TODO: handle FS type arguments here?
-		}
+		value, _ := c.Value(v)
+		//if err != nil {
+		// Skip this then because it's not known. It should be provided by a different step ran previously.
+		// TODO: handle FS type arguments here?
+		//}
 
 		volumes = append(volumes, &yaml.VolumeMount{
 			Name:      stringutil.Slugify(v.Key),
@@ -77,48 +78,40 @@ func stepVolumes(c pipeline.Configurer, step pipeline.Step) []*yaml.VolumeMount 
 	return volumes
 }
 
-func NewStep(c pipeline.Configurer, path, state, version string, step pipeline.Step) (*yaml.Container, error) {
+func NewDaggerStep(c pipeline.Configurer, path, state, version string, p pipeline.Pipeline) (*yaml.Container, error) {
 	var (
-		name    = stringutil.Slugify(step.Name)
-		deps    = make([]string, len(step.Dependencies))
-		image   = step.Image
-		volumes = stepVolumes(c, step)
+		name  = stringutil.Slugify(p.Name)
+		image = "go:1.19"
+		//volumes = stepVolumes(c, step)
 	)
-	env, args := HandleSecrets(c, step)
+	//env, args := HandleSecrets(c, p)
 
-	for i, v := range step.Dependencies {
-		deps[i] = stringutil.Slugify(v.Name)
-	}
+	//for i, v := range step.Dependencies {
+	//	deps[i] = stringutil.Slugify(v.Name)
+	//}
 
-	cmd, err := cmdutil.StepCommand(cmdutil.CommandOpts{
-		CompiledPipeline: PipelinePath,
-		Path:             path,
-		Step:             step,
-		BuildID:          "$DRONE_BUILD_NUMBER",
-		State:            state,
-		StateArgs:        args,
-		LogLevel:         "debug",
-		Version:          version,
+	cmd, err := cmdutil.PipelineCommand(cmdutil.PipelineCommandOpts{
+		Pipeline: p,
+		CommandOpts: cmdutil.CommandOpts{
+			CompiledPipeline: PipelinePath,
+			PipelineArgs: plumbing.PipelineArgs{
+				Path:    path,
+				BuildID: "$DRONE_BUILD_NUMBER",
+				State:   state,
+				//ArgMap:        args,
+				LogLevel: logrus.DebugLevel,
+				Version:  version,
+			},
+		},
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	var cmds []string
-
-	if step.Action != nil {
-		cmds = []string{
-			strings.Join(cmd, " "),
-		}
-	}
-
 	return &yaml.Container{
-		Name:        name,
-		Image:       image,
-		Commands:    cmds,
-		DependsOn:   deps,
-		Environment: env,
-		Volumes:     volumes,
+		Name:     name,
+		Image:    image,
+		Commands: cmd,
 	}, nil
 }

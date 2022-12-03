@@ -61,12 +61,20 @@ func GlobFilter(v string) *FilterValue {
 // The only case where this may happen is if the event is a manual one, where users are able to submit the event with any arbitrary set of keys/values.
 // The 'Filters' key is provided in the pipeline code and should not be populated when pre-defined in the Scribe package.
 type Event struct {
+	Name     string
 	Filters  map[string]*FilterValue
 	Provides []Argument
 }
 
 type GitCommitFilters struct {
 	Branch *FilterValue
+}
+
+// GitCommitEventArgs are arguments that should provide in the pipeline state when a pipeline was created from a git commit event.
+var GitCommitEventArgs = []Argument{
+	ArgumentCommitSHA,
+	ArgumentBranch,
+	ArgumentRemoteURL,
 }
 
 func GitCommitEvent(filters GitCommitFilters) Event {
@@ -77,12 +85,9 @@ func GitCommitEvent(filters GitCommitFilters) Event {
 	}
 
 	return Event{
-		Filters: f,
-		Provides: []Argument{
-			ArgumentCommitSHA,
-			ArgumentBranch,
-			ArgumentRemoteURL,
-		},
+		Name:     "git-commit",
+		Filters:  f,
+		Provides: GitCommitEventArgs,
 	}
 }
 
@@ -90,27 +95,35 @@ type GitTagFilters struct {
 	Name *FilterValue
 }
 
+// GitTagEventArgs are arguments that should provide in the pipeline state when a pipeline was created from a git tag event.
+var GitTagEventArgs = []Argument{
+	ArgumentCommitSHA,
+	ArgumentCommitRef,
+	ArgumentRemoteURL,
+}
+
 func GitTagEvent(filters GitTagFilters) Event {
 	f := map[string]*FilterValue{}
 	f["tag"] = filters.Name
 
 	return Event{
-		Filters: f,
-		Provides: []Argument{
-			ArgumentCommitSHA,
-			ArgumentCommitRef,
-			ArgumentRemoteURL,
-		},
+		Name:     "git-tag",
+		Filters:  f,
+		Provides: GitTagEventArgs,
 	}
 }
 
 type PullRequestFilters struct{}
 
+// PullRequestEventArgs are arguments that should provide in the pipeline state when a pipeline was created from a pull request.
+var PullRequestEventArgs = []Argument{}
+
 func PullRequestEvent(filters PullRequestFilters) Event {
 	f := map[string]*FilterValue{}
 
 	return Event{
+		Name:     "pull-request",
 		Filters:  f,
-		Provides: []Argument{},
+		Provides: PullRequestEventArgs,
 	}
 }

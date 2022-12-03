@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/grafana/scribe/plumbing"
 	"github.com/grafana/scribe/plumbing/pipeline"
 )
 
@@ -44,5 +43,5 @@ func StepGetVersion(version string) pipeline.Step {
 			pipeline.ArgumentSourceFS,
 		).
 		Provides(ArgumentVersion).
-		WithImage(plumbing.SubImage("git", version))
+		WithImage("alpine/git:2.36.3")
 }
