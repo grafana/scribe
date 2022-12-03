@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/pipeline"
 )
 
 // ensurer provides a pipeline.StepWalkFunc that ensures that the steps that it receives are ran in the order provided.

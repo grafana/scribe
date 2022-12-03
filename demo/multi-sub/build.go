@@ -8,7 +8,8 @@ import (
 	gitx "github.com/grafana/scribe/git/x"
 	"github.com/grafana/scribe/golang"
 	"github.com/grafana/scribe/makefile"
-	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/pipeline"
+	"github.com/grafana/scribe/state"
 	"github.com/grafana/scribe/yarn"
 )
 
@@ -68,7 +69,7 @@ func publishPipeline(sw *scribe.Scribe) {
 	)
 
 	sw.Run(
-		pipeline.NamedStep("publish", makefile.Target("publish")).WithArguments(pipeline.NewSecretArgument("gcp-publish-key")),
+		pipeline.NamedStep("publish", makefile.Target("publish")).Requires(state.NewSecretArgument("gcp-publish-key")),
 	)
 }
 

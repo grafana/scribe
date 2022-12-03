@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/grafana/scribe"
-	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/pipeline"
 )
 
 func TestMulti(t *testing.T) {

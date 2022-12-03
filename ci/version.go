@@ -6,11 +6,12 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/pipeline"
+	"github.com/grafana/scribe/state"
 )
 
 var (
-	ArgumentVersion = pipeline.NewStringArgument("version")
+	ArgumentVersion = state.NewStringArgument("version")
 )
 
 func version() (string, error) {
@@ -39,7 +40,7 @@ func getVersion(ctx context.Context, opts pipeline.ActionOpts) error {
 
 func StepGetVersion(version string) pipeline.Step {
 	return pipeline.NewStep(getVersion).
-		WithArguments(
+		Requires(
 			pipeline.ArgumentSourceFS,
 		).
 		Provides(ArgumentVersion).

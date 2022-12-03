@@ -4,7 +4,8 @@ import (
 	"context"
 
 	"github.com/grafana/scribe"
-	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/pipeline"
+	"github.com/grafana/scribe/pipeline/clients"
 	"github.com/sirupsen/logrus"
 )
 
@@ -34,7 +35,7 @@ func (c *MyClient) Done(ctx context.Context, w pipeline.Walker) error {
 }
 
 func init() {
-	scribe.RegisterClient("my-custom-client", func(opts pipeline.CommonOpts) pipeline.Client {
+	scribe.RegisterClient("my-custom-client", func(opts clients.CommonOpts) pipeline.Client {
 		return &MyClient{
 			Log: opts.Log,
 		}

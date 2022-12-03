@@ -8,17 +8,18 @@ import (
 	"path/filepath"
 
 	"github.com/grafana/scribe"
-	"github.com/grafana/scribe/plumbing/pipeline"
-	"github.com/grafana/scribe/plumbing/stringutil"
+	"github.com/grafana/scribe/pipeline"
+	"github.com/grafana/scribe/state"
+	"github.com/grafana/scribe/stringutil"
 )
 
 var (
-	ArgumentSecret        = pipeline.NewSecretArgument("secret_string")
-	ArgumentRandomString  = pipeline.NewStringArgument("random_string")
-	ArgumentRandomInt     = pipeline.NewInt64Argument("random_int")
-	ArgumentRandomFloat64 = pipeline.NewFloat64Argument("random_float")
-	ArgumentTextFile      = pipeline.NewFileArgument("text_file")
-	ArgumentDirectory     = pipeline.NewDirectoryArgument("example_directory")
+	ArgumentSecret        = state.NewSecretArgument("secret_string")
+	ArgumentRandomString  = state.NewStringArgument("random_string")
+	ArgumentRandomInt     = state.NewInt64Argument("random_int")
+	ArgumentRandomFloat64 = state.NewFloat64Argument("random_float")
+	ArgumentTextFile      = state.NewFileArgument("text_file")
+	ArgumentDirectory     = state.NewDirectoryArgument("example_directory")
 )
 
 func StepProduceRandomString() pipeline.Step {
@@ -90,7 +91,7 @@ func StepPrintRandomInt64() pipeline.Step {
 	}
 
 	step := pipeline.NewStep(action)
-	return step.WithArguments(ArgumentRandomInt)
+	return step.Requires(ArgumentRandomInt)
 }
 
 func StepPrintRandomFloat64() pipeline.Step {
@@ -105,7 +106,7 @@ func StepPrintRandomFloat64() pipeline.Step {
 	}
 
 	step := pipeline.NewStep(action)
-	return step.WithArguments(ArgumentRandomFloat64)
+	return step.Requires(ArgumentRandomFloat64)
 }
 
 func StepPrintRandomString() pipeline.Step {
@@ -120,7 +121,7 @@ func StepPrintRandomString() pipeline.Step {
 	}
 
 	step := pipeline.NewStep(action)
-	return step.WithArguments(ArgumentRandomString)
+	return step.Requires(ArgumentRandomString)
 }
 
 func StepPrintFile() pipeline.Step {
@@ -139,7 +140,7 @@ func StepPrintFile() pipeline.Step {
 	}
 
 	step := pipeline.NewStep(action)
-	return step.WithArguments(ArgumentTextFile)
+	return step.Requires(ArgumentTextFile)
 }
 
 func StepPrintDirectory() pipeline.Step {
@@ -158,7 +159,7 @@ func StepPrintDirectory() pipeline.Step {
 	}
 
 	step := pipeline.NewStep(action)
-	return step.WithArguments(ArgumentDirectory)
+	return step.Requires(ArgumentDirectory)
 }
 
 func StepPrintSecret() pipeline.Step {
@@ -174,7 +175,7 @@ func StepPrintSecret() pipeline.Step {
 	}
 
 	step := pipeline.NewStep(action)
-	return step.WithArguments(ArgumentSecret)
+	return step.Requires(ArgumentSecret)
 }
 
 // func init() {

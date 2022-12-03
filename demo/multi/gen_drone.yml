@@ -9,7 +9,7 @@ platform:
 
 steps:
 - name: builtin-compile-pipeline
-  image: grafana/shipwright:go-latest
+  image: golang:1.19
   command:
   - go
   - build
@@ -24,10 +24,16 @@ steps:
   - name: scribe
     path: /var/scribe
 
-- name: install_frontend_dependencies
-  image: grafana/shipwright:latest
+- name: test
+  image: golang:1.19
   commands:
-  - /var/scribe/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/multi
+  - /var/scribe/pipeline
+  - --pipeline=test
+  - --build-id=$DRONE_BUILD_NUMBER
+  - --state=file:///var/scribe-state/state.json
+  - --log-level=debug
+  - --version=latest
+  - ./demo/multi
   volumes:
   - name: scribe
     path: /var/scribe
@@ -35,42 +41,6 @@ steps:
     path: /var/scribe-state
   depends_on:
   - builtin-compile-pipeline
-
-- name: install_backend_dependencies
-  image: grafana/shipwright:latest
-  commands:
-  - /var/scribe/pipeline -step=2 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/multi
-  volumes:
-  - name: scribe
-    path: /var/scribe
-  - name: scribe-state
-    path: /var/scribe-state
-  depends_on:
-  - install_frontend_dependencies
-
-- name: test_backend
-  image: grafana/shipwright:go-latest
-  commands:
-  - /var/scribe/pipeline -step=5 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/multi
-  volumes:
-  - name: scribe
-    path: /var/scribe
-  - name: scribe-state
-    path: /var/scribe-state
-  depends_on:
-  - install_backend_dependencies
-
-- name: test_frontend
-  image: grafana/shipwright:latest
-  commands:
-  - /var/scribe/pipeline -step=6 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/multi
-  volumes:
-  - name: scribe
-    path: /var/scribe
-  - name: scribe-state
-    path: /var/scribe-state
-  depends_on:
-  - install_backend_dependencies
 
 volumes:
 - name: scribe
@@ -92,7 +62,7 @@ platform:
 
 steps:
 - name: builtin-compile-pipeline
-  image: grafana/shipwright:go-latest
+  image: golang:1.19
   command:
   - go
   - build
@@ -107,10 +77,16 @@ steps:
   - name: scribe
     path: /var/scribe
 
-- name: install_frontend_dependencies
-  image: grafana/shipwright:latest
+- name: publish
+  image: golang:1.19
   commands:
-  - /var/scribe/pipeline -step=9 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/multi
+  - /var/scribe/pipeline
+  - --pipeline=publish
+  - --build-id=$DRONE_BUILD_NUMBER
+  - --state=file:///var/scribe-state/state.json
+  - --log-level=debug
+  - --version=latest
+  - ./demo/multi
   volumes:
   - name: scribe
     path: /var/scribe
@@ -118,58 +94,6 @@ steps:
     path: /var/scribe-state
   depends_on:
   - builtin-compile-pipeline
-
-- name: install_backend_dependencies
-  image: grafana/shipwright:latest
-  commands:
-  - /var/scribe/pipeline -step=10 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/multi
-  volumes:
-  - name: scribe
-    path: /var/scribe
-  - name: scribe-state
-    path: /var/scribe-state
-  depends_on:
-  - install_frontend_dependencies
-
-- name: compile_backend
-  image: grafana/shipwright:latest
-  commands:
-  - /var/scribe/pipeline -step=13 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/multi
-  volumes:
-  - name: scribe
-    path: /var/scribe
-  - name: scribe-state
-    path: /var/scribe-state
-  depends_on:
-  - install_backend_dependencies
-
-- name: compile_frontend
-  image: grafana/shipwright:latest
-  commands:
-  - /var/scribe/pipeline -step=14 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/multi
-  volumes:
-  - name: scribe
-    path: /var/scribe
-  - name: scribe-state
-    path: /var/scribe-state
-  depends_on:
-  - install_backend_dependencies
-
-- name: publish
-  image: grafana/shipwright:latest
-  commands:
-  - /var/scribe/pipeline -step=16 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest -arg=gcp-publish-key=$secret_gcp_publish_key ./demo/multi
-  environment:
-    secret_gcp_publish_key:
-      from_secret: gcp-publish-key
-  volumes:
-  - name: scribe
-    path: /var/scribe
-  - name: scribe-state
-    path: /var/scribe-state
-  depends_on:
-  - compile_backend
-  - compile_frontend
 
 volumes:
 - name: scribe

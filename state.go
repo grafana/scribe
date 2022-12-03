@@ -6,13 +6,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/grafana/scribe/plumbing"
-	"github.com/grafana/scribe/plumbing/pipeline"
-	"github.com/grafana/scribe/plumbing/stringutil"
+	"github.com/grafana/scribe/args"
+	"github.com/grafana/scribe/state"
+	"github.com/grafana/scribe/stringutil"
 	"github.com/sirupsen/logrus"
 )
 
-func newFilesystemState(u *url.URL) (pipeline.StateHandler, error) {
+func newFilesystemState(u *url.URL) (state.StateHandler, error) {
 	path := u.Path
 	if info, err := os.Stat(path); err == nil {
 		if info.IsDir() {
@@ -20,26 +20,26 @@ func newFilesystemState(u *url.URL) (pipeline.StateHandler, error) {
 		}
 	}
 
-	return pipeline.NewFilesystemState(path)
+	return state.NewFilesystemState(path)
 }
 
-var states = map[string]func(*url.URL) (pipeline.StateHandler, error){
+var states = map[string]func(*url.URL) (state.StateHandler, error){
 	"file": newFilesystemState,
 	"fs":   newFilesystemState,
 }
 
-func GetState(val string, log logrus.FieldLogger, args *plumbing.PipelineArgs) (*pipeline.State, error) {
+func GetState(val string, log logrus.FieldLogger, pargs *args.PipelineArgs) (*state.State, error) {
 	u, err := url.Parse(val)
 	if err != nil {
 		return nil, err
 	}
 
-	fallback := []pipeline.StateReader{
-		pipeline.StateReaderWithLogs(log.WithField("state", "arguments"), pipeline.NewArgMapReader(args.ArgMap)),
+	fallback := []state.StateReader{
+		state.StateReaderWithLogs(log.WithField("state", "arguments"), state.NewArgMapReader(pargs.ArgMap)),
 	}
 
-	if args.CanStdinPrompt {
-		fallback = append(fallback, pipeline.StateReaderWithLogs(log.WithField("state", "stdin"), pipeline.NewStdinReader(os.Stdin, os.Stdout)))
+	if pargs.CanStdinPrompt {
+		fallback = append(fallback, state.StateReaderWithLogs(log.WithField("state", "stdin"), state.NewStdinReader(os.Stdin, os.Stdout)))
 	}
 
 	if v, ok := states[u.Scheme]; ok {
@@ -48,8 +48,8 @@ func GetState(val string, log logrus.FieldLogger, args *plumbing.PipelineArgs) (
 			return nil, err
 		}
 
-		return &pipeline.State{
-			Handler:  pipeline.StateHandlerWithLogs(log.WithField("state", u.Scheme), handler),
+		return &state.State{
+			Handler:  state.StateHandlerWithLogs(log.WithField("state", u.Scheme), handler),
 			Fallback: fallback,
 			Log:      log,
 		}, nil

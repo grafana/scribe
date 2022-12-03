@@ -3,11 +3,12 @@ package git
 import (
 	"context"
 
-	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/pipeline"
+	"github.com/grafana/scribe/state"
 )
 
 var (
-	ArgGitDescription = pipeline.NewStringArgument("git-description")
+	ArgGitDescription = state.NewStringArgument("git-description")
 )
 
 type DescribeOpts struct {

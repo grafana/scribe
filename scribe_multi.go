@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/grafana/scribe/plumbing"
-	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/args"
+	"github.com/grafana/scribe/pipeline"
+	"github.com/grafana/scribe/pipeline/clients"
 	"github.com/sirupsen/logrus"
 )
 
@@ -14,7 +15,7 @@ type ScribeMulti struct {
 	Collection *pipeline.Collection
 
 	// Opts are the options that are provided to the pipeline from outside sources. This includes mostly command-line arguments and environment variables
-	Opts    pipeline.CommonOpts
+	Opts    clients.CommonOpts
 	Log     logrus.FieldLogger
 	Version string
 
@@ -165,9 +166,9 @@ func NewMulti() *ScribeMulti {
 	}
 }
 
-func NewMultiWithClient(opts pipeline.CommonOpts, client pipeline.Client) *ScribeMulti {
+func NewMultiWithClient(opts clients.CommonOpts, client pipeline.Client) *ScribeMulti {
 	if opts.Args == nil {
-		opts.Args = &plumbing.PipelineArgs{}
+		opts.Args = &args.PipelineArgs{}
 	}
 
 	return &ScribeMulti{

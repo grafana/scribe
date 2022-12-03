@@ -1,5 +1,5 @@
 package fs
 
-import "github.com/grafana/scribe/plumbing/pipeline"
+import "github.com/grafana/scribe/pipeline"
 
 func Glob(string) pipeline.Artifact { return nil }

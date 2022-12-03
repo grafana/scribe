@@ -3,7 +3,7 @@ package fs
 import (
 	"context"
 
-	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/pipeline"
 )
 
 func Replace(file string, content string) pipeline.Action {

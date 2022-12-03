@@ -12,7 +12,7 @@ import (
 	"github.com/google/go-jsonnet"
 	"github.com/google/go-jsonnet/formatter"
 	"github.com/google/go-jsonnet/linter"
-	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/pipeline"
 	"github.com/grafana/tanka/pkg/kubernetes/util"
 )
 
@@ -56,7 +56,7 @@ func Lint(path string) pipeline.Step {
 			}
 			return nil
 		},
-	).WithArguments(pipeline.ArgumentSourceFS)
+	).Requires(pipeline.ArgumentSourceFS)
 }
 
 func Format(path string) pipeline.Step {
@@ -108,5 +108,5 @@ func Format(path string) pipeline.Step {
 			}
 			return nil
 		},
-	).WithArguments(pipeline.ArgumentSourceFS)
+	).Requires(pipeline.ArgumentSourceFS)
 }

@@ -3,14 +3,15 @@ package scribe
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 
-	"github.com/grafana/scribe/plumbing"
-	"github.com/grafana/scribe/plumbing/cmdutil"
-	"github.com/grafana/scribe/plumbing/pipeline"
-	"github.com/grafana/scribe/plumbing/plog"
+	"github.com/grafana/scribe/args"
+	"github.com/grafana/scribe/cmdutil"
+	"github.com/grafana/scribe/errors"
+	"github.com/grafana/scribe/pipeline"
+	"github.com/grafana/scribe/pipeline/clients"
+	"github.com/grafana/scribe/plog"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 
@@ -29,7 +30,7 @@ type Scribe struct {
 	Collection *pipeline.Collection
 
 	// Opts are the options that are provided to the pipeline from outside sources. This includes mostly command-line arguments and environment variables
-	Opts    pipeline.CommonOpts
+	Opts    clients.CommonOpts
 	Log     logrus.FieldLogger
 	Version string
 
@@ -151,7 +152,7 @@ func (s *Scribe) setup(steps ...pipeline.Step) []pipeline.Step {
 		// Set a default image for steps that don't provide one.
 		// Most pre-made steps like `yarn`, `node`, `go` steps should provide a separate default image with those utilities installed.
 		if step.Image == "" {
-			image := "go:1.19"
+			image := "golang:1.19"
 			steps[i] = step.WithImage(image)
 		}
 
@@ -178,7 +179,7 @@ func (s *Scribe) validateSteps(steps ...pipeline.Step) error {
 			continue
 		}
 
-		if errors.Is(err, plumbing.ErrorSkipValidation) {
+		if errors.Is(err, errors.ErrorSkipValidation) {
 			s.Log.Warnln(formatError(v, err).Error())
 			continue
 		}
@@ -267,42 +268,42 @@ func (s *Scribe) Done() {
 	}
 }
 
-func parseOpts() (pipeline.CommonOpts, error) {
-	args, err := plumbing.ParseArguments(os.Args[1:])
+func parseOpts() (clients.CommonOpts, error) {
+	pargs, err := args.ParseArguments(os.Args[1:])
 	if err != nil {
-		return pipeline.CommonOpts{}, fmt.Errorf("Error parsing arguments. Error: %w", err)
+		return clients.CommonOpts{}, fmt.Errorf("Error parsing arguments. Error: %w", err)
 	}
 
-	if args == nil {
-		return pipeline.CommonOpts{}, fmt.Errorf("Arguments list must not be nil")
+	if pargs == nil {
+		return clients.CommonOpts{}, fmt.Errorf("Arguments list must not be nil")
 	}
 
 	// Create standard packages based on the arguments provided.
 	// This would be a good place to initialize loggers, tracers, etc
 	var tracer opentracing.Tracer = &opentracing.NoopTracer{}
 
-	logger := plog.New(args.LogLevel)
+	logger := plog.New(pargs.LogLevel)
 	jaegerCfg, err := config.FromEnv()
 	if err == nil {
 		// Here we ignore the closer because the jaegerTracer is the closer and we will just close that.
 		jaegerTracer, _, err := jaegerCfg.NewTracer(config.Logger(jaeger.StdLogger))
 		if err == nil {
-			logger.Infoln("Initialized jaeger tracer")
+			logger.Debugln("Initialized jaeger tracer")
 			tracer = jaegerTracer
 		} else {
-			logger.Infoln("Could not initialize jaeger tracer; using no-op tracer; Error:", err.Error())
+			logger.Debugln("Could not initialize jaeger tracer; using no-op tracer; Error:", err.Error())
 		}
 	}
 
-	s, err := GetState(args.State, logger, args)
+	s, err := GetState(pargs.State, logger, pargs)
 	if err != nil {
-		return pipeline.CommonOpts{}, err
+		return clients.CommonOpts{}, err
 	}
 
-	return pipeline.CommonOpts{
-		Version: args.Version,
+	return clients.CommonOpts{
+		Version: pargs.Version,
 		Output:  os.Stdout,
-		Args:    args,
+		Args:    pargs,
 		Log:     logger,
 		Tracer:  tracer,
 		State:   s,
@@ -336,9 +337,9 @@ func New(name string) *Scribe {
 
 // NewWithClient creates a new Scribe object with a specific client implementation.
 // This function is intended to be used in very specific environments, like in tests.
-func NewWithClient(opts pipeline.CommonOpts, client pipeline.Client) *Scribe {
+func NewWithClient(opts clients.CommonOpts, client pipeline.Client) *Scribe {
 	if opts.Args == nil {
-		opts.Args = &plumbing.PipelineArgs{}
+		opts.Args = &args.PipelineArgs{}
 	}
 
 	return &Scribe{
@@ -354,7 +355,7 @@ func NewWithClient(opts pipeline.CommonOpts, client pipeline.Client) *Scribe {
 
 // NewClient creates a new Scribe client based on the commonopts.
 // It does not check for a non-nil "Args" field.
-func NewClient(c pipeline.CommonOpts, collection *pipeline.Collection) *Scribe {
+func NewClient(c clients.CommonOpts, collection *pipeline.Collection) *Scribe {
 	c.Log.Infof("Initializing Scribe client '%s'", c.Args.Client)
 	sw := &Scribe{
 		n: &counter{},

@@ -1,6 +1,6 @@
 package fs
 
-import "github.com/grafana/scribe/plumbing/pipeline"
+import "github.com/grafana/scribe/pipeline"
 
 // FileHasChanged creates a checksum for the file "file" and stores it.
 // If the checksum does not exist in the scribe key store, then it will return false.

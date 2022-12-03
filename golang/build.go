@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/grafana/scribe/golang/x"
-	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/pipeline"
 )
 
 func BuildStep(pkg, output string, args, env []string) pipeline.Step {

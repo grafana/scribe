@@ -8,7 +8,8 @@ import (
 	gitx "github.com/grafana/scribe/git/x"
 	"github.com/grafana/scribe/golang"
 	"github.com/grafana/scribe/makefile"
-	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/pipeline"
+	"github.com/grafana/scribe/state"
 	"github.com/grafana/scribe/yarn"
 )
 
@@ -62,13 +63,13 @@ func main() {
 	sw.Run(
 		pipeline.NamedStep("compile backend", makefile.Target("build")).WithImage("alpine:latest"),
 		pipeline.NamedStep("compile frontend", makefile.Target("package")).WithImage("alpine:latest"),
-		pipeline.NamedStep("build docker image", makefile.Target("build")).WithArguments(pipeline.ArgumentDockerSocketFS).WithImage("alpine:latest"),
+		pipeline.NamedStep("build docker image", makefile.Target("build")).Requires(pipeline.ArgumentDockerSocketFS).WithImage("alpine:latest"),
 	)
 
 	sw.Run(
 		pipeline.NamedStep("publish", makefile.Target("publish")).
-			WithArguments(
-				pipeline.NewSecretArgument("gcs-publish-key"),
+			Requires(
+				state.NewSecretArgument("gcs-publish-key"),
 			),
 	)
 }

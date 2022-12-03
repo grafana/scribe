@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/pipeline"
 )
 
 type RunOpts struct {

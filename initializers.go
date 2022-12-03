@@ -1,10 +1,11 @@
 package scribe
 
 import (
-	"github.com/grafana/scribe/plumbing/pipeline"
-	"github.com/grafana/scribe/plumbing/pipeline/clients/cli"
-	"github.com/grafana/scribe/plumbing/pipeline/clients/dagger"
-	"github.com/grafana/scribe/plumbing/pipeline/clients/drone"
+	"github.com/grafana/scribe/pipeline"
+	"github.com/grafana/scribe/pipeline/clients"
+	"github.com/grafana/scribe/pipeline/clients/cli"
+	"github.com/grafana/scribe/pipeline/clients/dagger"
+	"github.com/grafana/scribe/pipeline/clients/drone"
 )
 
 var (
@@ -18,7 +19,7 @@ var (
 	ClientDagger = "dagger"
 )
 
-func NewDefaultCollection(opts pipeline.CommonOpts) *pipeline.Collection {
+func NewDefaultCollection(opts clients.CommonOpts) *pipeline.Collection {
 	p := pipeline.NewCollection()
 	if err := p.AddPipelines(pipeline.New(opts.Name, DefaultPipelineID)); err != nil {
 		panic(err)
@@ -31,34 +32,13 @@ func NewMultiCollection() *pipeline.Collection {
 	return pipeline.NewCollection()
 }
 
-type InitializerFunc func(pipeline.CommonOpts) pipeline.Client
+type InitializerFunc func(clients.CommonOpts) pipeline.Client
 
 // The ClientInitializers define how different RunModes initialize the Scribe client
 var ClientInitializers = map[string]InitializerFunc{
-	ClientCLI:    NewCLIClient,
-	ClientDrone:  NewDroneClient,
-	ClientDagger: NewDaggerClient,
-}
-
-func NewDroneClient(opts pipeline.CommonOpts) pipeline.Client {
-	return &drone.Client{
-		Opts: opts,
-		Log:  opts.Log,
-	}
-}
-
-func NewCLIClient(opts pipeline.CommonOpts) pipeline.Client {
-	return &cli.Client{
-		Opts: opts,
-		Log:  opts.Log,
-	}
-}
-
-func NewDaggerClient(opts pipeline.CommonOpts) pipeline.Client {
-	return &dagger.Client{
-		Opts: opts,
-		Log:  opts.Log,
-	}
+	ClientCLI:    cli.New,
+	ClientDrone:  drone.New,
+	ClientDagger: dagger.New,
 }
 
 func RegisterClient(name string, initializer InitializerFunc) {

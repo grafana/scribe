@@ -6,13 +6,14 @@ import (
 	"testing"
 
 	"github.com/grafana/scribe"
-	"github.com/grafana/scribe/plumbing"
-	"github.com/grafana/scribe/plumbing/pipeline"
-	"github.com/grafana/scribe/plumbing/pipeline/clients/cli"
-	"github.com/grafana/scribe/plumbing/pipeline/clients/dagger"
-	"github.com/grafana/scribe/plumbing/pipeline/clients/drone"
-	"github.com/grafana/scribe/plumbing/pipeline/dag"
-	"github.com/grafana/scribe/plumbing/plog"
+	"github.com/grafana/scribe/args"
+	"github.com/grafana/scribe/pipeline"
+	"github.com/grafana/scribe/pipeline/clients"
+	"github.com/grafana/scribe/pipeline/clients/cli"
+	"github.com/grafana/scribe/pipeline/clients/dagger"
+	"github.com/grafana/scribe/pipeline/clients/drone"
+	"github.com/grafana/scribe/pipeline/dag"
+	"github.com/grafana/scribe/plog"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,7 +24,7 @@ func logger() *logrus.Logger {
 	return logger
 }
 
-var testOpts = pipeline.CommonOpts{
+var testOpts = clients.CommonOpts{
 	Name:    "test piepline",
 	Version: "v0.0.0-test",
 	Log:     logger(),
@@ -32,14 +33,14 @@ var testOpts = pipeline.CommonOpts{
 func TestNew(t *testing.T) {
 	t.Run("New should return a Dagger client when provided no client flag", func(t *testing.T) {
 		cliArgs := []string{}
-		args, err := plumbing.ParseArguments(cliArgs)
+		pargs, err := args.ParseArguments(cliArgs)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		opts := pipeline.CommonOpts{
+		opts := clients.CommonOpts{
 			Log:  plog.New(logrus.DebugLevel),
-			Args: args,
+			Args: pargs,
 		}
 		sw := scribe.NewClient(opts, scribe.NewDefaultCollection(testOpts))
 
@@ -54,14 +55,14 @@ func TestNew(t *testing.T) {
 	})
 	t.Run("New should return a CLIClient when provided the --client=cli flag", func(t *testing.T) {
 		cliArgs := []string{"--client", "cli"}
-		args, err := plumbing.ParseArguments(cliArgs)
+		pargs, err := args.ParseArguments(cliArgs)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		opts := pipeline.CommonOpts{
+		opts := clients.CommonOpts{
 			Log:  plog.New(logrus.DebugLevel),
-			Args: args,
+			Args: pargs,
 		}
 		sw := scribe.NewClient(opts, scribe.NewDefaultCollection(testOpts))
 
@@ -77,14 +78,14 @@ func TestNew(t *testing.T) {
 
 	t.Run("New should return a DroneClient when provided the --client=drone flag", func(t *testing.T) {
 		cliArgs := []string{"--client", "drone"}
-		args, err := plumbing.ParseArguments(cliArgs)
+		pargs, err := args.ParseArguments(cliArgs)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		opts := pipeline.CommonOpts{
+		opts := clients.CommonOpts{
 			Log:  plog.New(logrus.DebugLevel),
-			Args: args,
+			Args: pargs,
 		}
 
 		sw := scribe.NewClient(opts, scribe.NewDefaultCollection(testOpts))

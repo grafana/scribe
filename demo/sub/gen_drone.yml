@@ -9,7 +9,7 @@ platform:
 
 steps:
 - name: builtin-compile-pipeline
-  image: grafana/shipwright:go-latest
+  image: golang:1.19
   command:
   - go
   - build
@@ -24,10 +24,16 @@ steps:
   - name: scribe
     path: /var/scribe
 
-- name: step_1
-  image: grafana/shipwright:latest
+- name: demo_pipeline_with_sub
+  image: golang:1.19
   commands:
-  - /var/scribe/pipeline -step=7 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/sub
+  - /var/scribe/pipeline
+  - --pipeline=demo-pipeline-with-sub
+  - --build-id=$DRONE_BUILD_NUMBER
+  - --state=file:///var/scribe-state/state.json
+  - --log-level=debug
+  - --version=latest
+  - ./demo/sub
   volumes:
   - name: scribe
     path: /var/scribe
@@ -35,66 +41,6 @@ steps:
     path: /var/scribe-state
   depends_on:
   - builtin-compile-pipeline
-
-- name: step_2
-  image: grafana/shipwright:latest
-  commands:
-  - /var/scribe/pipeline -step=8 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/sub
-  volumes:
-  - name: scribe
-    path: /var/scribe
-  - name: scribe-state
-    path: /var/scribe-state
-  depends_on:
-  - step_1
-
-- name: step_3
-  image: grafana/shipwright:latest
-  commands:
-  - /var/scribe/pipeline -step=9 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/sub
-  volumes:
-  - name: scribe
-    path: /var/scribe
-  - name: scribe-state
-    path: /var/scribe-state
-  depends_on:
-  - step_2
-
-- name: step_4
-  image: grafana/shipwright:latest
-  commands:
-  - /var/scribe/pipeline -step=13 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/sub
-  volumes:
-  - name: scribe
-    path: /var/scribe
-  - name: scribe-state
-    path: /var/scribe-state
-  depends_on:
-  - step_3
-
-- name: step_5
-  image: grafana/shipwright:latest
-  commands:
-  - /var/scribe/pipeline -step=14 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/sub
-  volumes:
-  - name: scribe
-    path: /var/scribe
-  - name: scribe-state
-    path: /var/scribe-state
-  depends_on:
-  - step_3
-
-- name: step_6
-  image: grafana/shipwright:latest
-  commands:
-  - /var/scribe/pipeline -step=15 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/sub
-  volumes:
-  - name: scribe
-    path: /var/scribe
-  - name: scribe-state
-    path: /var/scribe-state
-  depends_on:
-  - step_3
 
 volumes:
 - name: scribe
@@ -116,7 +62,7 @@ platform:
 
 steps:
 - name: builtin-compile-pipeline
-  image: grafana/shipwright:go-latest
+  image: golang:1.19
   command:
   - go
   - build
@@ -131,10 +77,16 @@ steps:
   - name: scribe
     path: /var/scribe
 
-- name: sub_step_1
-  image: grafana/shipwright:latest
+- name: sub_pipeline_0
+  image: golang:1.19
   commands:
-  - /var/scribe/pipeline -step=1 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/sub
+  - /var/scribe/pipeline
+  - --pipeline=sub-pipeline-0
+  - --build-id=$DRONE_BUILD_NUMBER
+  - --state=file:///var/scribe-state/state.json
+  - --log-level=debug
+  - --version=latest
+  - ./demo/sub
   volumes:
   - name: scribe
     path: /var/scribe
@@ -142,30 +94,6 @@ steps:
     path: /var/scribe-state
   depends_on:
   - builtin-compile-pipeline
-
-- name: sub_step_2
-  image: grafana/shipwright:latest
-  commands:
-  - /var/scribe/pipeline -step=3 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/sub
-  volumes:
-  - name: scribe
-    path: /var/scribe
-  - name: scribe-state
-    path: /var/scribe-state
-  depends_on:
-  - sub_step_1
-
-- name: sub_step_3
-  image: grafana/shipwright:latest
-  commands:
-  - /var/scribe/pipeline -step=4 -build-id=$DRONE_BUILD_NUMBER -state=file:///var/scribe-state/state.json -log-level=debug -version=latest ./demo/sub
-  volumes:
-  - name: scribe
-    path: /var/scribe
-  - name: scribe-state
-    path: /var/scribe-state
-  depends_on:
-  - sub_step_1
 
 volumes:
 - name: scribe

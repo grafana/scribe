@@ -6,11 +6,12 @@ import (
 	"strings"
 
 	"github.com/grafana/scribe/exec"
-	"github.com/grafana/scribe/plumbing/pipeline"
+	"github.com/grafana/scribe/pipeline"
+	"github.com/grafana/scribe/state"
 )
 
 var (
-	ArgumentYarnCache = pipeline.NewDirectoryArgument("yarn-cache-dir")
+	ArgumentYarnCache = state.NewDirectoryArgument("yarn-cache-dir")
 )
 
 func InstallAction() pipeline.Action {
@@ -27,8 +28,8 @@ func InstallStep() pipeline.Step {
 	return pipeline.
 		NewStep(InstallAction()).
 		WithName("yarn install").
-		Provides(ArgumentYarnCache).
-		WithArguments(pipeline.ArgumentSourceFS)
+		Requires(pipeline.ArgumentSourceFS).
+		Provides(ArgumentYarnCache)
 }
 
 func RunAction(script ...string) pipeline.Action {
@@ -47,5 +48,5 @@ func RunStep(script ...string) pipeline.Step {
 
 	return pipeline.NewStep(action).
 		WithName(name).
-		WithArguments(pipeline.ArgumentSourceFS)
+		Requires(pipeline.ArgumentSourceFS)
 }

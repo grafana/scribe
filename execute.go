@@ -11,12 +11,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/grafana/scribe/plumbing"
-	"github.com/grafana/scribe/plumbing/pipeline"
-	"github.com/grafana/scribe/plumbing/plog"
+	"github.com/grafana/scribe/args"
+	"github.com/grafana/scribe/pipeline"
+	"github.com/grafana/scribe/pipeline/clients"
+	"github.com/grafana/scribe/plog"
+	"github.com/grafana/scribe/state"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"github.com/uber/jaeger-client-go"
+	"golang.org/x/exp/slices"
 )
 
 var ArgDefaults = map[string]func(context.Context) *exec.Cmd{
@@ -84,7 +87,7 @@ func executeWithLogging(log logrus.FieldLogger, ef executeFunc) executeFunc {
 }
 
 func executeWithSteps(
-	args *plumbing.PipelineArgs,
+	args *args.PipelineArgs,
 	name string,
 	n *counter,
 	ef executeFunc,
@@ -109,7 +112,7 @@ func executeWithSteps(
 }
 
 func executeWithPipelines(
-	args *plumbing.PipelineArgs,
+	args *args.PipelineArgs,
 	name string,
 	n *counter,
 	ef executeFunc,
@@ -134,14 +137,14 @@ func executeWithPipelines(
 
 // executeWithEvent uses the provided '-event' argument which will populate the state with data that represents the event.
 func executeWithEvent(
-	args *plumbing.PipelineArgs,
-	opts pipeline.CommonOpts,
+	args *args.PipelineArgs,
+	opts clients.CommonOpts,
 	ef executeFunc,
 ) executeFunc {
 	log := opts.Log
 	return func(ctx context.Context, collection *pipeline.Collection) error {
 		type event struct {
-			Args     []pipeline.Argument
+			Args     []state.Argument
 			Pipeline int64
 		}
 
@@ -220,16 +223,23 @@ func executeWithSignals(
 	}
 }
 
+// LocalClients define modes that are intended to run a pipeline "locally".
+// These local clients will do things like filter the pipeline based on the selected event with the '-e' flag.
+var LocalModes = []string{"dagger"}
+
 // Execute runs the provided executeFunc with the appropriate wrappers.
 // All of the arguments are for populating the wrappers.
-func execute(ctx context.Context, collection *pipeline.Collection, name string, opts pipeline.CommonOpts, n *counter, ef executeFunc) error {
+func execute(ctx context.Context, collection *pipeline.Collection, name string, opts clients.CommonOpts, n *counter, ef executeFunc) error {
 	logger := opts.Log.WithFields(plog.Combine(plog.TracingFields(ctx), plog.PipelineFields(opts)))
 
 	// Wrap with signals watching. If the user submits a SIGTERM/SIGINT/SIGKILL, this function will catch it and return an error.
 	wrapped := executeWithSignals(ef)
 
 	// If the user supplies a --event or -e argument, check the arguments for the event and reduce the collection
-	wrapped = executeWithEvent(opts.Args, opts, wrapped)
+	// However, we only want to do this type of filtering when we're running locally using the dagger mode.
+	if slices.Contains[string](LocalModes, opts.Args.Client) {
+		wrapped = executeWithEvent(opts.Args, opts, wrapped)
+	}
 
 	// If the user supplies a --step argument, reduce the collection
 	wrapped = executeWithSteps(opts.Args, name, n, wrapped)

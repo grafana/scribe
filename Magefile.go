@@ -29,7 +29,7 @@ func Build() error {
 		"build",
 		"-ldflags", fmt.Sprintf("-X main.Version=%s", version),
 		"-o", "./bin/scribe",
-		"./plumbing/cmd",
+		"./cmd",
 	)
 }
 
