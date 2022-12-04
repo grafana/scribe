@@ -28,7 +28,8 @@ steps:
   image: golang:1.19
   commands:
   - /var/scribe/pipeline
-  - --pipeline=state-example
+  - --pipeline
+  - "'state-example'"
   - --build-id=$DRONE_BUILD_NUMBER
   - --state=file:///var/scribe-state/state.json
   - --log-level=debug

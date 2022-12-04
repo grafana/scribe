@@ -28,7 +28,8 @@ steps:
   image: golang:1.19
   commands:
   - /var/scribe/pipeline
-  - --pipeline=code quality check
+  - --pipeline
+  - "'code quality check'"
   - --build-id=$DRONE_BUILD_NUMBER
   - --state=file:///var/scribe-state/state.json
   - --log-level=debug
@@ -81,7 +82,8 @@ steps:
   image: golang:1.19
   commands:
   - /var/scribe/pipeline
-  - --pipeline=test
+  - --pipeline
+  - "'test'"
   - --build-id=$DRONE_BUILD_NUMBER
   - --state=file:///var/scribe-state/state.json
   - --log-level=debug
@@ -134,7 +136,8 @@ steps:
   image: golang:1.19
   commands:
   - /var/scribe/pipeline
-  - --pipeline=publish
+  - --pipeline
+  - "'publish'"
   - --build-id=$DRONE_BUILD_NUMBER
   - --state=file:///var/scribe-state/state.json
   - --log-level=debug

@@ -97,7 +97,7 @@ func PipelineCommand(opts PipelineCommandOpts) ([]string, error) {
 		name = p
 	}
 
-	cmd := append([]string{name, fmt.Sprintf("--pipeline=%s", opts.Pipeline.Name)}, args...)
+	cmd := append([]string{name, "--pipeline", fmt.Sprintf("'%s'", opts.Pipeline.Name)}, args...)
 	if opts.Path != "" {
 		cmd = append(cmd, opts.Path)
 	}
