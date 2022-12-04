@@ -26,7 +26,7 @@ steps:
 
 - name: test_and_build
   image: golang:1.19
-  commands:
+  command:
   - /var/scribe/pipeline
   - --pipeline
   - "'test and build'"
@@ -80,7 +80,7 @@ steps:
 
 - name: create_github_release
   image: golang:1.19
-  commands:
+  command:
   - /var/scribe/pipeline
   - --pipeline
   - "'create github release'"

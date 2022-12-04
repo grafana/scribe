@@ -111,8 +111,8 @@ func NewDaggerStep(c pipeline.Configurer, path, state, version string, p pipelin
 	}
 
 	return &yaml.Container{
-		Name:     name,
-		Image:    image,
-		Commands: cmd,
+		Name:    name,
+		Image:   image,
+		Command: cmd,
 	}, nil
 }
