@@ -19,12 +19,12 @@ var (
 )
 
 func handleSignal(log *logrus.Logger, cmd *exec.Cmd, sig os.Signal) int {
-	log.Infoln("Received OS signal", sig.String())
+	log.Debugln("Received OS signal", sig.String())
 
-	log.Infof("Sending pipeline '%s' signal...", sig.String())
+	log.Debugf("Sending pipeline '%s' signal...", sig.String())
 	cmd.Process.Signal(sig)
 
-	log.Infoln("Waiting for pipeline to exit...")
+	log.Debugln("Waiting for pipeline to exit...")
 	p, err := cmd.Process.Wait()
 	if err != nil {
 		log.Error(err)
@@ -37,7 +37,7 @@ func handleSignal(log *logrus.Logger, cmd *exec.Cmd, sig os.Signal) int {
 func main() {
 	log := plog.New(logrus.InfoLevel)
 
-	log.Println("Running version", Version)
+	log.Debugln("Running version", Version)
 	var (
 		ctx = context.Background()
 	)
@@ -67,7 +67,7 @@ func main() {
 		doneChan <- true
 	}(cmd)
 
-	log.Infoln("Watching for OS signals...")
+	log.Debugln("Watching for OS signals...")
 	cmdutil.NotifySignals(c)
 
 	select {

@@ -1,6 +1,8 @@
 # scribe
 
-Scribe is a framework for writing flexible CI pipelines in Go that have consistent behavior when ran locally or in a CI server.
+Scribe is a framework for [dagger](github.com/dagger/dagger) for writing flexible CI pipelines in Go that have consistent behavior when ran locally or in a CI server.
+
+Write your pipeline once, run it locally and produce the config for your CI provider from the same code.
 
 ## Status
 
@@ -11,9 +13,9 @@ This is still in beta. Expect breaking changes and incomplete features.
 With Scribe you can:
 
 - Run pipelines locally for testing using [dagger](github.com/dagger/dagger).
-- Generate configurations for existing CI tools.
+- Generate configurations for existing CI providers.
 - Use tools like delve to debug your pipelines.
-- Use existing Go tools to make complex pipelines easier to develop and maintain.
+- Use Go features to make complex pipelines easier to develop and maintain.
 
 ## Running Locally / testing
 
@@ -44,13 +46,9 @@ With Scribe you can:
 
 1. Every pipeline is a program and must have a `package main` and a `func main`.
 2. Every pipeline must have a form of `pipeline := scribe.New(...)` or `pipeline := scribe.NewMulti(...)` to produce the scribe object.
-
    - Steps are then added to that object to create a pipeline.
-
 3. Every pipeline must conclude with `pipeline.Done()`
-
 4. It is recommended to create a Go workspace for your CI pipeline with `go work init {directory}`.
-
    - This will keep the larger and irrelevant modules  out of your project.
 
 ### Examples

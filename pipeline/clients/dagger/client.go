@@ -88,20 +88,11 @@ func (c *Client) PipelineWalkFunc(w pipeline.Walker, d *dagger.Client, cache *da
 			return err
 		}
 
-		log := c.Log.WithFields(logrus.Fields{
-			"source":   src,
-			"go.mod":   gomod,
-			"pipeline": c.Opts.Args.Path,
-		})
-
-		log.Infoln("Compiling pipeline...")
 		// Compile the pipeline so that individual steps can be ran in each container
 		bin, err := CompilePipeline(ctx, d, src, gomod, c.Opts.Args.Path)
 		if err != nil {
 			return err
 		}
-
-		log.Infoln("Done compiling pipeline")
 
 		wg := syncutil.NewPipelineWaitGroup()
 		for _, pipeline := range pipelines {
@@ -116,7 +107,9 @@ func (c *Client) PipelineWalkFunc(w pipeline.Walker, d *dagger.Client, cache *da
 // Done must be ran at the end of the pipeline.
 // This is typically what takes the defined pipeline steps, runs them in the order defined, and produces some kind of output.
 func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
-	d, err := dagger.Connect(ctx, dagger.WithLogOutput(c.Log.Writer()))
+	// Until dagger has the ability to provide log streams per-container for stdout/stderr, we have to include the whole thing
+	logger := c.Log.WithField("stream", "dagger").WriterLevel(logrus.InfoLevel)
+	d, err := dagger.Connect(ctx, dagger.WithLogOutput(logger))
 	if err != nil {
 		return err
 	}
