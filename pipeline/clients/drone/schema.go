@@ -2,6 +2,7 @@ package drone
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/drone/drone-yaml/yaml"
 	"github.com/grafana/scribe/args"
@@ -112,8 +113,8 @@ func NewDaggerStep(c pipeline.Configurer, path, state, version string, p pipelin
 	}
 
 	return &yaml.Container{
-		Name:    name,
-		Image:   image,
-		Command: cmd,
+		Name:     name,
+		Image:    image,
+		Commands: []string{strings.Join(cmd, " ")},
 	}, nil
 }

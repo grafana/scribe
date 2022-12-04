@@ -26,14 +26,8 @@ steps:
 
 - name: test_and_build
   image: golang:1.19
-  command:
-  - /var/scribe/pipeline
-  - --pipeline="test and build"
-  - --build-id=$DRONE_BUILD_NUMBER
-  - --state=file:///var/scribe-state/state.json
-  - --log-level=debug
-  - --version=v0.10.0-2-g7ffe61a-dirty
-  - ./ci
+  commands:
+  - /var/scribe/pipeline --pipeline="test and build" --client cli --build-id=$DRONE_BUILD_NUMBER --state=file:///var/scribe-state/state.json --log-level=debug --version=v0.10.0-2-g7ffe61a-dirty ./ci
   volumes:
   - name: scribe
     path: /var/scribe
@@ -79,14 +73,8 @@ steps:
 
 - name: create_github_release
   image: golang:1.19
-  command:
-  - /var/scribe/pipeline
-  - --pipeline="create github release"
-  - --build-id=$DRONE_BUILD_NUMBER
-  - --state=file:///var/scribe-state/state.json
-  - --log-level=debug
-  - --version=v0.10.0-2-g7ffe61a-dirty
-  - ./ci
+  commands:
+  - /var/scribe/pipeline --pipeline="create github release" --client cli --build-id=$DRONE_BUILD_NUMBER --state=file:///var/scribe-state/state.json --log-level=debug --version=v0.10.0-2-g7ffe61a-dirty ./ci
   volumes:
   - name: scribe
     path: /var/scribe

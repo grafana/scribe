@@ -26,16 +26,8 @@ steps:
 
 - name: demo_pipeline_with_sub
   image: golang:1.19
-  command:
-  - /var/scribe/pipeline
-  - --pipeline="demo-pipeline-with-sub"
-  - --client
-  - cli
-  - --build-id=$DRONE_BUILD_NUMBER
-  - --state=file:///var/scribe-state/state.json
-  - --log-level=debug
-  - --version=latest
-  - ./demo/sub
+  commands:
+  - /var/scribe/pipeline --pipeline="demo-pipeline-with-sub" --client cli --build-id=$DRONE_BUILD_NUMBER --state=file:///var/scribe-state/state.json --log-level=debug --version=latest ./demo/sub
   volumes:
   - name: scribe
     path: /var/scribe
@@ -81,16 +73,8 @@ steps:
 
 - name: sub_pipeline_0
   image: golang:1.19
-  command:
-  - /var/scribe/pipeline
-  - --pipeline="sub-pipeline-0"
-  - --client
-  - cli
-  - --build-id=$DRONE_BUILD_NUMBER
-  - --state=file:///var/scribe-state/state.json
-  - --log-level=debug
-  - --version=latest
-  - ./demo/sub
+  commands:
+  - /var/scribe/pipeline --pipeline="sub-pipeline-0" --client cli --build-id=$DRONE_BUILD_NUMBER --state=file:///var/scribe-state/state.json --log-level=debug --version=latest ./demo/sub
   volumes:
   - name: scribe
     path: /var/scribe

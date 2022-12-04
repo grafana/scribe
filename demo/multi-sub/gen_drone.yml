@@ -26,16 +26,8 @@ steps:
 
 - name: code_quality_check
   image: golang:1.19
-  command:
-  - /var/scribe/pipeline
-  - --pipeline="code quality check"
-  - --client
-  - cli
-  - --build-id=$DRONE_BUILD_NUMBER
-  - --state=file:///var/scribe-state/state.json
-  - --log-level=debug
-  - --version=latest
-  - ./demo/multi-sub
+  commands:
+  - /var/scribe/pipeline --pipeline="code quality check" --client cli --build-id=$DRONE_BUILD_NUMBER --state=file:///var/scribe-state/state.json --log-level=debug --version=latest ./demo/multi-sub
   volumes:
   - name: scribe
     path: /var/scribe
@@ -81,16 +73,8 @@ steps:
 
 - name: test
   image: golang:1.19
-  command:
-  - /var/scribe/pipeline
-  - --pipeline="test"
-  - --client
-  - cli
-  - --build-id=$DRONE_BUILD_NUMBER
-  - --state=file:///var/scribe-state/state.json
-  - --log-level=debug
-  - --version=latest
-  - ./demo/multi-sub
+  commands:
+  - /var/scribe/pipeline --pipeline="test" --client cli --build-id=$DRONE_BUILD_NUMBER --state=file:///var/scribe-state/state.json --log-level=debug --version=latest ./demo/multi-sub
   volumes:
   - name: scribe
     path: /var/scribe
@@ -136,16 +120,8 @@ steps:
 
 - name: publish
   image: golang:1.19
-  command:
-  - /var/scribe/pipeline
-  - --pipeline="publish"
-  - --client
-  - cli
-  - --build-id=$DRONE_BUILD_NUMBER
-  - --state=file:///var/scribe-state/state.json
-  - --log-level=debug
-  - --version=latest
-  - ./demo/multi-sub
+  commands:
+  - /var/scribe/pipeline --pipeline="publish" --client cli --build-id=$DRONE_BUILD_NUMBER --state=file:///var/scribe-state/state.json --log-level=debug --version=latest ./demo/multi-sub
   volumes:
   - name: scribe
     path: /var/scribe

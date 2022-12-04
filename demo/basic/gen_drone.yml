@@ -26,16 +26,8 @@ steps:
 
 - name: basic_pipeline
   image: golang:1.19
-  command:
-  - /var/scribe/pipeline
-  - --pipeline="basic pipeline"
-  - --client
-  - cli
-  - --build-id=$DRONE_BUILD_NUMBER
-  - --state=file:///var/scribe-state/state.json
-  - --log-level=debug
-  - --version=latest
-  - ./demo/basic
+  commands:
+  - /var/scribe/pipeline --pipeline="basic pipeline" --client cli --build-id=$DRONE_BUILD_NUMBER --state=file:///var/scribe-state/state.json --log-level=debug --version=latest ./demo/basic
   volumes:
   - name: scribe
     path: /var/scribe
