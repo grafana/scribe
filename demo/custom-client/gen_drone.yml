@@ -29,6 +29,8 @@ steps:
   command:
   - /var/scribe/pipeline
   - --pipeline="custom-client"
+  - --client
+  - cli
   - --build-id=$DRONE_BUILD_NUMBER
   - --state=file:///var/scribe-state/state.json
   - --log-level=debug

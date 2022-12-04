@@ -32,7 +32,7 @@ steps:
   - --build-id=$DRONE_BUILD_NUMBER
   - --state=file:///var/scribe-state/state.json
   - --log-level=debug
-  - --version=v0.9.20-16-g7b28ce7
+  - --version=v0.10.0-2-g7ffe61a-dirty
   - ./ci
   volumes:
   - name: scribe
@@ -85,7 +85,7 @@ steps:
   - --build-id=$DRONE_BUILD_NUMBER
   - --state=file:///var/scribe-state/state.json
   - --log-level=debug
-  - --version=v0.9.20-16-g7b28ce7
+  - --version=v0.10.0-2-g7ffe61a-dirty
   - ./ci
   volumes:
   - name: scribe

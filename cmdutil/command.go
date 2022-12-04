@@ -63,7 +63,7 @@ type PipelineCommandOpts struct {
 }
 
 func PipelineCommand(opts PipelineCommandOpts) ([]string, error) {
-	args := []string{}
+	args := []string{"--client", "cli"}
 
 	if opts.BuildID != "" {
 		args = append(args, fmt.Sprintf("--build-id=%s", opts.BuildID))

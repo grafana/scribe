@@ -29,6 +29,8 @@ steps:
   command:
   - /var/scribe/pipeline
   - --pipeline="code quality check"
+  - --client
+  - cli
   - --build-id=$DRONE_BUILD_NUMBER
   - --state=file:///var/scribe-state/state.json
   - --log-level=debug
@@ -82,6 +84,8 @@ steps:
   command:
   - /var/scribe/pipeline
   - --pipeline="test"
+  - --client
+  - cli
   - --build-id=$DRONE_BUILD_NUMBER
   - --state=file:///var/scribe-state/state.json
   - --log-level=debug
@@ -135,6 +139,8 @@ steps:
   command:
   - /var/scribe/pipeline
   - --pipeline="publish"
+  - --client
+  - cli
   - --build-id=$DRONE_BUILD_NUMBER
   - --state=file:///var/scribe-state/state.json
   - --log-level=debug

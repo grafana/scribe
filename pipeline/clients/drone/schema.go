@@ -100,6 +100,7 @@ func NewDaggerStep(c pipeline.Configurer, path, state, version string, p pipelin
 				BuildID: "$DRONE_BUILD_NUMBER",
 				State:   state,
 				//ArgMap:        args,
+				Client:   "cli",
 				LogLevel: logrus.DebugLevel,
 				Version:  version,
 			},
