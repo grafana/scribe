@@ -28,8 +28,7 @@ steps:
   image: golang:1.19
   command:
   - /var/scribe/pipeline
-  - --pipeline
-  - "'test and build'"
+  - --pipeline="test and build"
   - --build-id=$DRONE_BUILD_NUMBER
   - --state=file:///var/scribe-state/state.json
   - --log-level=debug
@@ -82,8 +81,7 @@ steps:
   image: golang:1.19
   command:
   - /var/scribe/pipeline
-  - --pipeline
-  - "'create github release'"
+  - --pipeline="create github release"
   - --build-id=$DRONE_BUILD_NUMBER
   - --state=file:///var/scribe-state/state.json
   - --log-level=debug

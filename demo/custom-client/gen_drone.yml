@@ -26,10 +26,9 @@ steps:
 
 - name: custom_client
   image: golang:1.19
-  commands:
+  command:
   - /var/scribe/pipeline
-  - --pipeline
-  - "'custom-client'"
+  - --pipeline="custom-client"
   - --build-id=$DRONE_BUILD_NUMBER
   - --state=file:///var/scribe-state/state.json
   - --log-level=debug

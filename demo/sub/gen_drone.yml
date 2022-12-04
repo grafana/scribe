@@ -26,10 +26,9 @@ steps:
 
 - name: demo_pipeline_with_sub
   image: golang:1.19
-  commands:
+  command:
   - /var/scribe/pipeline
-  - --pipeline
-  - "'demo-pipeline-with-sub'"
+  - --pipeline="demo-pipeline-with-sub"
   - --build-id=$DRONE_BUILD_NUMBER
   - --state=file:///var/scribe-state/state.json
   - --log-level=debug
@@ -80,10 +79,9 @@ steps:
 
 - name: sub_pipeline_0
   image: golang:1.19
-  commands:
+  command:
   - /var/scribe/pipeline
-  - --pipeline
-  - "'sub-pipeline-0'"
+  - --pipeline="sub-pipeline-0"
   - --build-id=$DRONE_BUILD_NUMBER
   - --state=file:///var/scribe-state/state.json
   - --log-level=debug

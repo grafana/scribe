@@ -26,10 +26,9 @@ steps:
 
 - name: basic_pipeline
   image: golang:1.19
-  commands:
+  command:
   - /var/scribe/pipeline
-  - --pipeline
-  - "'basic pipeline'"
+  - --pipeline="basic pipeline"
   - --build-id=$DRONE_BUILD_NUMBER
   - --state=file:///var/scribe-state/state.json
   - --log-level=debug
