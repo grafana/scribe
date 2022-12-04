@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/grafana/scribe/pipeline/dag"
 )
@@ -348,7 +349,7 @@ func (c *Collection) PipelinesByName(ctx context.Context, names []string) ([]Pip
 	if err := c.WalkPipelines(ctx, func(ctx context.Context, pipelines ...Pipeline) error {
 		for i, argPipeline := range names {
 			for _, pipeline := range pipelines {
-				if pipeline.Name == argPipeline {
+				if strings.EqualFold(pipeline.Name, argPipeline) {
 					pipeline.Dependencies = []Pipeline{}
 					retP[i] = pipeline
 					found = true

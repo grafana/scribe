@@ -68,6 +68,7 @@ func (p *pipelineNames) String() string {
 }
 
 func (p *pipelineNames) Set(value string) error {
+	value = strings.Trim(value, "\"'")
 	p.names = append(p.names, value)
 	return nil
 }

@@ -83,7 +83,11 @@ func Run(ctx context.Context, opts *RunOpts) *exec.Cmd {
 		cmdArgs = append(cmdArgs, "--arg", fmt.Sprintf("%s=%s", k, v))
 	}
 
-	if args.Step != nil {
+	if args.PipelineName != nil {
+		for _, v := range args.PipelineName {
+			cmdArgs = append(cmdArgs, fmt.Sprintf("--pipeline=\"%s\"", v))
+		}
+	} else if args.Step != nil {
 		cmdArgs = append(cmdArgs, "--step", strconv.FormatInt(*args.Step, 10))
 	}
 
