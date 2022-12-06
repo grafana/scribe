@@ -1,6 +1,6 @@
 # scribe
 
-Scribe is a framework for [dagger](https://github.com/dagger/dagger) for writing flexible CI pipelines in Go that have consistent behavior when ran locally or in a CI server.
+Scribe is a framework for [Dagger](https://github.com/dagger/dagger) for writing flexible CI pipelines in Go that have consistent behavior when ran locally or in a CI server.
 
 Write your pipeline once, run it locally and produce the config for your CI provider from the same code.
 
@@ -12,7 +12,7 @@ This is still in beta. Expect breaking changes and incomplete features.
 
 With Scribe you can:
 
-- Run pipelines locally for testing using [dagger](github.com/dagger/dagger).
+- Run pipelines locally for testing using [Dagger](https://github.com/dagger/dagger).
 - Generate configurations for existing CI providers.
 - Use tools like delve to debug your pipelines.
 - Use Go features to make complex pipelines easier to develop and maintain.
@@ -59,7 +59,7 @@ To view examples of pipelines, visit the [demo](./demo) folder. These demos are 
 
 - **Why use Go and not `JavaScript/TypeScript/Python/Java`?**
 
-We use Go pretty ubiquitously at Grafana, especially in our server code. Go also allows you to easily compile a static binary for Linux from any platform which helps a lot with the portability of Scribe, especially with the dagger client.
+We use Go pretty ubiquitously at Grafana, especially in our server code. Go also allows you to easily compile a static binary for Linux from any platform which helps a lot with the portability of Scribe, especially with the Dagger client.
 
 - **Will there be support for any other languages?**
 
@@ -67,7 +67,7 @@ Given the current design, it would be very difficult and there are no concrete p
 
 - **What clients are available?**
 
-- `dagger`, which runs the pipeline using [Dagger](github.com/dagger/dagger). Dagger allows us to reproducibly run the pipeline using Docker BuildKit and Docker containers. This is the recommended way to run pipelines locally.
+- `dagger`, which runs the pipeline using [Dagger](https://github.com/dagger/dagger). Dagger allows us to reproducibly run the pipeline using Docker BuildKit and Docker containers. This is the recommended way to run pipelines locally.
 - `drone`, which produces a .drone.yml file in the standard output stream (`stdout`) that will run the pipeline in Drone.
 - `cli`, which runs the pipeline in the current shell. This mode is not recommended to be used outside of a docker container.
 
