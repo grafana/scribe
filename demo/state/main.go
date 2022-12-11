@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"math/rand"
 	"path/filepath"
+	"time"
 
 	"github.com/grafana/scribe"
 	"github.com/grafana/scribe/pipeline"
@@ -25,6 +26,7 @@ var (
 func StepProduceRandomString() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		r := stringutil.Random(12)
+		time.Sleep(time.Second * 10)
 		opts.State.SetString(ArgumentRandomString, r)
 		return nil
 	}
@@ -37,6 +39,7 @@ func StepProduceRandomString() pipeline.Step {
 func StepProduceRandomFloat64() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		r := rand.Float64() * 10000
+		time.Sleep(time.Second * 10)
 		opts.State.SetFloat64(ArgumentRandomFloat64, r)
 		return nil
 	}
@@ -49,6 +52,7 @@ func StepProduceRandomFloat64() pipeline.Step {
 func StepProduceRandomInt64() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		r := rand.Int63n(10000)
+		time.Sleep(time.Second * 10)
 		opts.State.SetInt64(ArgumentRandomInt, r)
 		return nil
 	}
@@ -61,6 +65,7 @@ func StepProduceRandomInt64() pipeline.Step {
 func StepStoreFile() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		opts.Logger.Infoln("Storing file ./example-state-file.txt in state")
+		time.Sleep(time.Second * 10)
 		return opts.State.SetFile(ArgumentTextFile, filepath.Join(opts.Path, "./example-state-file.txt"))
 	}
 
@@ -71,6 +76,7 @@ func StepStoreFile() pipeline.Step {
 
 func StepStoreDirectory() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
+		time.Sleep(time.Second * 10)
 		return opts.State.SetDirectory(ArgumentDirectory, filepath.Join(opts.Path, "./example-directory"))
 	}
 
@@ -81,6 +87,7 @@ func StepStoreDirectory() pipeline.Step {
 
 func StepPrintRandomInt64() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
+		time.Sleep(time.Second * 10)
 		v, err := opts.State.GetInt64(ArgumentRandomInt)
 		if err != nil {
 			return err
@@ -96,6 +103,7 @@ func StepPrintRandomInt64() pipeline.Step {
 
 func StepPrintRandomFloat64() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
+		time.Sleep(time.Second * 10)
 		v, err := opts.State.GetFloat64(ArgumentRandomFloat64)
 		if err != nil {
 			return err
@@ -111,6 +119,7 @@ func StepPrintRandomFloat64() pipeline.Step {
 
 func StepPrintRandomString() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
+		time.Sleep(time.Second * 10)
 		v, err := opts.State.GetString(ArgumentRandomString)
 		if err != nil {
 			return err
@@ -126,6 +135,7 @@ func StepPrintRandomString() pipeline.Step {
 
 func StepPrintFile() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
+		time.Sleep(time.Second * 10)
 		v, err := opts.State.GetFile(ArgumentTextFile)
 		if err != nil {
 			return err
@@ -145,6 +155,7 @@ func StepPrintFile() pipeline.Step {
 
 func StepPrintDirectory() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
+		time.Sleep(time.Second * 10)
 		dir, err := opts.State.GetDirectory(ArgumentDirectory)
 		if err != nil {
 			return err
@@ -164,6 +175,7 @@ func StepPrintDirectory() pipeline.Step {
 
 func StepPrintSecret() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
+		time.Sleep(time.Second * 10)
 		str, err := opts.State.GetString(ArgumentSecret)
 		if err != nil {
 			return err
@@ -186,7 +198,7 @@ func main() {
 	sw := scribe.New("state-example")
 	defer sw.Done()
 
-	sw.Run(
+	sw.Add(
 		StepProduceRandomInt64().WithName("create random int64"),
 		StepProduceRandomFloat64().WithName("create random float64"),
 		StepProduceRandomString().WithName("create random string"),
@@ -194,12 +206,12 @@ func main() {
 		StepStoreDirectory().WithName("store directory"),
 	)
 
-	sw.Run(
-		StepPrintRandomInt64().WithName("print random int64"),
+	sw.Add(
+		StepPrintRandomInt64().WithName("print random int64 1"),
 		StepPrintRandomFloat64().WithName("print random float64"),
 		StepPrintRandomString().WithName("print random string"),
 		StepPrintFile().WithName("print file"),
 		StepPrintDirectory().WithName("print directory"),
-		StepPrintSecret().WithName("print secret"),
+		//StepPrintSecret().WithName("print secret"),
 	)
 }

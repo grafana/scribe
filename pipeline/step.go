@@ -2,9 +2,7 @@ package pipeline
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"strings"
 
 	"github.com/grafana/scribe/state"
 	"github.com/opentracing/opentracing-go"
@@ -33,7 +31,7 @@ const (
 // The ActionOpts are provided to every step that is ran.
 // Each step can choose to use these options.
 type ActionOpts struct {
-	State  *state.State
+	State  state.Handler
 	Stdout io.Writer
 	Stderr io.Writer
 	Tracer opentracing.Tracer
@@ -73,11 +71,11 @@ type Step struct {
 	// As far as we're concerned, Steps can only depend on other steps of the same type.
 	Dependencies []Step
 
-	// Arguments are arguments that are must exist in order for this step to run.
-	Arguments []state.Argument
+	// RequiredArgs are arguments that are must exist in order for this step to run.
+	RequiredArgs state.Arguments
 
 	// Provides are arguments that this step provides for other arguments to use in their "Arguments" list.
-	ProvidesArgs []state.Argument
+	ProvidedArgs state.Arguments
 
 	Environment StepEnv
 }
@@ -98,14 +96,6 @@ func (s Step) After(step Step) Step {
 
 func (s Step) WithImage(image string) Step {
 	s.Image = image
-	return s
-}
-
-func (s Step) WithOutput(artifact Artifact) Step {
-	return s
-}
-
-func (s Step) WithInput(artifact Artifact) Step {
 	return s
 }
 
@@ -132,17 +122,17 @@ func (s Step) WithEnvironment(env StepEnv) Step {
 }
 
 func (s Step) ResetArguments() Step {
-	s.Arguments = []state.Argument{}
+	s.RequiredArgs = []state.Argument{}
 	return s
 }
 
 func (s Step) Requires(args ...state.Argument) Step {
-	s.Arguments = append(s.Arguments, args...)
+	s.RequiredArgs = append(s.RequiredArgs, args...)
 	return s
 }
 
 func (s Step) Provides(arg ...state.Argument) Step {
-	s.ProvidesArgs = arg
+	s.ProvidedArgs = arg
 	return s
 }
 
@@ -166,20 +156,6 @@ func NamedStep(name string, action Action) Step {
 	}
 }
 
-func (s *StepList) Names() []string {
-	names := make([]string, len(s.Steps))
-
-	for i, v := range s.Steps {
-		names[i] = v.Name
-	}
-
-	return names
-}
-
-func (s *StepList) String() string {
-	return fmt.Sprintf("[%s]", strings.Join(s.Names(), " | "))
-}
-
 // DefaultAction is a nil action intentionally. In some client implementations, a nil step indicates a specific behavior.
 // In Drone and Docker, for example, a nil step indicates that the docker command or entrypoint should not be supplied, thus using the default command for that image.
 var DefaultAction Action = nil
@@ -201,14 +177,14 @@ func Combine(step ...Step) Step {
 		Name:         step[0].Name,
 		Image:        step[0].Image,
 		Dependencies: []Step{},
-		Arguments:    []state.Argument{},
-		ProvidesArgs: []state.Argument{},
+		RequiredArgs: []state.Argument{},
+		ProvidedArgs: []state.Argument{},
 	}
 
 	for _, v := range step {
 		s.Dependencies = append(s.Dependencies, v.Dependencies...)
-		s.Arguments = append(s.Arguments, v.Arguments...)
-		s.ProvidesArgs = append(s.ProvidesArgs, v.ProvidesArgs...)
+		s.RequiredArgs = append(s.RequiredArgs, v.RequiredArgs...)
+		s.ProvidedArgs = append(s.ProvidedArgs, v.ProvidedArgs...)
 	}
 
 	s.Action = func(ctx context.Context, opts ActionOpts) error {
@@ -222,27 +198,4 @@ func Combine(step ...Step) Step {
 	}
 
 	return s
-}
-
-func stepListEqual(a, b []Step) bool {
-	if len(a) != len(b) {
-		return false
-	}
-
-	for i := range a {
-		if a[i].ID != b[i].ID {
-			return false
-		}
-	}
-
-	return true
-}
-
-func StepNames(s []Step) []string {
-	v := make([]string, len(s))
-	for i := range s {
-		v[i] = s[i].Name
-	}
-
-	return v
 }

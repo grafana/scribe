@@ -95,12 +95,11 @@ func executeWithSteps(
 	return func(ctx context.Context, collection *pipeline.Collection) error {
 		// If the user has specified a specific step, then cut the "Collection" to only include that step
 		if args.Step != nil {
-			step, err := collection.ByID(ctx, *args.Step)
+			steps, err := collection.ByID(ctx, *args.Step)
 			if err != nil {
 				return fmt.Errorf("could not find step with id '%d'. Error: %w", *args.Step, err)
 			}
-			l := pipeline.NewStepList(n.Next(), step...)
-			c, err := pipeline.NewCollectionWithSteps(name, l)
+			c, err := pipeline.NewCollectionWithSteps(name, steps...)
 			if err != nil {
 				return err
 			}

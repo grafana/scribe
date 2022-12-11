@@ -32,7 +32,7 @@ func NewMultiCollection() *pipeline.Collection {
 	return pipeline.NewCollection()
 }
 
-type InitializerFunc func(clients.CommonOpts) pipeline.Client
+type InitializerFunc func(clients.CommonOpts) (pipeline.Client, error)
 
 // The ClientInitializers define how different RunModes initialize the Scribe client
 var ClientInitializers = map[string]InitializerFunc{

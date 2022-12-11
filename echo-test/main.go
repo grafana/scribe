@@ -25,5 +25,5 @@ func main() {
 	sw := scribe.New("test-pipeline")
 	defer sw.Done()
 
-	sw.Run(StepEcho())
+	sw.Add(StepEcho())
 }

@@ -39,7 +39,6 @@ type Scribe struct {
 	n        *counter
 	pipeline int64
 
-	prev          []pipeline.StepList
 	prevPipelines []pipeline.Pipeline
 }
 
@@ -71,22 +70,22 @@ func (s *Scribe) Background(steps ...pipeline.Step) {
 	if err := s.validateSteps(steps...); err != nil {
 		s.Log.Fatalln(err)
 	}
+
 	for i := range steps {
 		steps[i].Type = pipeline.StepTypeBackground
 	}
 
 	steps = s.setup(steps...)
-	list := pipeline.NewStepList(s.n.Next(), steps...)
 
-	if err := s.Collection.AddSteps(s.pipeline, list); err != nil {
+	if err := s.Collection.AddSteps(s.pipeline, steps...); err != nil {
 		s.Log.Fatalln(err)
 	}
 }
 
-// Run allows users to define steps that are ran sequentially. For example, the second step will not run until the first step has completed.
-// This function blocks the pipeline execution until all of the steps provided (step) have completed sequentially.
-func (s *Scribe) Run(steps ...pipeline.Step) {
-	s.Log.Debugf("Adding '%d' sequential steps: %+v", len(steps), pipeline.StepNames(steps))
+// Add allows users to define steps.
+// The order in which steps are ran is defined by what they provide / require.
+// Some steps do not produce anything, like for example running a suite of tests for a pass/fail result.
+func (s *Scribe) Add(steps ...pipeline.Step) {
 	steps = s.setup(steps...)
 
 	if err := s.runSteps(steps...); err != nil {
@@ -99,46 +98,9 @@ func (s *Scribe) runSteps(steps ...pipeline.Step) error {
 		return err
 	}
 
-	prev := s.prev
-
-	for _, v := range steps {
-		list := pipeline.NewStepList(s.n.Next(), v)
-		list.Dependencies = prev
-
-		if err := s.Collection.AddSteps(s.pipeline, list); err != nil {
-			return fmt.Errorf("Run: error adding step '%d' to collection. error: %w", list.ID, err)
-		}
-
-		prev = []pipeline.StepList{list}
+	if err := s.Collection.AddSteps(s.pipeline, steps...); err != nil {
+		return fmt.Errorf("error adding steps '%v' to collection. error: %w", steps, err)
 	}
-
-	s.prev = prev
-
-	return nil
-}
-
-// Parallel will run the listed steps at the same time.
-// This function blocks the pipeline execution until all of the steps have completed.
-func (s *Scribe) Parallel(steps ...pipeline.Step) {
-	steps = s.setup(steps...)
-	if err := s.parallelSteps(steps...); err != nil {
-		s.Log.Fatalln(err)
-	}
-}
-
-func (s *Scribe) parallelSteps(steps ...pipeline.Step) error {
-	if err := s.validateSteps(steps...); err != nil {
-		return err
-	}
-
-	list := pipeline.NewStepList(s.n.Next(), steps...)
-	list.Dependencies = s.prev
-
-	if err := s.Collection.AddSteps(s.pipeline, list); err != nil {
-		return fmt.Errorf("error adding step '%d' to collection. error: %w", list.ID, err)
-	}
-
-	s.prev = []pipeline.StepList{list}
 
 	return nil
 }
@@ -151,7 +113,7 @@ func (s *Scribe) setup(steps ...pipeline.Step) []pipeline.Step {
 	for i, step := range steps {
 		// Set a default image for steps that don't provide one.
 		// Most pre-made steps like `yarn`, `node`, `go` steps should provide a separate default image with those utilities installed.
-		if step.Image == "" {
+		if steps[i].Image == "" {
 			image := "golang:1.19"
 			steps[i] = step.WithImage(image)
 		}
@@ -199,83 +161,39 @@ func (s *Scribe) watchSignals() error {
 // Execute is the equivalent of Done, but returns an error.
 // Done should be preferred in Scribe pipelines as it includes sub-process handling and logging.
 func (s *Scribe) Execute(ctx context.Context, collection *pipeline.Collection) error {
+	// Only worry about building an entire graph if we're not running a specific step.
+	if step := s.Opts.Args.Step; step == nil || (*step) == 0 {
+		rootArgs := pipeline.ClientProvidedArguments
+		if err := s.Collection.BuildStepEdges(s.Log, rootArgs...); err != nil {
+			return err
+		}
+	}
+
 	if err := s.Client.Done(ctx, collection); err != nil {
 		return err
 	}
 	return nil
 }
 
-// SubFunc should use the provided Scribe object to populate a pipeline that runs independently.
-type SubFunc func(*Scribe)
-
-// This function adds a single sub-pipeline to the collection
-func (s *Scribe) subPipeline(sub *Scribe) error {
-	node, err := sub.Collection.Graph.Node(DefaultPipelineID)
-	if err != nil {
-		return fmt.Errorf("Failed to retrieve populated subpipeline: %w", err)
-	}
-
-	p := node.Value
-	p.Type = pipeline.PipelineTypeSub
-	p.ID = s.n.Next()
-
-	if err := s.Collection.AddPipelines(p); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Sub creates a sub-pipeline. The sub-pipeline is equivalent to creating a new coroutine made of multiple steps.
-// This sub-pipeline will run concurrently with the rest of the pipeline at the time of definition.
-// Under the hood, the Scribe client creates a new Scribe object with a clean Collection,
-// then calles the SubFunc (sf) with the new Scribe object. The collection is then populated by the SubFunc, and then appended to the existing collection.
-func (s *Scribe) Sub(sf SubFunc) {
-	sub := s.newSub()
-
-	s.Log.Debugf("Populating sub-pipeline in call to Sub")
-	sf(sub)
-	s.Log.Debugf("Populated sub-pipeline with '%d' nodes and '%d' edges", len(sub.Collection.Graph.Nodes), len(sub.Collection.Graph.Edges))
-
-	if err := s.subPipeline(sub); err != nil {
-		s.Log.WithError(err).Fatalln("failed to add sub-pipeline")
-	}
-}
-
-func (s *Scribe) newSub() *Scribe {
-	id := s.n.Next()
-	opts := s.Opts
-	opts.Name = fmt.Sprintf("sub-pipeline-%d", id)
-
-	collection := NewDefaultCollection(opts)
-
-	return &Scribe{
-		Client:     s.Client,
-		Opts:       opts,
-		Log:        s.Log.WithField("sub-pipeline", opts.Name),
-		Version:    s.Version,
-		n:          s.n,
-		Collection: collection,
-		pipeline:   DefaultPipelineID,
-	}
-}
-
 func (s *Scribe) Done() {
-	ctx := context.Background()
+	var (
+		ctx = context.Background()
+		log = s.Log
+	)
 
 	if err := execute(ctx, s.Collection, nameOrDefault(s.Opts.Name), s.Opts, s.n, s.Execute); err != nil {
-		s.Log.WithError(err).Fatal("error in execution")
+		log.WithError(err).Fatalln("error in execution")
 	}
 }
 
 func parseOpts() (clients.CommonOpts, error) {
 	pargs, err := args.ParseArguments(os.Args[1:])
 	if err != nil {
-		return clients.CommonOpts{}, fmt.Errorf("Error parsing arguments. Error: %w", err)
+		return clients.CommonOpts{}, fmt.Errorf("error parsing arguments. Error: %w", err)
 	}
 
 	if pargs == nil {
-		return clients.CommonOpts{}, fmt.Errorf("Arguments list must not be nil")
+		return clients.CommonOpts{}, fmt.Errorf("arguments list must not be nil")
 	}
 
 	// Create standard packages based on the arguments provided.
@@ -295,18 +213,12 @@ func parseOpts() (clients.CommonOpts, error) {
 		}
 	}
 
-	s, err := GetState(pargs.State, logger, pargs)
-	if err != nil {
-		return clients.CommonOpts{}, err
-	}
-
 	return clients.CommonOpts{
 		Version: pargs.Version,
 		Output:  os.Stdout,
 		Args:    pargs,
 		Log:     logger,
 		Tracer:  tracer,
-		State:   s,
 	}, nil
 }
 
@@ -358,7 +270,7 @@ func NewWithClient(opts clients.CommonOpts, client pipeline.Client) *Scribe {
 func NewClient(c clients.CommonOpts, collection *pipeline.Collection) *Scribe {
 	c.Log.Infof("Initializing Scribe client '%s'", c.Args.Client)
 	sw := &Scribe{
-		n: &counter{},
+		n: &counter{1},
 	}
 
 	initializer, ok := ClientInitializers[c.Args.Client]
@@ -366,7 +278,11 @@ func NewClient(c clients.CommonOpts, collection *pipeline.Collection) *Scribe {
 		c.Log.Fatalf("Could not initialize scribe. Could not find initializer for client '%s'", c.Args.Client)
 		return nil
 	}
-	sw.Client = initializer(c)
+	client, err := initializer(c)
+	if err != nil {
+		panic(err)
+	}
+	sw.Client = client
 	sw.Collection = collection
 
 	sw.Opts = c

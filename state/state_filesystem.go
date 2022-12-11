@@ -16,7 +16,7 @@ import (
 	"github.com/grafana/scribe/tarfs"
 )
 
-type stateValue struct {
+type StateValueJSON struct {
 	Argument Argument `json:"argument"`
 	Value    any      `json:"value"`
 }
@@ -63,7 +63,7 @@ func (f *FilesystemState) setValue(arg Argument, value any) error {
 		}
 	}
 
-	state := map[string]stateValue{}
+	state := map[string]StateValueJSON{}
 
 	// Error ignored intentionally. If there's an error, it's likely that the file is empty. We'll overwrite it.
 	json.NewDecoder(r).Decode(&state)
@@ -82,7 +82,7 @@ func (f *FilesystemState) setValue(arg Argument, value any) error {
 
 	defer w.Close()
 
-	state[arg.Key] = stateValue{
+	state[arg.Key] = StateValueJSON{
 		Argument: arg,
 		Value:    value,
 	}
@@ -100,7 +100,7 @@ func (f *FilesystemState) getValue(arg Argument) (any, error) {
 
 	defer file.Close()
 
-	state := map[string]stateValue{}
+	state := map[string]StateValueJSON{}
 
 	if err := json.NewDecoder(file).Decode(&state); err != nil {
 		return "", ErrorEmptyState
@@ -197,17 +197,17 @@ func (f *FilesystemState) SetFile(arg Argument, value string) error {
 	return f.setValue(arg, path)
 }
 
-func (f *FilesystemState) SetFileReader(arg Argument, value io.Reader) error {
+func (f *FilesystemState) SetFileReader(arg Argument, value io.Reader) (string, error) {
 	path, err := f.fsStatePath()
 	if err != nil {
-		return err
+		return "", err
 	}
 	path = filepath.Join(path, stringutil.Slugify(arg.Key))
 	if err := swfs.CopyFileReader(value, path); err != nil {
-		return err
+		return "", err
 	}
 
-	return f.setValue(arg, path)
+	return path, f.setValue(arg, path)
 }
 
 func (f *FilesystemState) GetDirectory(arg Argument) (fs.FS, error) {
@@ -305,4 +305,28 @@ func (f *FilesystemState) Exists(arg Argument) (bool, error) {
 	}
 
 	return false, err
+}
+
+func SetValueFromJSON(w Writer, value StateValueJSON) error {
+	switch value.Argument.Type {
+	case ArgumentTypeString:
+		return w.SetString(value.Argument, value.Value.(string))
+	case ArgumentTypeInt64:
+		return w.SetInt64(value.Argument, int64(value.Value.(float64)))
+	case ArgumentTypeFloat64:
+		return w.SetFloat64(value.Argument, value.Value.(float64))
+	case ArgumentTypeBool:
+		return w.SetBool(value.Argument, value.Value.(bool))
+	//case ArgumentTypeSecret:
+	//return w.SetSecret(value.Argument, value.Value.(bool))
+	case ArgumentTypeFile:
+		return w.SetFile(value.Argument, value.Value.(string))
+	case ArgumentTypeFS:
+		return w.SetDirectory(value.Argument, value.Value.(string))
+	case ArgumentTypeUnpackagedFS:
+		return w.SetDirectory(value.Argument, value.Value.(string))
+	default:
+	}
+
+	return nil
 }

@@ -17,6 +17,14 @@ With Scribe you can:
 - Use tools like delve to debug your pipelines.
 - Use Go features to make complex pipelines easier to develop and maintain.
 
+## Why not only use Dagger?
+
+Scribe internally uses Dagger to accomplish consistency. The promise of running the same thing locally that's ran in a CI service could not happen without it.
+
+Scribe adds a few features on top of Dagger, like:
+* Executing an anonymous function instead of a command.
+* Generating a CI configuration from your pipeline code.
+
 ## Running Locally / testing
 
 **Note**: For examples, please see the [demo](demo/) folder.

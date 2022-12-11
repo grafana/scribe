@@ -7,7 +7,6 @@ import (
 	"github.com/grafana/scribe"
 	"github.com/grafana/scribe/pipeline"
 	"github.com/grafana/scribe/pipeline/clients"
-	"github.com/grafana/scribe/pipeline/dag"
 	"github.com/grafana/scribe/testutil"
 )
 
@@ -60,162 +59,67 @@ func TestCollectionAddSteps(t *testing.T) {
 		col := scribe.NewDefaultCollection(clients.CommonOpts{
 			Name: "test",
 		})
-		steps := pipeline.StepList{
-			ID: 3,
-			Steps: []pipeline.Step{
-				{
-					ID:   1,
-					Name: "step 1",
-				},
-				{
-					ID:   2,
-					Name: "step 2",
-				},
+		steps := []pipeline.Step{
+			{
+				ID:   1,
+				Name: "step 1",
+			},
+			{
+				ID:   2,
+				Name: "step 2",
 			},
 		}
 
-		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, steps), nil)
+		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, steps...), nil)
 	})
 
 	t.Run("AddSteps should add steps to the graph with the correct edges", func(t *testing.T) {
 		col := scribe.NewDefaultCollection(clients.CommonOpts{
 			Name: "test",
 		})
-		step1 := pipeline.StepList{
-			ID: 7,
-			Steps: []pipeline.Step{
-				{
-					ID:   1,
-					Name: "step 1",
-				},
-				{
-					ID:   2,
-					Name: "step 2",
-				},
+		step1 := []pipeline.Step{
+			{
+				ID:   1,
+				Name: "step 1",
+			},
+			{
+				ID:   2,
+				Name: "step 2",
 			},
 		}
 
-		step2 := pipeline.StepList{
-			ID:           8,
-			Dependencies: []pipeline.StepList{step1},
-			Steps: []pipeline.Step{
-				{
-					ID:   3,
-					Name: "step 3",
-				},
-				{
-					ID:   4,
-					Name: "step 4",
-				},
-				{
-					ID:   5,
-					Name: "step 5",
-				},
+		step2 := []pipeline.Step{
+			{
+				ID:   3,
+				Name: "step 3",
+			},
+			{
+				ID:   4,
+				Name: "step 4",
+			},
+			{
+				ID:   5,
+				Name: "step 5",
 			},
 		}
 
-		step3 := pipeline.StepList{
-			ID:           9,
-			Dependencies: []pipeline.StepList{step2},
-			Steps: []pipeline.Step{
-				{
-					ID:   6,
-					Name: "step 6",
-				},
+		step3 := []pipeline.Step{
+			{
+				ID:   6,
+				Name: "step 6",
 			},
 		}
 
-		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step1), nil)
-		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step2), nil)
-		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step3), nil)
-
-		expectedEdges := map[int64][]int64{
-			0: {7},
-			7: {8},
-			8: {9},
-		}
-
-		g, _ := col.Graph.Node(scribe.DefaultPipelineID)
-		dag.EnsureGraphEdges(t, expectedEdges, g.Value.Graph.Edges)
+		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step1...), nil)
+		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step2...), nil)
+		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step3...), nil)
 	})
 
 	t.Run("AddSteps should always make steps where type == StepTypeBackground a child of the root node", func(t *testing.T) {
 		col := scribe.NewDefaultCollection(clients.CommonOpts{
 			Name: "test",
 		})
-		step1 := pipeline.StepList{
-			ID: 1,
-			Steps: []pipeline.Step{
-				{
-					ID:   2,
-					Name: "step 1",
-				},
-				{
-					ID:   3,
-					Name: "step 2",
-				},
-			},
-		}
-
-		step2 := pipeline.StepList{
-			ID: 4,
-			Steps: []pipeline.Step{
-				{
-					ID:   5,
-					Name: "step 3",
-					Type: pipeline.StepTypeBackground,
-				},
-				{
-					ID:   6,
-					Name: "step 4",
-					Type: pipeline.StepTypeBackground,
-				},
-				{
-					ID:   7,
-					Name: "step 5",
-					Type: pipeline.StepTypeBackground,
-				},
-			},
-		}
-
-		step3 := pipeline.StepList{
-			ID:           8,
-			Dependencies: []pipeline.StepList{step1},
-			Steps: []pipeline.Step{
-				{
-					ID:   9,
-					Name: "step 6",
-				},
-			},
-		}
-
-		// Add 1, 2
-		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step1), nil)
-
-		// Add 3, 4, 5
-		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step2), nil)
-
-		// Add 6
-		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step3), nil)
-
-		expectedEdges := map[int64][]int64{
-			0: {1, 4},
-			1: {8},
-		}
-
-		g, _ := col.Graph.Node(scribe.DefaultPipelineID)
-
-		dag.EnsureGraphEdges(t, expectedEdges, g.Value.Graph.Edges)
-	})
-}
-
-func TestCollectionGetters(t *testing.T) {
-	col := scribe.NewDefaultCollection(clients.CommonOpts{
-		Name: "test",
-	})
-	step1 := pipeline.StepList{
-		ID: 1,
-		Steps: []pipeline.Step{
+		step1 := []pipeline.Step{
 			{
 				ID:   2,
 				Name: "step 1",
@@ -224,12 +128,9 @@ func TestCollectionGetters(t *testing.T) {
 				ID:   3,
 				Name: "step 2",
 			},
-		},
-	}
+		}
 
-	step2 := pipeline.StepList{
-		ID: 4,
-		Steps: []pipeline.Step{
+		step2 := []pipeline.Step{
 			{
 				ID:   5,
 				Name: "step 3",
@@ -245,30 +146,67 @@ func TestCollectionGetters(t *testing.T) {
 				Name: "step 5",
 				Type: pipeline.StepTypeBackground,
 			},
-		},
-	}
+		}
 
-	step3 := pipeline.StepList{
-		ID:           8,
-		Dependencies: []pipeline.StepList{step1},
-		Steps: []pipeline.Step{
+		step3 := []pipeline.Step{
 			{
 				ID:   9,
 				Name: "step 6",
 			},
+		}
+
+		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step1...), nil)
+		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step2...), nil)
+		testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step3...), nil)
+	})
+}
+
+func TestCollectionGetters(t *testing.T) {
+	col := scribe.NewDefaultCollection(clients.CommonOpts{
+		Name: "test",
+	})
+
+	step1 := []pipeline.Step{
+		{
+			ID:   2,
+			Name: "step 1",
+		},
+		{
+			ID:   3,
+			Name: "step 2",
 		},
 	}
 
-	// Add 1, 2
-	testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step1), nil)
+	step2 := []pipeline.Step{
+		{
+			ID:   5,
+			Name: "step 3",
+			Type: pipeline.StepTypeBackground,
+		},
+		{
+			ID:   6,
+			Name: "step 4",
+			Type: pipeline.StepTypeBackground,
+		},
+		{
+			ID:   7,
+			Name: "step 5",
+			Type: pipeline.StepTypeBackground,
+		},
+	}
 
-	// Add 3, 4, 5
-	testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step2), nil)
+	step3 := []pipeline.Step{
+		{
+			ID:   9,
+			Name: "step 6",
+		},
+	}
 
-	// Add 6
-	testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step3), nil)
+	testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step1...), nil)
+	testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step2...), nil)
+	testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step3...), nil)
 
-	t.Run("ByID should return the step that has the provided serial number", func(t *testing.T) {
+	t.Run("ByID should return the step that has the provided ID", func(t *testing.T) {
 		steps, err := col.ByID(context.Background(), 9)
 		if err != nil {
 			t.Fatal(err)

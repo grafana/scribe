@@ -58,11 +58,6 @@ func TestDroneClient(t *testing.T) {
 			testDemoPipeline(t, "multi")
 		}),
 	)
-	t.Run("It should generate a drone pipeline with a sub-pipeline",
-		testutil.WithTimeout(time.Second*10, func(t *testing.T) {
-			testDemoPipeline(t, "sub")
-		}),
-	)
 	t.Run("It should generate a multi-drone pipeline with a sub-pipeline",
 		testutil.WithTimeout(time.Second*10, func(t *testing.T) {
 			testDemoPipeline(t, "multi-sub")
@@ -91,7 +86,7 @@ func TestDroneRun(t *testing.T) {
 			)
 
 			t.Log("Running steps...")
-			sw.Run(step1, step2, step3)
+			sw.Add(step1, step2, step3)
 
 			go func() {
 				t.Log("Done()")

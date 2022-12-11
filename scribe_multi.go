@@ -129,6 +129,14 @@ func (s *ScribeMulti) Sub(sf MultiSubFunc) {
 // Execute is the equivalent of Done, but returns an error.
 // Done should be preferred in Scribe pipelines as it includes sub-process handling and logging.
 func (s *ScribeMulti) Execute(ctx context.Context, collection *pipeline.Collection) error {
+	// Only worry about building an entire graph if we're not running a specific step.
+	if step := s.Opts.Args.Step; step == nil || (*step) == 0 {
+		rootArgs := pipeline.ClientProvidedArguments
+		if err := s.Collection.BuildStepEdges(s.Opts.Log, rootArgs...); err != nil {
+			return err
+		}
+	}
+
 	if err := s.Client.Done(ctx, collection); err != nil {
 		return err
 	}
@@ -220,17 +228,18 @@ func (s *ScribeMulti) New(name string, mf MultiFunc) pipeline.Pipeline {
 	if err != nil {
 		log.Fatal(err)
 	}
-	graph := node.Value.Graph
+
 	log.WithFields(logrus.Fields{
-		"nodes": len(graph.Nodes),
-		"edges": len(graph.Edges),
-	}).Debugln("Graph populated")
+		"nodes": len(node.Value.Graph.Nodes),
+	}).Debugln("Sub-pipeline created ")
 
 	return pipeline.Pipeline{
-		Name:   name,
-		Events: node.Value.Events,
-		ID:     s.serial(),
-		Graph:  node.Value.Graph,
+		ID:        s.serial(),
+		Name:      name,
+		Events:    node.Value.Events,
+		Graph:     node.Value.Graph,
+		Providers: node.Value.Providers,
+		Root:      node.Value.Root,
 	}
 }
 

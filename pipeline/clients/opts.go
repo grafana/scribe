@@ -4,7 +4,6 @@ import (
 	"io"
 
 	"github.com/grafana/scribe/args"
-	"github.com/grafana/scribe/state"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
@@ -18,5 +17,4 @@ type CommonOpts struct {
 	Args    *args.PipelineArgs
 	Log     *logrus.Logger
 	Tracer  opentracing.Tracer
-	State   *state.State
 }

@@ -48,7 +48,7 @@ func main() {
 
 	// In parallel, install the yarn and go dependencies, and cache the node_modules and $GOPATH/pkg folders.
 	// The cache should invalidate if the yarn.lock or go.sum files have changed
-	sw.Run(
+	sw.Add(
 		pipeline.NamedStep("install frontend dependencies", sw.Cache(
 			yarn.InstallAction(),
 			fs.Cache("node_modules", fs.FileHasChanged("yarn.lock")),
@@ -60,13 +60,13 @@ func main() {
 		writeVersion(sw).WithName("write-version-file"),
 	)
 
-	sw.Run(
+	sw.Add(
 		pipeline.NamedStep("compile backend", makefile.Target("build")).WithImage("alpine:latest"),
 		pipeline.NamedStep("compile frontend", makefile.Target("package")).WithImage("alpine:latest"),
 		pipeline.NamedStep("build docker image", makefile.Target("build")).Requires(pipeline.ArgumentDockerSocketFS).WithImage("alpine:latest"),
 	)
 
-	sw.Run(
+	sw.Add(
 		pipeline.NamedStep("publish", makefile.Target("publish")).
 			Requires(
 				state.NewSecretArgument("gcs-publish-key"),

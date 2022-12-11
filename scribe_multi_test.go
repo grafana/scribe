@@ -6,6 +6,7 @@ import (
 
 	"github.com/grafana/scribe"
 	"github.com/grafana/scribe/pipeline"
+	"github.com/grafana/scribe/state"
 )
 
 func TestMulti(t *testing.T) {
@@ -24,44 +25,31 @@ func TestMulti(t *testing.T) {
 	})
 
 	t.Run("Creating a multi-pipeline with steps", func(t *testing.T) {
+		// This is a potentially flaky test because I think 4 could sometimes show up before 5.
 		ens := newEnsurer(
-			[]string{"step 1"}, []string{"step 2"}, []string{"step 3"}, []string{"step 4"}, []string{"step 5"},
-			[]string{"step 1"}, []string{"step 2"}, []string{"step 3"}, []string{"step 4"}, []string{"step 5"},
+			"step 1", "step 2", "step 3", "step 5", "step 4",
+			"step 1", "step 2", "step 3", "step 5", "step 4",
 		)
 
 		// In this test case we're not providing ensurer data because we are not running 'Done'.
-		sw := scribe.NewMultiWithClient(testOpts, ens)
-
-		mf := func(sw *scribe.Scribe) {
-			sw.Run(pipeline.NoOpStep.WithName("step 1"), pipeline.NoOpStep.WithName("step 2"))
-			sw.Run(pipeline.NoOpStep.WithName("step 3"))
-			sw.Run(pipeline.NoOpStep.WithName("step 4"), pipeline.NoOpStep.WithName("step 5"))
-		}
-
-		// each multi-func adds 5 new steps, and each new sub-pipeline adds an additional root step.
-		// These pipelines are processed after all of the others are, so they will have the highest IDs (23 and 24).
-		sw.Run(
-			sw.New("test 1", mf),
-			sw.New("test 2", mf),
+		var (
+			sw   = scribe.NewMultiWithClient(testOpts, ens)
+			argA = state.NewStringArgument("a")
+			argB = state.NewStringArgument("b")
+			argC = state.NewStringArgument("c")
 		)
-
-		if err := sw.Execute(context.Background(), sw.Collection); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("Should run pipelines in parallel if they are added with the Parallel function", func(t *testing.T) {
-		ens := newEnsurer(
-			[]string{"step 1", "step 2"}, []string{"step 3", "step 4"},
-			[]string{"step 1", "step 2"}, []string{"step 3", "step 4"},
-		)
-
-		// In this test case we're not providing ensurer data because we are not running 'Done'.
-		sw := scribe.NewMultiWithClient(testOpts, ens)
-
-		mf := func(sw *scribe.Scribe) {
-			sw.Parallel(pipeline.NoOpStep.WithName("step 1"), pipeline.NoOpStep.WithName("step 2"))
-			sw.Parallel(pipeline.NoOpStep.WithName("step 3"), pipeline.NoOpStep.WithName("step 4"))
+		mf := func(s *scribe.Scribe) {
+			s.Add(
+				pipeline.NoOpStep.WithName("step 1").Provides(argA),
+				pipeline.NoOpStep.WithName("step 2").Provides(argC),
+			)
+			s.Add(
+				pipeline.NoOpStep.WithName("step 3").Requires(argA).Provides(argB),
+			)
+			s.Add(
+				pipeline.NoOpStep.WithName("step 4").Requires(argB, argC),
+				pipeline.NoOpStep.WithName("step 5").Requires(argA, argB, argC),
+			)
 		}
 
 		// each multi-func adds 5 new steps, and each new sub-pipeline adds an additional root step.
@@ -87,7 +75,7 @@ func TestMultiWithEvent(t *testing.T) {
 				pipeline.GitTagEvent(pipeline.GitTagFilters{}),
 			)
 
-			sw.Parallel(pipeline.NoOpStep.WithName("step 1"))
+			sw.Add(pipeline.NoOpStep.WithName("step 1"))
 		}
 
 		sw.Run(

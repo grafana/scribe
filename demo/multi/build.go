@@ -30,7 +30,7 @@ func writeVersion(sw *scribe.Scribe) pipeline.Step {
 }
 
 func installDependencies(sw *scribe.Scribe) {
-	sw.Run(
+	sw.Add(
 		pipeline.NamedStep("install frontend dependencies", sw.Cache(
 			yarn.InstallAction(),
 			fs.Cache("node_modules", fs.FileHasChanged("yarn.lock")),
@@ -45,7 +45,7 @@ func installDependencies(sw *scribe.Scribe) {
 func testPipeline(sw *scribe.Scribe) {
 	installDependencies(sw)
 
-	sw.Parallel(
+	sw.Add(
 		golang.Test(sw, "./...").WithName("test backend"),
 		pipeline.NamedStep("test frontend", makefile.Target("test-frontend")),
 	)
@@ -63,12 +63,12 @@ func publishPipeline(sw *scribe.Scribe) {
 
 	installDependencies(sw)
 
-	sw.Parallel(
+	sw.Add(
 		pipeline.NamedStep("compile backend", makefile.Target("build")),
 		pipeline.NamedStep("compile frontend", makefile.Target("package")),
 	)
 
-	sw.Run(
+	sw.Add(
 		pipeline.NamedStep("publish", makefile.Target("publish")).Requires(state.NewSecretArgument("gcp-publish-key")),
 	)
 }

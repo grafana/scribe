@@ -18,7 +18,7 @@ func main() {
 
 	sw.Run(
 		sw.New("test and build", func(sw *scribe.Scribe) {
-			sw.Run(golang.Test(sw, "./...").WithName("test"))
+			sw.Add(golang.Test(sw, "./...").WithName("test"))
 		}),
 	)
 
@@ -28,7 +28,7 @@ func main() {
 				pipeline.GitTagEvent(pipeline.GitTagFilters{}),
 			)
 
-			sw.Run(pipeline.NamedStep("am I on a tag event?", func(ctx context.Context, opts pipeline.ActionOpts) error {
+			sw.Add(pipeline.NamedStep("am I on a tag event?", func(ctx context.Context, opts pipeline.ActionOpts) error {
 				opts.Logger.Infoln("1. I'm on a tag event.")
 				opts.Logger.Infoln("2. I'm on a tag event.")
 				opts.Logger.Infoln("3. I'm on a tag event.")
