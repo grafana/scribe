@@ -1,5 +1,7 @@
 package state
 
+import "strings"
+
 type ArgumentType int
 
 const (
@@ -99,4 +101,15 @@ func NewSecretArgument(key string) Argument {
 		Type: ArgumentTypeSecret,
 		Key:  key,
 	}
+}
+
+type Arguments []Argument
+
+func (a *Arguments) String() string {
+	str := make([]string, len(*a))
+	for i, v := range *a {
+		str[i] = v.Key
+	}
+
+	return strings.Join(str, ", ")
 }

@@ -12,7 +12,7 @@ func NewScribe(initializer scribe.InitializerFunc) *scribe.Scribe {
 	opts := clients.CommonOpts{
 		Log: log,
 	}
-	client := initializer(opts)
+	client, _ := initializer(opts)
 
 	return &scribe.Scribe{
 		Opts:       opts,

@@ -12,7 +12,7 @@ import (
 )
 
 // This function effectively runs 'git remote get-url $(git remote)'
-func setCurrentRemote(s *state.State) error {
+func setCurrentRemote(s state.Writer) error {
 	remote, err := exec.Command("git", "remote").CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%w. output: %s", err, string(remote))
@@ -27,7 +27,7 @@ func setCurrentRemote(s *state.State) error {
 }
 
 // This function effectively runs 'git rev-parse HEAD'
-func setCurrentCommit(s *state.State) error {
+func setCurrentCommit(s state.Writer) error {
 	v, err := exec.Command("git", "rev-parse", "HEAD").CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%w. output: %s", err, string(v))
@@ -37,7 +37,7 @@ func setCurrentCommit(s *state.State) error {
 }
 
 // This function effectively runs 'git rev-parse --abrev-ref HEAD'
-func setCurrentBranch(s *state.State) error {
+func setCurrentBranch(s state.Writer) error {
 	v, err := exec.Command("git", "rev-parse", "--abrev-ref", "HEAD").CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%w. output: %s", err, string(v))
@@ -46,7 +46,7 @@ func setCurrentBranch(s *state.State) error {
 	return s.SetString(pipeline.ArgumentBranch, string(v))
 }
 
-func setWorkingDir(s *state.State) error {
+func setWorkingDir(s state.Writer) error {
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -55,7 +55,7 @@ func setWorkingDir(s *state.State) error {
 	return s.SetString(pipeline.ArgumentWorkingDir, wd)
 }
 
-func setSourceFS(s *state.State) error {
+func setSourceFS(s state.Writer) error {
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -64,13 +64,13 @@ func setSourceFS(s *state.State) error {
 	return s.SetDirectory(pipeline.ArgumentSourceFS, wd)
 }
 
-func setBuildID(s *state.State) error {
+func setBuildID(s state.Writer) error {
 	r := stringutil.Random(8)
 	return s.SetString(pipeline.ArgumentBuildID, r)
 }
 
 // KnownValues are URL values that we know how to retrieve using the command line.
-var KnownValues = map[state.Argument]func(*state.State) error{
+var KnownValues = map[state.Argument]func(state.Writer) error{
 	pipeline.ArgumentRemoteURL:  setCurrentRemote,
 	pipeline.ArgumentCommitRef:  setCurrentCommit,
 	pipeline.ArgumentBranch:     setCurrentBranch,

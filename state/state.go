@@ -18,7 +18,7 @@ var (
 	ErrorReadOnly   = errors.New("state is read-only")
 )
 
-type StateReader interface {
+type Reader interface {
 	Exists(Argument) (bool, error)
 	GetString(Argument) (string, error)
 	GetInt64(Argument) (int64, error)
@@ -29,24 +29,24 @@ type StateReader interface {
 	GetDirectoryString(Argument) (string, error)
 }
 
-type StateWriter interface {
+type Writer interface {
 	SetString(Argument, string) error
 	SetInt64(Argument, int64) error
 	SetFloat64(Argument, float64) error
 	SetBool(Argument, bool) error
 	SetFile(Argument, string) error
-	SetFileReader(Argument, io.Reader) error
+	SetFileReader(Argument, io.Reader) (string, error)
 	SetDirectory(Argument, string) error
 }
 
-type StateHandler interface {
-	StateReader
-	StateWriter
+type Handler interface {
+	Reader
+	Writer
 }
 
 type State struct {
-	Handler  StateHandler
-	Fallback []StateReader
+	Handler  Handler
+	Fallback []Reader
 	Log      logrus.FieldLogger
 }
 
@@ -106,7 +106,7 @@ func (s *State) GetString(arg Argument) (string, error) {
 	return "", err
 }
 
-func (s *State) MustGetString(arg Argument) string {
+func MustGetString(s Handler, arg Argument) string {
 	val, err := s.GetString(arg)
 	if err != nil {
 		panic(err)
@@ -144,7 +144,7 @@ func (s *State) GetInt64(arg Argument) (int64, error) {
 	return 0, err
 }
 
-func (s *State) MustGetInt64(arg Argument) int64 {
+func MustGetInt64(s Handler, arg Argument) int64 {
 	val, err := s.GetInt64(arg)
 	if err != nil {
 		panic(err)
@@ -183,7 +183,7 @@ func (s *State) GetFloat64(arg Argument) (float64, error) {
 	return 0, err
 }
 
-func (s *State) MustGetFloat64(arg Argument) float64 {
+func MustGetFloat64(s Handler, arg Argument) float64 {
 	val, err := s.GetFloat64(arg)
 	if err != nil {
 		panic(err)
@@ -222,7 +222,7 @@ func (s *State) GetBool(arg Argument) (bool, error) {
 	return false, err
 }
 
-func (s *State) MustGetBool(arg Argument) bool {
+func MustGetBool(s Handler, arg Argument) bool {
 	val, err := s.GetBool(arg)
 	if err != nil {
 		panic(err)
@@ -257,7 +257,7 @@ func (s *State) GetFile(arg Argument) (*os.File, error) {
 	return nil, err
 }
 
-func (s *State) MustGetFile(arg Argument) *os.File {
+func MustGetFile(s Handler, arg Argument) *os.File {
 	val, err := s.GetFile(arg)
 	if err != nil {
 		panic(err)
@@ -332,7 +332,7 @@ func (s *State) GetDirectoryString(arg Argument) (string, error) {
 	return "", err
 }
 
-func (s *State) MustGetDirectory(arg Argument) fs.FS {
+func MustGetDirectory(s Handler, arg Argument) fs.FS {
 	val, err := s.GetDirectory(arg)
 	if err != nil {
 		panic(err)
@@ -341,7 +341,7 @@ func (s *State) MustGetDirectory(arg Argument) fs.FS {
 	return val
 }
 
-func (s *State) MustGetDirectoryString(arg Argument) string {
+func MustGetDirectoryString(s Handler, arg Argument) string {
 	val, err := s.GetDirectoryString(arg)
 	if err != nil {
 		panic(err)
@@ -398,9 +398,9 @@ func (s *State) SetFile(arg Argument, path string) error {
 
 // SetFileReader attempts to set the reader into the state as a file.
 // This is an easy way to go from downloading a file to setting it into the state without having to write it to disk first.
-func (s *State) SetFileReader(arg Argument, r io.Reader) error {
+func (s *State) SetFileReader(arg Argument, r io.Reader) (string, error) {
 	if !ArgumentTypesEqual(arg, ArgumentTypeFile) {
-		return fmt.Errorf("attempted to set file in state for wrong argument type '%s'", arg.Type)
+		return "", fmt.Errorf("attempted to set file in state for wrong argument type '%s'", arg.Type)
 	}
 
 	return s.Handler.SetFileReader(arg, r)

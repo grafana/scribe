@@ -1,6 +1,8 @@
 package pipeline
 
-import "context"
+import (
+	"context"
+)
 
 type Client interface {
 	// Validate is ran internally before calling Run or Parallel and allows the client to effectively configure per-step requirements

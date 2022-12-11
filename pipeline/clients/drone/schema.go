@@ -36,7 +36,7 @@ func HandleSecrets(c pipeline.Configurer, step pipeline.Step) (map[string]*yaml.
 		args = make(map[string]string)
 	)
 
-	for _, arg := range step.Arguments {
+	for _, arg := range step.RequiredArgs {
 		name := secretEnv(arg.Key)
 		switch arg.Type {
 		case state.ArgumentTypeSecret:
@@ -54,7 +54,7 @@ func stepVolumes(c pipeline.Configurer, step pipeline.Step) []*yaml.VolumeMount 
 	volumes := []*yaml.VolumeMount{}
 	// TODO: It's unlikely that we want to actually associate volume mounts with "FS" type arguments.
 	// We will probably want to zip those up and place them in the state volume or something...
-	for _, v := range step.Arguments {
+	for _, v := range step.RequiredArgs {
 		if v.Type != state.ArgumentTypeFS && v.Type != state.ArgumentTypeUnpackagedFS {
 			continue
 		}
