@@ -11,6 +11,7 @@ import (
 	"github.com/grafana/scribe/pipeline"
 	"github.com/grafana/scribe/pipeline/clients"
 	"github.com/grafana/scribe/pipelineutil"
+	"github.com/grafana/scribe/state"
 	"github.com/grafana/scribe/stringutil"
 	"github.com/sirupsen/logrus"
 )
@@ -170,50 +171,66 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 	log := c.Log.WithField("client", "drone")
 
 	// StatePath is an aboslute path and already has a '/'.
-	state := &url.URL{
+	stateArg := &url.URL{
 		Scheme: "file",
 		Path:   path.Join(StatePath, "state.json"),
 	}
 
-	err := w.WalkPipelines(ctx, func(ctx context.Context, pipelines ...pipeline.Pipeline) error {
-		log.Debugf("Walking '%d' pipelines...", len(pipelines))
-		for _, v := range pipelines {
-			log.Debugf("Processing pipeline '%s'...", v.Name)
+	pipelines := []pipeline.Pipeline{}
 
-			s, err := c.Step(v, state.String())
+	if err := w.WalkPipelines(ctx, func(ctx context.Context, p ...pipeline.Pipeline) error {
+		pipelines = append(pipelines, p...)
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	for _, v := range pipelines {
+		if v.ID == 0 {
+			continue
+		}
+		log.Debugf("Processing pipeline '%s'...", v.Name)
+
+		s, err := c.Step(v, stateArg.String())
+		if err != nil {
+			return err
+		}
+
+		dependencies := []string{}
+		// Find the pipelines that supply the argument that we require.
+		// The collection type has already verified that everything we are expecting exists somewhere in the graph.
+		for _, arg := range v.RequiredArgs {
+			for _, p := range pipelines {
+				if state.ArgListContains(p.ProvidedArgs, arg) {
+					dependencies = append(dependencies, stringutil.Slugify(p.Name))
+					break
+				}
+			}
+		}
+
+		pipeline := c.newPipeline(newPipelineOpts{
+			Name:      stringutil.Slugify(v.Name),
+			Steps:     []*yaml.Container{s},
+			DependsOn: dependencies,
+		}, c.Opts)
+		if len(v.Events) == 0 {
+			log.Debugf("Pipeline '%d' / '%s' has 0 events", v.ID, v.Name)
+		} else {
+			log.Debugf("Pipeline '%d' / '%s' has '%d events", v.ID, v.Name, len(v.Events))
+		}
+		events := v.Events
+		if len(events) != 0 {
+			log.Debugf("Generating with %d event filters...", len(events))
+			cond, err := Events(events)
 			if err != nil {
 				return err
 			}
 
-			pipeline := c.newPipeline(newPipelineOpts{
-				Name:      stringutil.Slugify(v.Name),
-				Steps:     []*yaml.Container{s},
-				DependsOn: pipelinesToNames(v.Dependencies),
-			}, c.Opts)
-			if len(v.Events) == 0 {
-				log.Debugf("Pipeline '%d' / '%s' has 0 events", v.ID, v.Name)
-			} else {
-				log.Debugf("Pipeline '%d' / '%s' has '%d events", v.ID, v.Name, len(v.Events))
-			}
-			events := v.Events
-			if len(events) != 0 {
-				log.Debugf("Generating with %d event filters...", len(events))
-				cond, err := Events(events)
-				if err != nil {
-					return err
-				}
-
-				pipeline.Trigger = cond
-			}
-
-			log.Debugf("Done processing pipeline '%s'", v.Name)
-			cfg = append(cfg, pipeline)
+			pipeline.Trigger = cond
 		}
-		return nil
-	})
 
-	if err != nil {
-		return err
+		log.Debugf("Done processing pipeline '%s'", v.Name)
+		cfg = append(cfg, pipeline)
 	}
 
 	manifest := &yaml.Manifest{

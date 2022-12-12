@@ -16,13 +16,13 @@ func main() {
 	sw := scribe.NewMulti()
 	defer sw.Done()
 
-	sw.Run(
+	sw.Add(
 		sw.New("test and build", func(sw *scribe.Scribe) {
 			sw.Add(golang.Test(sw, "./...").WithName("test"))
 		}),
 	)
 
-	sw.Run(
+	sw.Add(
 		sw.New("create github release", func(sw *scribe.Scribe) {
 			sw.When(
 				pipeline.GitTagEvent(pipeline.GitTagFilters{}),

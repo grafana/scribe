@@ -24,6 +24,7 @@ func NewDefaultCollection(opts clients.CommonOpts) *pipeline.Collection {
 	if err := p.AddPipelines(pipeline.New(opts.Name, DefaultPipelineID)); err != nil {
 		panic(err)
 	}
+	p.Root = []int64{DefaultPipelineID}
 
 	return p
 }

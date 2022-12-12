@@ -127,7 +127,7 @@ func (s Step) ResetArguments() Step {
 }
 
 func (s Step) Requires(args ...state.Argument) Step {
-	s.RequiredArgs = append(s.RequiredArgs, args...)
+	s.RequiredArgs = args
 	return s
 }
 
@@ -198,4 +198,12 @@ func Combine(step ...Step) Step {
 	}
 
 	return s
+}
+
+func StepNames(steps []Step) []string {
+	n := make([]string, len(steps))
+	for i, v := range steps {
+		n[i] = v.Name
+	}
+	return n
 }

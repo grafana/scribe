@@ -12,75 +12,48 @@ import (
 )
 
 var (
-	ErrorNoSteps = errors.New("no steps were provided")
+	ErrorNoPipelineProvider = errors.New("no pipeline in the graph provides a required argument")
+	ErrorNoSteps            = errors.New("no steps were provided")
 )
-
-// WalkFunc is implemented by the pipeline 'Clients'. This function is executed for each Step.
-type StepWalkFunc func(context.Context, Step) error
-
-// PipelineWalkFunc is implemented by the pipeline 'Clients'. This function is executed for each pipeline.
-// This function follows the same rules for pipelines as the StepWalker func does for pipelines. If multiple pipelines are provided in the steps argument,
-// then those pipelines are intended to be executed in parallel.
-type PipelineWalkFunc func(context.Context, ...Pipeline) error
-
-// Walker is an interface that collections of steps should satisfy.
-type Walker interface {
-	WalkSteps(context.Context, int64, StepWalkFunc) error
-	WalkPipelines(context.Context, PipelineWalkFunc) error
-}
-
-func StepIDs(steps []Step) []int64 {
-	ids := make([]int64, len(steps))
-	for i, v := range steps {
-		ids[i] = v.ID
-	}
-
-	return ids
-}
 
 // Collection defines a directed acyclic Graph that stores a collection of Steps.
 // When using Scribe with "scribe.New", this collection contains a graph with one pipeline in it.
 // When using Scribe with "scribe.NewMulti", this collection contains a graph with several pipelines in it.
 type Collection struct {
-	Graph *dag.Graph[Pipeline]
+	Graph     *dag.Graph[Pipeline]
+	Providers map[state.Argument]int64
+	Root      []int64
 }
 
-func withoutBackgroundSteps(steps []Step) []Step {
-	s := []Step{}
-
-	for i, v := range steps {
-		if v.Type != StepTypeBackground {
-			s = append(s, steps[i])
-		}
+// NewCollectinoWithSteps creates a new Collection with a single pipeline from a list of Steps.
+func NewCollectionWithSteps(pipelineName string, steps ...Step) (*Collection, error) {
+	var (
+		col       = NewCollection()
+		id  int64 = 1
+	)
+	if err := col.AddPipelines(New(pipelineName, id)); err != nil {
+		return nil, err
 	}
 
-	return s
+	if err := col.AddSteps(id, steps...); err != nil {
+		return nil, err
+	}
+
+	return col, nil
 }
 
-// NodeListToSteps converts a list of Nodes to a list of Steps
-func NodesToSteps(nodes []dag.Node[Step]) []Step {
-	steps := make([]Step, len(nodes))
-
-	for i, v := range nodes {
-		steps[i] = v.Value
+func NewCollection() *Collection {
+	graph := dag.New[Pipeline]()
+	graph.AddNode(0, New("default", 0))
+	return &Collection{
+		Graph:     graph,
+		Providers: map[state.Argument]int64{},
+		Root:      []int64{},
 	}
-
-	return steps
 }
 
 // AdjNodesToPipelines converts a list of Nodes (with type Pipeline) to a list of Pipelines
 func AdjNodesToPipelines(nodes []*dag.Node[Pipeline]) []Pipeline {
-	pipelines := make([]Pipeline, len(nodes))
-
-	for i, v := range nodes {
-		pipelines[i] = v.Value
-	}
-
-	return pipelines
-}
-
-// NodesToPipelines converts a list of Nodes (with type Pipeline) to a list of Pipelines
-func NodesToPipelines(nodes []dag.Node[Pipeline]) []Pipeline {
 	pipelines := make([]Pipeline, len(nodes))
 
 	for i, v := range nodes {
@@ -104,14 +77,49 @@ func pipelinesEqual(a, b []Pipeline) bool {
 	return true
 }
 
-// BuildStepEdges generates the edges in each pipeline based on the required and provided args of each step.
-func (c *Collection) BuildStepEdges(log logrus.FieldLogger, rootArgs ...state.Argument) error {
+// SetProvider sets the provider of the argument 'arg' to the pipeline ID 'id'.
+// If there is already a pipeline that provides the argument 'arg', then a 'pipeline.ErrorAmbiguousProvider' is returned.
+// The provider for the argument is used to create an edge between the provider and pipelines that require the argument that is provided by it.
+func (c *Collection) SetProvider(arg state.Argument, id int64) error {
+	if _, ok := c.Providers[arg]; ok {
+		return fmt.Errorf("ambiguous `Provides` for argument '%s (%s)'. Error: '%w'", arg.Key, arg.Type.String(), ErrorAmbiguousProvider)
+	}
+	c.Providers[arg] = id
+	return nil
+}
+
+// BuidlEdges generates the edges in each pipeline based on the required and provided args of each step and pipeline.
+func (c *Collection) BuildEdges(log logrus.FieldLogger, rootArgs ...state.Argument) error {
+	c.Graph.Edges = map[int64][]dag.Edge[Pipeline]{}
+
+	// Build the edges between each pipeline
+	// Starting with pipelines that have no requirements
+	for _, v := range c.Root {
+		if err := c.Graph.AddEdge(0, v); err != nil {
+			return fmt.Errorf("error creating edge from '%d' to '%d': %w", 0, v, err)
+		}
+	}
+	// Build the edges for the graph of steps in each pipeline
 	for _, v := range c.Graph.Nodes {
 		// default pipeline has no steps
 		if v.ID == 0 {
 			continue
 		}
+		// Find the node that provides the argument that we require.
+		for _, arg := range v.Value.RequiredArgs {
+			providerID, ok := c.Providers[arg]
+			// If there is none, then we require an argument that nothing provides; do not continue.
+			if !ok && arg.Type != state.ArgumentTypeSecret {
+				return fmt.Errorf("%w: %s (%s)", ErrorNoPipelineProvider, arg.Key, arg.Type.String())
+			}
 
+			// Add the edge to that node.
+			if err := c.Graph.AddEdge(providerID, v.ID); err != nil {
+				return err
+			}
+		}
+
+		// Do pretty much the same thing for every step in our pipeline, too.
 		if err := v.Value.BuildEdges(rootArgs...); err != nil {
 			return err
 		}
@@ -158,29 +166,8 @@ func (c *Collection) AddEvents(pipelineID int64, events ...Event) error {
 
 // stepVisitFunc returns a dag.VisitFunc that popules the provided list of `steps` with the order that they should be ran.
 func (c *Collection) pipelineVisitFunc(ctx context.Context, wf PipelineWalkFunc) dag.VisitFunc[Pipeline] {
-	var (
-		adj  = []Pipeline{}
-		next = []Pipeline{}
-	)
-
 	return func(n *dag.Node[Pipeline]) error {
-		if n.ID == 0 {
-			adj = AdjNodesToPipelines(c.Graph.Adj(0))
-			return nil
-		}
-
-		next = append(next, n.Value)
-
-		if pipelinesEqual(adj, next) {
-			if err := wf(ctx, next...); err != nil {
-				return err
-			}
-
-			adj = AdjNodesToPipelines(c.Graph.Adj(n.ID))
-			next = []Pipeline{}
-		}
-
-		return nil
+		return wf(ctx, n.Value)
 	}
 }
 
@@ -207,31 +194,25 @@ func (c *Collection) AddSteps(pipelineID int64, steps ...Step) error {
 	return nil
 }
 
-func (c *Collection) addPipeline(p Pipeline) error {
-	if err := c.Graph.AddNode(p.ID, p); err != nil {
-		return fmt.Errorf("error adding new pipeline to graph: %w", err)
-	}
-
-	if len(p.Dependencies) == 0 {
-		if err := c.Graph.AddEdge(0, p.ID); err != nil {
-			return err
+// AppendPipeline adds a populated pipeline of Steps to the Graph.
+func (c *Collection) AddPipelines(pipelines ...Pipeline) error {
+	for _, v := range pipelines {
+		if err := c.Graph.AddNode(v.ID, v); err != nil {
+			return fmt.Errorf("error adding pipeline node to graph: '%s', error: %w", v.Name, err)
 		}
 	}
 
-	for _, v := range p.Dependencies {
-		if err := c.Graph.AddEdge(v.ID, p.ID); err != nil {
-			return err
+	for _, v := range pipelines {
+		id := v.ID
+		if len(v.RequiredArgs) == 0 {
+			// If this pipeline doesn't require anything before running, then it can run first.
+			c.Root = append(c.Root, id)
 		}
-	}
 
-	return nil
-}
-
-// AppendPipeline adds a populated sub-pipeline of Steps to the Graph.
-func (c *Collection) AddPipelines(p ...Pipeline) error {
-	for _, v := range p {
-		if err := c.addPipeline(v); err != nil {
-			return err
+		for _, arg := range v.ProvidedArgs {
+			if err := c.SetProvider(arg, id); err != nil {
+				return fmt.Errorf("pipeline: '%s', error: %w", v.Name, err)
+			}
 		}
 	}
 	return nil
@@ -302,7 +283,6 @@ func (c *Collection) PipelinesByName(ctx context.Context, names []string) ([]Pip
 		for i, argPipeline := range names {
 			for _, pipeline := range pipelines {
 				if strings.EqualFold(pipeline.Name, argPipeline) {
-					pipeline.Dependencies = []Pipeline{}
 					retP[i] = pipeline
 					found = true
 					break
@@ -328,7 +308,6 @@ func (c *Collection) PipelinesByEvent(ctx context.Context, name string) ([]Pipel
 		for _, pipeline := range pipelines {
 			for _, event := range pipeline.Events {
 				if event.Name == name {
-					pipeline.Dependencies = []Pipeline{}
 					ret = append(ret, pipeline)
 					break
 				}
@@ -344,29 +323,4 @@ func (c *Collection) PipelinesByEvent(ctx context.Context, name string) ([]Pipel
 	}
 
 	return ret, nil
-}
-
-// NewCollectinoWithSteps creates a new Collection with a single pipeline from a list of Steps.
-func NewCollectionWithSteps(pipelineName string, steps ...Step) (*Collection, error) {
-	var (
-		col       = NewCollection()
-		id  int64 = 1
-	)
-	if err := col.AddPipelines(New(pipelineName, id)); err != nil {
-		return nil, err
-	}
-
-	if err := col.AddSteps(id, steps...); err != nil {
-		return nil, err
-	}
-
-	return col, nil
-}
-
-func NewCollection() *Collection {
-	graph := dag.New[Pipeline]()
-	graph.AddNode(0, New("default", 0))
-	return &Collection{
-		Graph: graph,
-	}
 }

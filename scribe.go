@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/grafana/scribe/args"
 	"github.com/grafana/scribe/cmdutil"
@@ -99,7 +100,7 @@ func (s *Scribe) runSteps(steps ...pipeline.Step) error {
 	}
 
 	if err := s.Collection.AddSteps(s.pipeline, steps...); err != nil {
-		return fmt.Errorf("error adding steps '%v' to collection. error: %w", steps, err)
+		return fmt.Errorf("error adding steps '[%s]' to collection. error: %w", strings.Join(pipeline.StepNames(steps), ", "), err)
 	}
 
 	return nil
@@ -164,7 +165,7 @@ func (s *Scribe) Execute(ctx context.Context, collection *pipeline.Collection) e
 	// Only worry about building an entire graph if we're not running a specific step.
 	if step := s.Opts.Args.Step; step == nil || (*step) == 0 {
 		rootArgs := pipeline.ClientProvidedArguments
-		if err := s.Collection.BuildStepEdges(s.Log, rootArgs...); err != nil {
+		if err := s.Collection.BuildEdges(s.Log, rootArgs...); err != nil {
 			return err
 		}
 	}

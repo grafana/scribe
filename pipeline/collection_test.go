@@ -8,6 +8,7 @@ import (
 	"github.com/grafana/scribe/pipeline"
 	"github.com/grafana/scribe/pipeline/clients"
 	"github.com/grafana/scribe/testutil"
+	"github.com/sirupsen/logrus"
 )
 
 func TestCollectionAddEvents(t *testing.T) {
@@ -41,6 +42,9 @@ func TestCollectionAddEvents(t *testing.T) {
 
 		col.WalkPipelines(context.Background(), func(ctx context.Context, p ...pipeline.Pipeline) error {
 			for _, v := range p {
+				if v.ID == 0 {
+					continue
+				}
 				if len(v.Events) != len(events) {
 					t.Fatalf("Expected '%d' events but found '%d' in pipeline", len(events), len(v.Events))
 				}
@@ -205,6 +209,7 @@ func TestCollectionGetters(t *testing.T) {
 	testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step1...), nil)
 	testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step2...), nil)
 	testutil.EnsureError(t, col.AddSteps(scribe.DefaultPipelineID, step3...), nil)
+	testutil.EnsureError(t, col.BuildEdges(logrus.New()), nil)
 
 	t.Run("ByID should return the step that has the provided ID", func(t *testing.T) {
 		steps, err := col.ByID(context.Background(), 9)

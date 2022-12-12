@@ -21,108 +21,25 @@ type ScribeMulti struct {
 
 	n        *counter
 	pipeline int64
-
-	prev []pipeline.Pipeline
 }
 
 func (s *ScribeMulti) serial() int64 {
 	return s.n.Next()
 }
 
-// runPipeliens adds the list of pipelines to the collection. Pipelines are essentially branches in the graph.
-// The pipelines provided run one after another.
-func (s *ScribeMulti) runPipelines(pipelines ...pipeline.Pipeline) error {
-	prev := s.prev
-
+// Add adds new pipelines to the Scribe DAG to be processed by the Client.
+func (s *ScribeMulti) Add(pipelines ...pipeline.Pipeline) {
+	s.PrintGraph("before adding nodes...")
 	for _, v := range pipelines {
-		v.Dependencies = prev
-		if err := s.Collection.AddPipelines(v); err != nil {
-			return fmt.Errorf("error adding pipeline '%d' to collection. error: %w", v.ID, err)
-		}
-
-		prev = []pipeline.Pipeline{v}
+		s.Log.WithFields(logrus.Fields{
+			"name":     v.Name,
+			"requires": v.RequiredArgs,
+			"provides": v.ProvidedArgs,
+		}).Debugln("adding pipeline")
 	}
-
-	s.prev = prev
-
-	return nil
-}
-
-func (s *ScribeMulti) Run(steps ...pipeline.Pipeline) {
-	if err := s.runPipelines(steps...); err != nil {
-		s.Log.Fatalln(err)
-	}
-}
-
-func (s *ScribeMulti) parallelPipelines(pipelines ...pipeline.Pipeline) error {
-	for i := range pipelines {
-		pipelines[i].Dependencies = s.prev
-	}
-
+	defer s.PrintGraph("after adding nodes...")
 	if err := s.Collection.AddPipelines(pipelines...); err != nil {
-		return fmt.Errorf("error adding '%d' parallel pipelines to collection. error: %w", len(pipelines), err)
-	}
-
-	s.prev = pipelines
-
-	return nil
-}
-
-func (s *ScribeMulti) Parallel(steps ...pipeline.Pipeline) {
-	if err := s.parallelPipelines(steps...); err != nil {
-		s.Log.Fatalln(err)
-	}
-}
-
-func (s *ScribeMulti) subMulti(sub *ScribeMulti) error {
-	prev := s.prev
-
-	for i, v := range sub.Collection.Graph.Nodes {
-		if v.ID == 0 || v.ID == DefaultPipelineID {
-			continue
-		}
-
-		sub.Collection.Graph.Nodes[i].Value.Type = pipeline.PipelineTypeSub
-
-		if len(v.Value.Dependencies) == 0 {
-			sub.Collection.Graph.Nodes[i].Value.Dependencies = prev
-		}
-
-		if err := s.Collection.AddPipelines(sub.Collection.Graph.Nodes[i].Value); err != nil {
-			return err
-		}
-
-		s.Log.Debugln("Appended pipeline", v.ID, v.Value.Name)
-	}
-	return nil
-}
-
-func (s *ScribeMulti) newSub() *ScribeMulti {
-	serial := s.n.Next()
-	opts := s.Opts
-	opts.Name = fmt.Sprintf("sub-pipeline-%d", serial)
-
-	collection := NewDefaultCollection(opts)
-
-	return &ScribeMulti{
-		Client:     s.Client,
-		Opts:       opts,
-		Log:        s.Log.WithField("sub-pipeline", opts.Name),
-		Version:    s.Version,
-		n:          s.n,
-		Collection: collection,
-		pipeline:   DefaultPipelineID,
-	}
-}
-
-type MultiSubFunc func(*ScribeMulti)
-
-func (s *ScribeMulti) Sub(sf MultiSubFunc) {
-	sub := s.newSub()
-	sf(sub)
-
-	if err := s.subMulti(sub); err != nil {
-		s.Log.WithError(err).Fatalln("failed to add sub-pipeline")
+		s.Log.WithError(err).Fatalln("error adding pipelines")
 	}
 }
 
@@ -132,7 +49,7 @@ func (s *ScribeMulti) Execute(ctx context.Context, collection *pipeline.Collecti
 	// Only worry about building an entire graph if we're not running a specific step.
 	if step := s.Opts.Args.Step; step == nil || (*step) == 0 {
 		rootArgs := pipeline.ClientProvidedArguments
-		if err := s.Collection.BuildStepEdges(s.Opts.Log, rootArgs...); err != nil {
+		if err := s.Collection.BuildEdges(s.Opts.Log, rootArgs...); err != nil {
 			return err
 		}
 	}
@@ -145,7 +62,7 @@ func (s *ScribeMulti) Execute(ctx context.Context, collection *pipeline.Collecti
 
 func (s *ScribeMulti) Done() {
 	ctx := context.Background()
-
+	s.PrintGraph("before executing...")
 	if err := execute(ctx, s.Collection, nameOrDefault(s.Opts.Name), s.Opts, s.n, s.Execute); err != nil {
 		s.Log.WithError(err).Fatal("error in execution")
 	}
@@ -208,18 +125,16 @@ func (s *ScribeMulti) New(name string, mf MultiFunc) pipeline.Pipeline {
 	log := s.Log.WithFields(logrus.Fields{
 		"pipeline": name,
 	})
-
 	sw, err := s.newMulti(name)
 	if err != nil {
 		log.WithError(err).Fatalln("Failed to clone pipeline for use in multi-pipeline")
 	}
 
 	sw.Opts.Name = name
-
 	// This function adds the pipeline the way the user specified. It should look exactly like a normal scribe pipeline.
 	// This collection will be populated with a collection of Steps with actions.
-	wrapped := MultiFuncWithLogging(log, mf)
-	wrapped(sw)
+	wrappedMultiFunc := MultiFuncWithLogging(log, mf)
+	wrappedMultiFunc(sw)
 
 	// Update our counter with the new value of the sub-pipeline counter
 	s.n = sw.n
@@ -229,24 +144,30 @@ func (s *ScribeMulti) New(name string, mf MultiFunc) pipeline.Pipeline {
 		log.Fatal(err)
 	}
 
+	id := s.serial()
 	log.WithFields(logrus.Fields{
-		"nodes": len(node.Value.Graph.Nodes),
-	}).Debugln("Sub-pipeline created ")
+		"nodes":    len(node.Value.Graph.Nodes),
+		"requires": node.Value.RequiredArgs,
+		"provides": node.Value.RequiredArgs,
+		"name":     name,
+		"id":       id,
+	}).Debugln("Sub-pipeline created")
 
 	return pipeline.Pipeline{
-		ID:        s.serial(),
-		Name:      name,
-		Events:    node.Value.Events,
-		Graph:     node.Value.Graph,
-		Providers: node.Value.Providers,
-		Root:      node.Value.Root,
+		ID:           id,
+		Name:         name,
+		Events:       node.Value.Events,
+		Graph:        node.Value.Graph,
+		Providers:    node.Value.Providers,
+		Root:         node.Value.Root,
+		RequiredArgs: node.Value.RequiredArgs,
+		ProvidedArgs: node.Value.ProvidedArgs,
 	}
 }
 
 func (s *ScribeMulti) newMulti(name string) (*Scribe, error) {
 	log := s.Log.WithField("pipeline", name)
 	collection := NewMultiCollection()
-
 	if err := collection.AddPipelines(pipeline.New(name, DefaultPipelineID)); err != nil {
 		return nil, err
 	}
@@ -262,4 +183,17 @@ func (s *ScribeMulti) newMulti(name string) (*Scribe, error) {
 	}
 
 	return sw, nil
+}
+
+func (s *ScribeMulti) PrintGraph(msg string) {
+	for _, v := range s.Collection.Graph.Nodes {
+		s.Log.WithFields(logrus.Fields{
+			"id":       v.ID,
+			"name":     v.Value.Name,
+			"steps":    len(v.Value.Graph.Nodes),
+			"edges":    len(v.Value.Graph.Edges),
+			"requires": v.Value.RequiredArgs,
+			"provides": v.Value.ProvidedArgs,
+		}).Debugln(msg)
+	}
 }

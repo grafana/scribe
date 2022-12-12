@@ -54,7 +54,7 @@ func TestMulti(t *testing.T) {
 
 		// each multi-func adds 5 new steps, and each new sub-pipeline adds an additional root step.
 		// These pipelines are processed after all of the others are, so they will have the highest IDs (23 and 24).
-		sw.Run(
+		sw.Add(
 			sw.New("test 1", mf),
 			sw.New("test 2", mf),
 		)
@@ -78,7 +78,7 @@ func TestMultiWithEvent(t *testing.T) {
 			sw.Add(pipeline.NoOpStep.WithName("step 1"))
 		}
 
-		sw.Run(
+		sw.Add(
 			sw.New("test 1", mf),
 		)
 

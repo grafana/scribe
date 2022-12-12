@@ -13,6 +13,10 @@ import (
 	"github.com/grafana/scribe/yarn"
 )
 
+var (
+	ArgumentTestResult = state.NewBoolArgument("test-result")
+)
+
 func writeVersion(sw *scribe.Scribe) pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 
@@ -81,8 +85,8 @@ func main() {
 	sw := scribe.NewMulti()
 	defer sw.Done()
 
-	sw.Run(
-		sw.New("test", testPipeline),
-		sw.New("publish", publishPipeline),
+	sw.Add(
+		sw.New("test", testPipeline).Provides(ArgumentTestResult),
+		sw.New("publish", publishPipeline).Requires(ArgumentTestResult),
 	)
 }

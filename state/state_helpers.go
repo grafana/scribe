@@ -46,3 +46,13 @@ func GetValueAsString(r Reader, arg Argument) (string, error) {
 
 	return "", fmt.Errorf("unsupported or unrecognized argument type: %s", arg.Type)
 }
+
+func ArgListContains(args Arguments, arg Argument) bool {
+	for _, v := range args {
+		if v == arg {
+			return true
+		}
+	}
+
+	return false
+}

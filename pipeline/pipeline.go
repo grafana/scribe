@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ErrorNoProvider        = errors.New("no step in the graph provides a required argument")
+	ErrorNoStepProvider    = errors.New("no step in the graph provides a required argument")
 	ErrorAmbiguousProvider = errors.New("more than one step provides the same argument(s)")
 )
 
@@ -19,15 +19,17 @@ type Pipeline struct {
 	ID   int64
 	Name string
 	// Graph is a graph where each node is a list of Steps. Each set of steps runs in parallel.
-	Graph        *dag.Graph[Step]
-	Providers    map[state.Argument]int64
-	Root         []int64
-	Events       []Event
-	Type         PipelineType
-	Dependencies []Pipeline
+	Graph     *dag.Graph[Step]
+	Providers map[state.Argument]int64
+	Root      []int64
+	Events    []Event
+	Type      PipelineType
+
+	RequiredArgs state.Arguments
+	ProvidedArgs state.Arguments
 }
 
-func (p *Pipeline) SetProvider(arg state.Argument, id int64) error {
+func (p Pipeline) SetProvider(arg state.Argument, id int64) error {
 	if _, ok := p.Providers[arg]; ok {
 		return fmt.Errorf("ambiguous `Provides` for argument '%s (%s)'. Error: '%w'", arg.Key, arg.Type.String(), ErrorAmbiguousProvider)
 	}
@@ -59,7 +61,7 @@ func (p *Pipeline) AddSteps(steps ...Step) error {
 
 // BuildEdges generates the edges of the step graph based on the required / provided args of each step.
 // It will return an error if there are required arguments that are not satisfied.
-func (p *Pipeline) BuildEdges(rootArgs ...state.Argument) error {
+func (p Pipeline) BuildEdges(rootArgs ...state.Argument) error {
 	for _, v := range rootArgs {
 		if err := p.SetProvider(v, 0); err != nil {
 			return err
@@ -79,7 +81,7 @@ func (p *Pipeline) BuildEdges(rootArgs ...state.Argument) error {
 		for _, v := range node.Value.RequiredArgs {
 			providerID, ok := p.Providers[v]
 			if !ok && v.Type != state.ArgumentTypeSecret {
-				return fmt.Errorf("%w: %s (%s)", ErrorNoProvider, v.Key, v.Type.String())
+				return fmt.Errorf("%w: %s (%s)", ErrorNoStepProvider, v.Key, v.Type.String())
 			}
 			if err := p.Graph.AddEdge(providerID, node.ID); err != nil {
 				return err
@@ -88,6 +90,16 @@ func (p *Pipeline) BuildEdges(rootArgs ...state.Argument) error {
 	}
 
 	return nil
+}
+
+func (p Pipeline) Requires(args ...state.Argument) Pipeline {
+	p.RequiredArgs = args
+	return p
+}
+
+func (p Pipeline) Provides(args ...state.Argument) Pipeline {
+	p.ProvidedArgs = args
+	return p
 }
 
 func nodeID(steps []Step) int64 {

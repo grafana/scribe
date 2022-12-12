@@ -236,7 +236,7 @@ func execute(ctx context.Context, collection *pipeline.Collection, name string, 
 
 	// If the user supplies a --event or -e argument, check the arguments for the event and reduce the collection
 	// However, we only want to do this type of filtering when we're running locally using the dagger mode.
-	if slices.Contains[string](LocalModes, opts.Args.Client) {
+	if slices.Contains(LocalModes, opts.Args.Client) {
 		wrapped = executeWithEvent(opts.Args, opts, wrapped)
 	}
 

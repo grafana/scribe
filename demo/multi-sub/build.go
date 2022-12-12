@@ -13,6 +13,10 @@ import (
 	"github.com/grafana/scribe/yarn"
 )
 
+var (
+	ArgumentTestResult = state.NewBoolArgument("test-results")
+)
+
 func writeVersion(sw *scribe.Scribe) pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 
@@ -81,7 +85,6 @@ func codeqlPipeline(sw *scribe.Scribe) {
 }
 
 // "main" defines our program pipeline.
-// "main" defines our program pipeline.
 // Every pipeline step should be instantiated using the scribe client (sw).
 // This allows the various clients to work properly in different scenarios, like in a CI environment or locally.
 // Logic and processing done outside of the `sw.*` family of functions may not be included in the resulting pipeline.
@@ -89,14 +92,9 @@ func main() {
 	sw := scribe.NewMulti()
 	defer sw.Done()
 
-	// Presumably this function could run for 10+ minutes so we want to run it while test & publish are happening.
-	// We could run it in parallel with test, and if it fails, don't run publish, but we don't actually care if this passes in order to publish a pre-release build.
-	sw.Sub(func(sw *scribe.ScribeMulti) {
-		sw.Run(sw.New("code quality check", codeqlPipeline))
-	})
-
-	sw.Run(
-		sw.New("test", testPipeline),
-		sw.New("publish", publishPipeline),
+	sw.Add(
+		sw.New("code quality check", codeqlPipeline),
+		sw.New("test", testPipeline).Provides(ArgumentTestResult),
+		sw.New("publish", publishPipeline).Requires(ArgumentTestResult),
 	)
 }

@@ -117,13 +117,14 @@ func TestScribeRun(t *testing.T) {
 			pipeline.NoOpStep.WithName("step 4").Requires(argA, argB),
 		)
 		// populate the graph edges
-		if err := client.Collection.BuildStepEdges(logrus.StandardLogger()); err != nil {
+		if err := client.Collection.BuildEdges(logrus.StandardLogger()); err != nil {
 			t.Fatal(err)
 		}
 		n, err := client.Collection.Graph.Node(scribe.DefaultPipelineID)
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		dag.EnsureGraphEdges(t, map[int64][]int64{
 			0: {1, 2, 3},
 			2: {4},
