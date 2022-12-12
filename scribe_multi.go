@@ -29,7 +29,6 @@ func (s *ScribeMulti) serial() int64 {
 
 // Add adds new pipelines to the Scribe DAG to be processed by the Client.
 func (s *ScribeMulti) Add(pipelines ...pipeline.Pipeline) {
-	s.PrintGraph("before adding nodes...")
 	for _, v := range pipelines {
 		s.Log.WithFields(logrus.Fields{
 			"name":     v.Name,
@@ -37,7 +36,6 @@ func (s *ScribeMulti) Add(pipelines ...pipeline.Pipeline) {
 			"provides": v.ProvidedArgs,
 		}).Debugln("adding pipeline")
 	}
-	defer s.PrintGraph("after adding nodes...")
 	if err := s.Collection.AddPipelines(pipelines...); err != nil {
 		s.Log.WithError(err).Fatalln("error adding pipelines")
 	}
@@ -62,7 +60,6 @@ func (s *ScribeMulti) Execute(ctx context.Context, collection *pipeline.Collecti
 
 func (s *ScribeMulti) Done() {
 	ctx := context.Background()
-	s.PrintGraph("before executing...")
 	if err := execute(ctx, s.Collection, nameOrDefault(s.Opts.Name), s.Opts, s.n, s.Execute); err != nil {
 		s.Log.WithError(err).Fatal("error in execution")
 	}

@@ -23,19 +23,12 @@ func (c *MyClient) Provides() []state.Argument {
 }
 
 func (c *MyClient) Done(ctx context.Context, w pipeline.Walker) error {
-	return w.WalkPipelines(ctx, func(ctx context.Context, pipelines ...pipeline.Pipeline) error {
-		c.Log.Infoln("pipelines:", pipeline.PipelineNames(pipelines))
-		for _, v := range pipelines {
-			err := w.WalkSteps(ctx, v.ID, func(ctx context.Context, step pipeline.Step) error {
-				c.Log.Infoln("step:", step.Name)
-				return nil
-			})
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
+	return w.WalkPipelines(ctx, func(ctx context.Context, p pipeline.Pipeline) error {
+		c.Log.Infoln("pipeline:", p.Name)
+		return w.WalkSteps(ctx, p.ID, func(ctx context.Context, step pipeline.Step) error {
+			c.Log.Infoln("step:", step.Name)
+			return nil
+		})
 	})
 }
 

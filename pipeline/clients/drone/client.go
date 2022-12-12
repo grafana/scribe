@@ -178,8 +178,8 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 
 	pipelines := []pipeline.Pipeline{}
 
-	if err := w.WalkPipelines(ctx, func(ctx context.Context, p ...pipeline.Pipeline) error {
-		pipelines = append(pipelines, p...)
+	if err := w.WalkPipelines(ctx, func(ctx context.Context, p pipeline.Pipeline) error {
+		pipelines = append(pipelines, p)
 		return nil
 	}); err != nil {
 		return err

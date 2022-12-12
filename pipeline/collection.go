@@ -39,6 +39,11 @@ func NewCollectionWithSteps(pipelineName string, steps ...Step) (*Collection, er
 		return nil, err
 	}
 
+	col.Root = []int64{id}
+	if err := col.BuildEdges(logrus.StandardLogger(), ClientProvidedArguments...); err != nil {
+		return nil, err
+	}
+
 	return col, nil
 }
 
@@ -95,6 +100,7 @@ func (c *Collection) BuildEdges(log logrus.FieldLogger, rootArgs ...state.Argume
 	// Build the edges between each pipeline
 	// Starting with pipelines that have no requirements
 	for _, v := range c.Root {
+		log.Debugln("Adding edge from root node to", v)
 		if err := c.Graph.AddEdge(0, v); err != nil {
 			return fmt.Errorf("error creating edge from '%d' to '%d': %w", 0, v, err)
 		}
@@ -113,6 +119,7 @@ func (c *Collection) BuildEdges(log logrus.FieldLogger, rootArgs ...state.Argume
 				return fmt.Errorf("%w: %s (%s)", ErrorNoPipelineProvider, arg.Key, arg.Type.String())
 			}
 
+			log.Debugln("Adding edge from provider (%d) to node (%d)", providerID, v.ID)
 			// Add the edge to that node.
 			if err := c.Graph.AddEdge(providerID, v.ID); err != nil {
 				return err
@@ -140,7 +147,6 @@ func (c *Collection) WalkSteps(ctx context.Context, pipelineID int64, wf StepWal
 	}
 
 	pipeline := node.Value
-
 	return pipeline.Graph.BreadthFirstSearch(0, func(n *dag.Node[Step]) error {
 		if n.ID == 0 {
 			return nil
@@ -164,9 +170,13 @@ func (c *Collection) AddEvents(pipelineID int64, events ...Event) error {
 	return nil
 }
 
-// stepVisitFunc returns a dag.VisitFunc that popules the provided list of `steps` with the order that they should be ran.
+// pipelineVisitFunc returns a dag.VisitFunc that runs per-pipeline found in the graph.
 func (c *Collection) pipelineVisitFunc(ctx context.Context, wf PipelineWalkFunc) dag.VisitFunc[Pipeline] {
 	return func(n *dag.Node[Pipeline]) error {
+		// Always skip the root node
+		if n.ID == 0 {
+			return nil
+		}
 		return wf(ctx, n.Value)
 	}
 }
@@ -197,6 +207,9 @@ func (c *Collection) AddSteps(pipelineID int64, steps ...Step) error {
 // AppendPipeline adds a populated pipeline of Steps to the Graph.
 func (c *Collection) AddPipelines(pipelines ...Pipeline) error {
 	for _, v := range pipelines {
+		if v.ID == 0 {
+			continue
+		}
 		if err := c.Graph.AddNode(v.ID, v); err != nil {
 			return fmt.Errorf("error adding pipeline node to graph: '%s', error: %w", v.Name, err)
 		}
@@ -219,29 +232,16 @@ func (c *Collection) AddPipelines(pipelines ...Pipeline) error {
 }
 
 // ByID should return the Step that corresponds with a specific ID
-func (c *Collection) ByID(ctx context.Context, id int64) ([]Step, error) {
-	steps := []Step{}
-
-	// Search every pipeline and step for the listed IDs
-	if err := c.WalkPipelines(ctx, func(ctx context.Context, pipelines ...Pipeline) error {
-		for _, pipeline := range pipelines {
-			for _, node := range pipeline.Graph.Nodes {
-				if node.Value.ID == id {
-					steps = []Step{node.Value}
-					return dag.ErrorBreak
-				}
+func (c *Collection) ByID(ctx context.Context, id int64) (Step, error) {
+	for _, p := range c.Graph.Nodes {
+		for _, node := range p.Value.Graph.Nodes {
+			if node.Value.ID == id {
+				return node.Value, nil
 			}
 		}
-		return nil
-	}); err != nil {
-		return nil, err
 	}
 
-	if len(steps) == 0 {
-		return nil, errors.New("no step found")
-	}
-
-	return steps, nil
+	return Step{}, errors.New("no step found")
 }
 
 // ByName should return the Step that corresponds with a specific Name
@@ -249,17 +249,14 @@ func (c *Collection) ByName(ctx context.Context, name string) ([]Step, error) {
 	steps := []Step{}
 
 	// Search every pipeline and step for the listed IDs
-	if err := c.WalkPipelines(ctx, func(ctx context.Context, pipelines ...Pipeline) error {
-		for _, pipeline := range pipelines {
-			if pipeline.Name == name {
-				// uhhh.. todo
-				continue
-			}
-			for _, node := range pipeline.Graph.Nodes {
-				if node.Value.Name == name {
-					steps = []Step{node.Value}
-					return dag.ErrorBreak
-				}
+	if err := c.WalkPipelines(ctx, func(ctx context.Context, p Pipeline) error {
+		if p.Name == name {
+			return nil
+		}
+		for _, node := range p.Graph.Nodes {
+			if node.Value.Name == name {
+				steps = []Step{node.Value}
+				return dag.ErrorBreak
 			}
 		}
 
@@ -279,14 +276,12 @@ func (c *Collection) PipelinesByName(ctx context.Context, names []string) ([]Pip
 	)
 
 	// Search every pipeline for the listed names
-	if err := c.WalkPipelines(ctx, func(ctx context.Context, pipelines ...Pipeline) error {
+	if err := c.WalkPipelines(ctx, func(ctx context.Context, p Pipeline) error {
 		for i, argPipeline := range names {
-			for _, pipeline := range pipelines {
-				if strings.EqualFold(pipeline.Name, argPipeline) {
-					retP[i] = pipeline
-					found = true
-					break
-				}
+			if strings.EqualFold(p.Name, argPipeline) {
+				retP[i] = p
+				found = true
+				break
 			}
 		}
 		return nil
@@ -304,13 +299,11 @@ func (c *Collection) PipelinesByEvent(ctx context.Context, name string) ([]Pipel
 	ret := []Pipeline{}
 
 	// Search every pipeline for the event
-	if err := c.WalkPipelines(ctx, func(ctx context.Context, pipelines ...Pipeline) error {
-		for _, pipeline := range pipelines {
-			for _, event := range pipeline.Events {
-				if event.Name == name {
-					ret = append(ret, pipeline)
-					break
-				}
+	if err := c.WalkPipelines(ctx, func(ctx context.Context, p Pipeline) error {
+		for _, event := range p.Events {
+			if event.Name == name {
+				ret = append(ret, p)
+				break
 			}
 		}
 		return nil

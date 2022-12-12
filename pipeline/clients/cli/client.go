@@ -39,38 +39,36 @@ func New(opts clients.CommonOpts) (pipeline.Client, error) {
 }
 
 // PipelineWalkFunc walks through the pipelines that the collection provides. Each pipeline is a pipeline of steps, so each will walk through the list of steps using the StepWalkFunc.
-func (c *Client) PipelineWalkFunc(ctx context.Context, pipelines ...pipeline.Pipeline) error {
+func (c *Client) PipelineWalkFunc(ctx context.Context, p pipeline.Pipeline) error {
 	var (
 		wg = syncutil.NewStepWaitGroup()
 	)
 
-	for _, v := range pipelines {
-		for _, node := range v.Graph.Nodes {
-			if node.ID == 0 {
-				continue
-			}
-			log := c.Opts.Log
-			logWrapper := &wrappers.LogWrapper{
-				Opts: c.Opts,
-				Log:  log,
-			}
-			traceWrapper := &wrappers.TraceWrapper{
-				Opts:   c.Opts,
-				Tracer: c.Opts.Tracer,
-			}
-
-			step := logWrapper.WrapStep(node.Value)
-			step = traceWrapper.WrapStep(step)
-
-			// Otherwise, add this pipeline to the set that needs to complete before moving on to the next set of pipelines.
-			wg.Add(step, pipeline.ActionOpts{
-				Path:    c.Opts.Args.Path,
-				State:   c.State,
-				Tracer:  c.Opts.Tracer,
-				Version: c.Opts.Version,
-				Logger:  log,
-			})
+	for _, node := range p.Graph.Nodes {
+		if node.ID == 0 {
+			continue
 		}
+		log := c.Opts.Log
+		logWrapper := &wrappers.LogWrapper{
+			Opts: c.Opts,
+			Log:  log.WithField("step", node.Value.Name),
+		}
+		traceWrapper := &wrappers.TraceWrapper{
+			Opts:   c.Opts,
+			Tracer: c.Opts.Tracer,
+		}
+
+		step := logWrapper.WrapStep(node.Value)
+		step = traceWrapper.WrapStep(step)
+
+		// Otherwise, add this pipeline to the set that needs to complete before moving on to the next set of pipelines.
+		wg.Add(step, pipeline.ActionOpts{
+			Path:    c.Opts.Args.Path,
+			State:   c.State,
+			Tracer:  c.Opts.Tracer,
+			Version: c.Opts.Version,
+			Logger:  log,
+		})
 	}
 
 	if err := wg.Wait(ctx); err != nil {

@@ -210,8 +210,11 @@ func (c *Client) StepWalkFunc(d *dagger.Client, wg *syncutil.WaitGroup, bin *dag
 }
 
 // PipelineWalkFunc is executed once for every set of parallel functions.
-func (c *Client) PipelineWalkFunc(w pipeline.Walker, d *dagger.Client) pipeline.PipelineWalkFunc {
-	return func(ctx context.Context, pipelines ...pipeline.Pipeline) error {
+func (c *Client) PipelineWalkFunc(w pipeline.Walker, wg *syncutil.WaitGroup, d *dagger.Client) pipeline.PipelineWalkFunc {
+	return func(ctx context.Context, p pipeline.Pipeline) error {
+		if p.ID == 0 {
+			return nil
+		}
 		// This is where all of the source code for the project lives, including the pipeline.
 		src, err := c.State.GetDirectoryString(pipeline.ArgumentSourceFS)
 		if err != nil {
@@ -225,30 +228,24 @@ func (c *Client) PipelineWalkFunc(w pipeline.Walker, d *dagger.Client) pipeline.
 		}
 
 		// Compile the pipeline so that individual steps can be ran in each container
+		// TODO: not every pipeline needs to do this.
 		bin, err := CompilePipeline(ctx, d, src, gomod, c.Opts.Args.Path)
 		if err != nil {
 			return err
 		}
 
-		wg := syncutil.NewWaitGroup()
-		for _, pipeline := range pipelines {
-			wg.Add(func(ctx context.Context) error {
-				stepwg := syncutil.NewWaitGroup()
-				wf := c.StepWalkFunc(d, stepwg, bin, d.Host().Directory(src), c.Opts.Args.Path)
-				// Walk through each step, add it to the waitgroup for this set of steps
-				if err := w.WalkSteps(ctx, pipeline.ID, wf); err != nil {
-					return err
-				}
+		wg.Add(func(ctx context.Context) error {
+			swg := syncutil.NewWaitGroup()
+			wf := c.StepWalkFunc(d, swg, bin, d.Host().Directory(src), c.Opts.Args.Path)
+			// Walk through each step, add it to the waitgroup for this set of steps
+			if err := w.WalkSteps(ctx, p.ID, wf); err != nil {
+				return err
+			}
 
-				if err := stepwg.Wait(ctx); err != nil {
-					return err
-				}
+			return swg.Wait(ctx)
+		})
 
-				return nil
-			})
-		}
-
-		return wg.Wait(ctx)
+		return nil
 	}
 }
 
@@ -267,7 +264,13 @@ func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
 		return err
 	}
 	defer d.Close()
-	return w.WalkPipelines(ctx, c.PipelineWalkFunc(w, d))
+
+	wg := syncutil.NewWaitGroup()
+	if err := w.WalkPipelines(ctx, c.PipelineWalkFunc(w, wg, d)); err != nil {
+		return err
+	}
+
+	return wg.Wait(ctx)
 }
 
 // Validate is ran internally before calling Run or Parallel and allows the client to effectively configure per-step requirements

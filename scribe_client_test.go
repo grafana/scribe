@@ -15,12 +15,10 @@ type ensurer struct {
 	steps []string
 }
 
-func (e *ensurer) WalkPipelines(w pipeline.Walker) func(context.Context, ...pipeline.Pipeline) error {
-	return func(ctx context.Context, pipelines ...pipeline.Pipeline) error {
-		for _, v := range pipelines {
-			if err := w.WalkSteps(ctx, v.ID, e.WalkSteps); err != nil {
-				return err
-			}
+func (e *ensurer) WalkPipelines(w pipeline.Walker) func(context.Context, pipeline.Pipeline) error {
+	return func(ctx context.Context, p pipeline.Pipeline) error {
+		if err := w.WalkSteps(ctx, p.ID, e.WalkSteps); err != nil {
+			return err
 		}
 		return nil
 	}

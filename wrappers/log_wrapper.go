@@ -11,7 +11,7 @@ import (
 
 type LogWrapper struct {
 	Opts clients.CommonOpts
-	Log  *logrus.Logger
+	Log  logrus.FieldLogger
 }
 
 func (l *LogWrapper) Fields(ctx context.Context, step pipeline.Step) logrus.Fields {

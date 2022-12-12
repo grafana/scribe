@@ -40,14 +40,12 @@ func TestCollectionAddEvents(t *testing.T) {
 
 		testutil.EnsureError(t, col.AddEvents(scribe.DefaultPipelineID, events...), nil)
 
-		col.WalkPipelines(context.Background(), func(ctx context.Context, p ...pipeline.Pipeline) error {
-			for _, v := range p {
-				if v.ID == 0 {
-					continue
-				}
-				if len(v.Events) != len(events) {
-					t.Fatalf("Expected '%d' events but found '%d' in pipeline", len(events), len(v.Events))
-				}
+		col.WalkPipelines(context.Background(), func(ctx context.Context, p pipeline.Pipeline) error {
+			if p.ID == 0 {
+				return nil
+			}
+			if len(p.Events) != len(events) {
+				t.Fatalf("Expected '%d' events but found '%d' in pipeline", len(events), len(p.Events))
 			}
 
 			return nil
@@ -212,17 +210,13 @@ func TestCollectionGetters(t *testing.T) {
 	testutil.EnsureError(t, col.BuildEdges(logrus.New()), nil)
 
 	t.Run("ByID should return the step that has the provided ID", func(t *testing.T) {
-		steps, err := col.ByID(context.Background(), 9)
+		step, err := col.ByID(context.Background(), 9)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if len(steps) != 1 {
-			t.Fatalf("expected 1 step but got '%d'", len(steps))
-		}
-
-		if steps[0].Name != "step 6" {
-			t.Fatalf("expected step to be 'step 6', but got '%v'", steps[0])
+		if step.Name != "step 6" {
+			t.Fatalf("expected step to be 'step 6', but got '%v'", step)
 		}
 	})
 

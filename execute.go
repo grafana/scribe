@@ -95,11 +95,11 @@ func executeWithSteps(
 	return func(ctx context.Context, collection *pipeline.Collection) error {
 		// If the user has specified a specific step, then cut the "Collection" to only include that step
 		if args.Step != nil {
-			steps, err := collection.ByID(ctx, *args.Step)
+			step, err := collection.ByID(ctx, *args.Step)
 			if err != nil {
 				return fmt.Errorf("could not find step with id '%d'. Error: %w", *args.Step, err)
 			}
-			c, err := pipeline.NewCollectionWithSteps(name, steps...)
+			c, err := pipeline.NewCollectionWithSteps(name, step)
 			if err != nil {
 				return err
 			}
@@ -152,21 +152,19 @@ func executeWithEvent(
 		)
 
 		// For every pipeline, set the arguments that each event requires into the pipeline.
-		if err := collection.WalkPipelines(ctx, func(ctx context.Context, pipelines ...pipeline.Pipeline) error {
-			for _, v := range pipelines {
-				// By default assume the user has selected the git-commit event
-				pipelineList["git-commit"] = event{
-					Args:     pipeline.GitCommitEventArgs,
-					Pipeline: v.ID,
-				}
+		if err := collection.WalkPipelines(ctx, func(ctx context.Context, p pipeline.Pipeline) error {
+			// By default assume the user has selected the git-commit event
+			pipelineList["git-commit"] = event{
+				Args:     pipeline.GitCommitEventArgs,
+				Pipeline: p.ID,
+			}
 
-				// However, still add every event found in the pipelines. This gives us a list of possible events that the user could have selected which we can present to them.
-				for _, e := range v.Events {
-					// Nailvely add each event to the list. It doesn't matter if we overwrite what's already there because event name collisions shouldn't happen.
-					pipelineList[e.Name] = event{
-						Args:     e.Provides,
-						Pipeline: v.ID,
-					}
+			// However, still add every event found in the pipelines. This gives us a list of possible events that the user could have selected which we can present to them.
+			for _, e := range p.Events {
+				// Nailvely add each event to the list. It doesn't matter if we overwrite what's already there because event name collisions shouldn't happen.
+				pipelineList[e.Name] = event{
+					Args:     e.Provides,
+					Pipeline: p.ID,
 				}
 			}
 			return nil
@@ -177,7 +175,6 @@ func executeWithEvent(
 		if len(pipelineList) == 0 {
 			return ef(ctx, collection)
 		}
-
 		e := opts.Args.Event
 		// If the user has not provided an event argument, then set a default and warn them.
 		if e == "" {
@@ -240,10 +237,10 @@ func execute(ctx context.Context, collection *pipeline.Collection, name string, 
 		wrapped = executeWithEvent(opts.Args, opts, wrapped)
 	}
 
-	// If the user supplies a --step argument, reduce the collection
+	//// If the user supplies a --step argument, reduce the collection
 	wrapped = executeWithSteps(opts.Args, name, n, wrapped)
 
-	// If the user supplies a --pipeline or -p argument, reduce the collection
+	//// If the user supplies a --pipeline or -p argument, reduce the collection
 	wrapped = executeWithPipelines(opts.Args, name, n, wrapped)
 
 	// Add a root tracing span to the context, and end the span when the executeFunc is done.

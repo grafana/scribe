@@ -160,11 +160,9 @@ func TestWithEvent(t *testing.T) {
 
 		sw.Add(pipeline.NoOpStep.WithName("step 1"))
 
-		sw.Collection.WalkPipelines(context.Background(), func(ctx context.Context, pipelines ...pipeline.Pipeline) error {
-			for _, v := range pipelines {
-				if len(v.Events) != 1 {
-					t.Fatal("Expected 1 pipeline event, but found", len(v.Events))
-				}
+		sw.Collection.WalkPipelines(context.Background(), func(ctx context.Context, p pipeline.Pipeline) error {
+			if len(p.Events) != 1 {
+				t.Fatal("Expected 1 pipeline event, but found", len(p.Events))
 			}
 
 			return nil
