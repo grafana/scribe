@@ -23,7 +23,7 @@ func Lint(path string) pipeline.Step {
 
 	return pipeline.NewStep(
 		func(ctx context.Context, opts pipeline.ActionOpts) error {
-			path := filepath.Join(state.MustGetDirectoryString(opts.State, pipeline.ArgumentSourceFS), path)
+			path := filepath.Join(state.MustGetDirectoryString(opts.State, ctx, pipeline.ArgumentSourceFS), path)
 			err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
 				if err != nil {
 					return err
@@ -65,7 +65,7 @@ func Format(path string) pipeline.Step {
 		func(ctx context.Context, opts pipeline.ActionOpts) error {
 			var errFiles []string
 
-			path := filepath.Join(state.MustGetDirectoryString(opts.State, pipeline.ArgumentSourceFS), path)
+			path := filepath.Join(state.MustGetDirectoryString(opts.State, ctx, pipeline.ArgumentSourceFS), path)
 			err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
 				if err != nil {
 					return err

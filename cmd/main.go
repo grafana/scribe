@@ -4,8 +4,10 @@ package main
 
 import (
 	"context"
+	"math/rand"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/grafana/scribe/cmd/commands"
 	"github.com/grafana/scribe/cmdutil"
@@ -17,6 +19,10 @@ import (
 var (
 	Version = "latest"
 )
+
+func init() {
+	rand.Seed(time.Now().Unix())
+}
 
 func handleSignal(log *logrus.Logger, cmd *exec.Cmd, sig os.Signal) int {
 	log.Debugln("Received OS signal", sig.String())
@@ -46,6 +52,7 @@ func main() {
 
 	cmd := commands.Run(ctx, &commands.RunOpts{
 		Version: Version,
+		State:   args.State,
 		Path:    args.Path,
 		Args:    args,
 		Stdout:  os.Stdout,

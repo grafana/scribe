@@ -35,7 +35,9 @@ type GoBuildOpts struct {
 	GoPath string
 	// Output is used as the '-o' argument in the go build command.
 	// If this is not set, then we do not provide it, causing the compiled pipeline to be built in the 'os.Getwd', with a potentially confusing or ambiguous (or even colliding) name.
-	Output string
+	Output  string
+	LDFlags string
+
 	Stdout io.Writer
 	Stderr io.Writer
 }
@@ -75,9 +77,10 @@ func GoBuild(ctx context.Context, opts GoBuildOpts) *exec.Cmd {
 	)
 
 	return golangx.Build(ctx, golangx.BuildOpts{
-		Pkg:    opts.Pipeline,
-		Module: wd,
-		Env:    env,
-		Output: opts.Output,
+		Pkg:     opts.Pipeline,
+		Module:  wd,
+		Env:     env,
+		Output:  opts.Output,
+		LDFlags: opts.LDFlags,
 	})
 }

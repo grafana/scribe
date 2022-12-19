@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"io/fs"
 	"os"
 	"strconv"
@@ -21,7 +22,7 @@ func NewArgMapReader(defaults args.ArgMap) *ArgMapReader {
 	}
 }
 
-func (s *ArgMapReader) GetString(arg Argument) (string, error) {
+func (s *ArgMapReader) GetString(ctx context.Context, arg Argument) (string, error) {
 	val, err := s.defaults.Get(arg.Key)
 	if err != nil {
 		return "", err
@@ -30,7 +31,7 @@ func (s *ArgMapReader) GetString(arg Argument) (string, error) {
 	return val, nil
 }
 
-func (s *ArgMapReader) GetInt64(arg Argument) (int64, error) {
+func (s *ArgMapReader) GetInt64(ctx context.Context, arg Argument) (int64, error) {
 	val, err := s.defaults.Get(arg.Key)
 	if err != nil {
 		return 0, err
@@ -39,7 +40,7 @@ func (s *ArgMapReader) GetInt64(arg Argument) (int64, error) {
 	return strconv.ParseInt(val, 10, 64)
 }
 
-func (s *ArgMapReader) GetFloat64(arg Argument) (float64, error) {
+func (s *ArgMapReader) GetFloat64(ctx context.Context, arg Argument) (float64, error) {
 	val, err := s.defaults.Get(arg.Key)
 	if err != nil {
 		return 0, err
@@ -48,7 +49,7 @@ func (s *ArgMapReader) GetFloat64(arg Argument) (float64, error) {
 	return strconv.ParseFloat(val, 64)
 }
 
-func (s *ArgMapReader) GetBool(arg Argument) (bool, error) {
+func (s *ArgMapReader) GetBool(ctx context.Context, arg Argument) (bool, error) {
 	val, err := s.defaults.Get(arg.Key)
 	if err != nil {
 		return false, err
@@ -57,7 +58,7 @@ func (s *ArgMapReader) GetBool(arg Argument) (bool, error) {
 	return strconv.ParseBool(val)
 }
 
-func (s *ArgMapReader) GetFile(arg Argument) (*os.File, error) {
+func (s *ArgMapReader) GetFile(ctx context.Context, arg Argument) (*os.File, error) {
 	val, err := s.defaults.Get(arg.Key)
 	if err != nil {
 		return nil, err
@@ -66,7 +67,7 @@ func (s *ArgMapReader) GetFile(arg Argument) (*os.File, error) {
 	return os.Open(val)
 }
 
-func (s *ArgMapReader) GetDirectory(arg Argument) (fs.FS, error) {
+func (s *ArgMapReader) GetDirectory(ctx context.Context, arg Argument) (fs.FS, error) {
 	val, err := s.defaults.Get(arg.Key)
 	if err != nil {
 		return nil, err
@@ -75,7 +76,7 @@ func (s *ArgMapReader) GetDirectory(arg Argument) (fs.FS, error) {
 	return os.DirFS(val), nil
 }
 
-func (s *ArgMapReader) GetDirectoryString(arg Argument) (string, error) {
+func (s *ArgMapReader) GetDirectoryString(ctx context.Context, arg Argument) (string, error) {
 	val, err := s.defaults.Get(arg.Key)
 	if err != nil {
 		return "", err
@@ -84,7 +85,7 @@ func (s *ArgMapReader) GetDirectoryString(arg Argument) (string, error) {
 	return val, nil
 }
 
-func (s *ArgMapReader) Exists(arg Argument) (bool, error) {
+func (s *ArgMapReader) Exists(ctx context.Context, arg Argument) (bool, error) {
 	// defaults.Get only returns an error if no value was found.
 	_, err := s.defaults.Get(arg.Key)
 	if err != nil {

@@ -27,7 +27,7 @@ func StepProduceRandomString() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		r := stringutil.Random(12)
 		time.Sleep(time.Second * 10)
-		opts.State.SetString(ArgumentRandomString, r)
+		opts.State.SetString(ctx, ArgumentRandomString, r)
 		return nil
 	}
 
@@ -40,7 +40,7 @@ func StepProduceRandomFloat64() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		r := rand.Float64() * 10000
 		time.Sleep(time.Second * 10)
-		opts.State.SetFloat64(ArgumentRandomFloat64, r)
+		opts.State.SetFloat64(ctx, ArgumentRandomFloat64, r)
 		return nil
 	}
 
@@ -53,8 +53,7 @@ func StepProduceRandomInt64() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		r := rand.Int63n(10000)
 		time.Sleep(time.Second * 10)
-		opts.State.SetInt64(ArgumentRandomInt, r)
-		return nil
+		return opts.State.SetInt64(ctx, ArgumentRandomInt, r)
 	}
 
 	step := pipeline.NewStep(action)
@@ -66,7 +65,7 @@ func StepStoreFile() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		opts.Logger.Infoln("Storing file ./example-state-file.txt in state")
 		time.Sleep(time.Second * 10)
-		return opts.State.SetFile(ArgumentTextFile, filepath.Join(opts.Path, "./example-state-file.txt"))
+		return opts.State.SetFile(ctx, ArgumentTextFile, filepath.Join(opts.Path, "./example-state-file.txt"))
 	}
 
 	step := pipeline.NewStep(action)
@@ -77,7 +76,7 @@ func StepStoreFile() pipeline.Step {
 func StepStoreDirectory() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		time.Sleep(time.Second * 10)
-		return opts.State.SetDirectory(ArgumentDirectory, filepath.Join(opts.Path, "./example-directory"))
+		return opts.State.SetDirectory(ctx, ArgumentDirectory, filepath.Join(opts.Path, "./example-directory"))
 	}
 
 	step := pipeline.NewStep(action)
@@ -88,7 +87,7 @@ func StepStoreDirectory() pipeline.Step {
 func StepPrintRandomInt64() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		time.Sleep(time.Second * 10)
-		v, err := opts.State.GetInt64(ArgumentRandomInt)
+		v, err := opts.State.GetInt64(ctx, ArgumentRandomInt)
 		if err != nil {
 			return err
 		}
@@ -104,7 +103,7 @@ func StepPrintRandomInt64() pipeline.Step {
 func StepPrintRandomFloat64() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		time.Sleep(time.Second * 10)
-		v, err := opts.State.GetFloat64(ArgumentRandomFloat64)
+		v, err := opts.State.GetFloat64(ctx, ArgumentRandomFloat64)
 		if err != nil {
 			return err
 		}
@@ -120,7 +119,7 @@ func StepPrintRandomFloat64() pipeline.Step {
 func StepPrintRandomString() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		time.Sleep(time.Second * 10)
-		v, err := opts.State.GetString(ArgumentRandomString)
+		v, err := opts.State.GetString(ctx, ArgumentRandomString)
 		if err != nil {
 			return err
 		}
@@ -136,7 +135,7 @@ func StepPrintRandomString() pipeline.Step {
 func StepPrintFile() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		time.Sleep(time.Second * 10)
-		v, err := opts.State.GetFile(ArgumentTextFile)
+		v, err := opts.State.GetFile(ctx, ArgumentTextFile)
 		if err != nil {
 			return err
 		}
@@ -156,7 +155,7 @@ func StepPrintFile() pipeline.Step {
 func StepPrintDirectory() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		time.Sleep(time.Second * 10)
-		dir, err := opts.State.GetDirectory(ArgumentDirectory)
+		dir, err := opts.State.GetDirectory(ctx, ArgumentDirectory)
 		if err != nil {
 			return err
 		}
@@ -176,7 +175,7 @@ func StepPrintDirectory() pipeline.Step {
 func StepPrintSecret() pipeline.Step {
 	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
 		time.Sleep(time.Second * 10)
-		str, err := opts.State.GetString(ArgumentSecret)
+		str, err := opts.State.GetString(ctx, ArgumentSecret)
 		if err != nil {
 			return err
 		}

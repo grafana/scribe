@@ -166,7 +166,7 @@ func (c *Client) newPipeline(opts newPipelineOpts, pipelineOpts clients.CommonOp
 }
 
 // Done traverses through the tree and writes a .drone.yml file to the provided writer
-func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
+func (c *Client) Done(ctx context.Context, w *pipeline.Collection) error {
 	cfg := []yaml.Resource{}
 	log := c.Log.WithField("client", "drone")
 

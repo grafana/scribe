@@ -22,7 +22,7 @@ func (c *MyClient) Provides() []state.Argument {
 	return nil
 }
 
-func (c *MyClient) Done(ctx context.Context, w pipeline.Walker) error {
+func (c *MyClient) Done(ctx context.Context, w *pipeline.Collection) error {
 	return w.WalkPipelines(ctx, func(ctx context.Context, p pipeline.Pipeline) error {
 		c.Log.Infoln("pipeline:", p.Name)
 		return w.WalkSteps(ctx, p.ID, func(ctx context.Context, step pipeline.Step) error {
@@ -33,7 +33,7 @@ func (c *MyClient) Done(ctx context.Context, w pipeline.Walker) error {
 }
 
 func init() {
-	scribe.RegisterClient("my-custom-client", func(opts clients.CommonOpts) (pipeline.Client, error) {
+	scribe.RegisterClient("my-custom-client", func(ctx context.Context, opts clients.CommonOpts) (pipeline.Client, error) {
 		return &MyClient{
 			Log: opts.Log,
 		}, nil

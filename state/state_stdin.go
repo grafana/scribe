@@ -2,6 +2,7 @@ package state
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"io/fs"
@@ -45,7 +46,7 @@ func (s *StdinReader) Get(arg Argument) (string, error) {
 	return value, nil
 }
 
-func (s *StdinReader) GetString(arg Argument) (string, error) {
+func (s *StdinReader) GetString(ctx context.Context, arg Argument) (string, error) {
 	val, err := s.Get(arg)
 	if err != nil {
 		return "", err
@@ -54,7 +55,7 @@ func (s *StdinReader) GetString(arg Argument) (string, error) {
 	return val, nil
 }
 
-func (s *StdinReader) GetDirectoryString(arg Argument) (string, error) {
+func (s *StdinReader) GetDirectoryString(ctx context.Context, arg Argument) (string, error) {
 	val, err := s.Get(arg)
 	if err != nil {
 		return "", err
@@ -63,7 +64,7 @@ func (s *StdinReader) GetDirectoryString(arg Argument) (string, error) {
 	return val, nil
 }
 
-func (s *StdinReader) GetInt64(arg Argument) (int64, error) {
+func (s *StdinReader) GetInt64(ctx context.Context, arg Argument) (int64, error) {
 	val, err := s.Get(arg)
 	if err != nil {
 		return 0, err
@@ -72,7 +73,7 @@ func (s *StdinReader) GetInt64(arg Argument) (int64, error) {
 	return strconv.ParseInt(val, 10, 64)
 }
 
-func (s *StdinReader) GetFloat64(arg Argument) (float64, error) {
+func (s *StdinReader) GetFloat64(ctx context.Context, arg Argument) (float64, error) {
 	val, err := s.Get(arg)
 	if err != nil {
 		return 0, err
@@ -81,7 +82,7 @@ func (s *StdinReader) GetFloat64(arg Argument) (float64, error) {
 	return strconv.ParseFloat(val, 10)
 }
 
-func (s *StdinReader) GetBool(arg Argument) (bool, error) {
+func (s *StdinReader) GetBool(ctx context.Context, arg Argument) (bool, error) {
 	val, err := s.Get(arg)
 	if err != nil {
 		return false, err
@@ -90,7 +91,7 @@ func (s *StdinReader) GetBool(arg Argument) (bool, error) {
 	return strconv.ParseBool(val)
 }
 
-func (s *StdinReader) GetFile(arg Argument) (*os.File, error) {
+func (s *StdinReader) GetFile(ctx context.Context, arg Argument) (*os.File, error) {
 	val, err := s.Get(arg)
 	if err != nil {
 		return nil, err
@@ -99,7 +100,7 @@ func (s *StdinReader) GetFile(arg Argument) (*os.File, error) {
 	return os.Open(val)
 }
 
-func (s *StdinReader) GetDirectory(arg Argument) (fs.FS, error) {
+func (s *StdinReader) GetDirectory(ctx context.Context, arg Argument) (fs.FS, error) {
 	val, err := s.Get(arg)
 	if err != nil {
 		return nil, err
@@ -109,6 +110,6 @@ func (s *StdinReader) GetDirectory(arg Argument) (fs.FS, error) {
 }
 
 // Since the StdinReader can read any state value, it's better if we assume that if it's being used, then it wasn't found in other reasonable state managers.
-func (s *StdinReader) Exists(arg Argument) (bool, error) {
+func (s *StdinReader) Exists(ctx context.Context, arg Argument) (bool, error) {
 	return false, nil
 }

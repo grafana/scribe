@@ -23,7 +23,7 @@ type Client struct {
 	State *StateWrapper
 }
 
-func New(opts clients.CommonOpts) (pipeline.Client, error) {
+func New(ctx context.Context, opts clients.CommonOpts) (pipeline.Client, error) {
 	if opts.Args.Step == nil || *opts.Args.Step == 0 {
 		return nil, errors.New("--step argument can not be empty or 0 when using the CLI client")
 	}
@@ -32,19 +32,20 @@ func New(opts clients.CommonOpts) (pipeline.Client, error) {
 		Opts: opts,
 		Log:  opts.Log,
 		State: NewStateWrapper(
-			state.NewArgMapReader(opts.Args.ArgMap),
+			state.ReaderWithLogs(opts.Log, state.NewArgMapReader(opts.Args.ArgMap)),
 			&state.NoOpHandler{},
 		),
 	}, nil
 }
 
 // PipelineWalkFunc walks through the pipelines that the collection provides. Each pipeline is a pipeline of steps, so each will walk through the list of steps using the StepWalkFunc.
-func (c *Client) PipelineWalkFunc(ctx context.Context, p pipeline.Pipeline) error {
+func (c *Client) HandlePipeline(ctx context.Context, p pipeline.Pipeline) error {
 	var (
 		wg = syncutil.NewStepWaitGroup()
 	)
 
 	for _, node := range p.Graph.Nodes {
+		// Skip the root step that's always present on every pipeline.
 		if node.ID == 0 {
 			continue
 		}
@@ -90,14 +91,26 @@ func (c *Client) HandleEvents(events []pipeline.Event) error {
 	return nil
 }
 
-func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
-	return w.WalkPipelines(ctx, c.PipelineWalkFunc)
+func (c *Client) Done(ctx context.Context, w *pipeline.Collection) error {
+	for _, node := range w.Graph.Nodes {
+		// Skip the root node because there's always a root node that just exists as a starting point.
+		if node.ID == 0 {
+			continue
+		}
+		pipeline := node.Value
+		// Not counting the root pipeline, there should really only be 1 pipeline here with 1 step since we've filtered by step ID.
+		if err := c.HandlePipeline(ctx, pipeline); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func (c *Client) prepopulateState(s state.Handler) error {
+func (c *Client) prepopulateState(ctx context.Context, s state.Handler) error {
 	log := c.Log
 	for k, v := range KnownValues {
-		exists, err := s.Exists(k)
+		exists, err := s.Exists(ctx, k)
 		if err != nil {
 			// Even if we encounter an error, we still want to attempt to set the state.
 			// One error that could happen here is if the state is empty.
@@ -106,7 +119,7 @@ func (c *Client) prepopulateState(s state.Handler) error {
 
 		if !exists {
 			log.Debugln("State not found for", k.Key, "preopulating value")
-			if err := v(s); err != nil {
+			if err := v(ctx, s); err != nil {
 				log.WithError(err).Debugln("Failed to pre-populate state for argument", k.Key)
 			}
 		}

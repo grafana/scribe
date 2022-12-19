@@ -4,8 +4,10 @@ package scribe
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/grafana/scribe/args"
 	"github.com/grafana/scribe/cmdutil"
@@ -165,7 +167,7 @@ func (s *Scribe) Execute(ctx context.Context, collection *pipeline.Collection) e
 	// Only worry about building an entire graph if we're not running a specific step.
 	if step := s.Opts.Args.Step; step == nil || (*step) == 0 {
 		rootArgs := pipeline.ClientProvidedArguments
-		if err := s.Collection.BuildEdges(s.Log, rootArgs...); err != nil {
+		if err := collection.BuildEdges(s.Log, rootArgs...); err != nil {
 			return err
 		}
 	}
@@ -223,14 +225,14 @@ func parseOpts() (clients.CommonOpts, error) {
 	}, nil
 }
 
-func newScribe(name string) *Scribe {
+func newScribe(ctx context.Context, name string) *Scribe {
 	opts, err := parseOpts()
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse arguments: %s", err.Error()))
 	}
 
 	opts.Name = name
-	sw := NewClient(opts, NewDefaultCollection(opts))
+	sw := NewClient(ctx, opts, NewDefaultCollection(opts))
 
 	// Ensure that no matter the behavior of the initializer, we still set the version on the scribe object.
 	sw.Version = opts.Args.Version
@@ -245,12 +247,15 @@ func newScribe(name string) *Scribe {
 // Watching for signals, parsing command line arguments, and panics are all things that are OK in this function.
 // New is used when creating a single pipeline. In order to create multiple pipelines, use the NewMulti function.
 func New(name string) *Scribe {
-	return newScribe(name)
+	ctx := context.Background()
+	rand.Seed(time.Now().Unix())
+	return newScribe(ctx, name)
 }
 
 // NewWithClient creates a new Scribe object with a specific client implementation.
 // This function is intended to be used in very specific environments, like in tests.
 func NewWithClient(opts clients.CommonOpts, client pipeline.Client) *Scribe {
+	rand.Seed(time.Now().Unix())
 	if opts.Args == nil {
 		opts.Args = &args.PipelineArgs{}
 	}
@@ -268,7 +273,7 @@ func NewWithClient(opts clients.CommonOpts, client pipeline.Client) *Scribe {
 
 // NewClient creates a new Scribe client based on the commonopts.
 // It does not check for a non-nil "Args" field.
-func NewClient(c clients.CommonOpts, collection *pipeline.Collection) *Scribe {
+func NewClient(ctx context.Context, c clients.CommonOpts, collection *pipeline.Collection) *Scribe {
 	c.Log.Infof("Initializing Scribe client '%s'", c.Args.Client)
 	sw := &Scribe{
 		n: &counter{1},
@@ -279,7 +284,7 @@ func NewClient(c clients.CommonOpts, collection *pipeline.Collection) *Scribe {
 		c.Log.Fatalf("Could not initialize scribe. Could not find initializer for client '%s'", c.Args.Client)
 		return nil
 	}
-	client, err := initializer(c)
+	client, err := initializer(ctx, c)
 	if err != nil {
 		panic(err)
 	}

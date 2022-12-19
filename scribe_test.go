@@ -43,7 +43,7 @@ func TestNew(t *testing.T) {
 			Log:  plog.New(logrus.DebugLevel),
 			Args: pargs,
 		}
-		sw := scribe.NewClient(opts, scribe.NewDefaultCollection(testOpts))
+		sw := scribe.NewClient(context.Background(), opts, scribe.NewDefaultCollection(testOpts))
 
 		if reflect.TypeOf(sw.Client) != reflect.TypeOf(&dagger.Client{}) {
 			t.Fatalf("scribe.Client is '%v', not a DaggerClient", reflect.TypeOf(sw.Client))
@@ -65,7 +65,7 @@ func TestNew(t *testing.T) {
 			Log:  plog.New(logrus.DebugLevel),
 			Args: pargs,
 		}
-		sw := scribe.NewClient(opts, scribe.NewDefaultCollection(testOpts))
+		sw := scribe.NewClient(context.Background(), opts, scribe.NewDefaultCollection(testOpts))
 
 		if reflect.TypeOf(sw.Client) != reflect.TypeOf(&cli.Client{}) {
 			t.Fatalf("scribe.Client is '%v', not a CLIClient", reflect.TypeOf(sw.Client))
@@ -89,7 +89,7 @@ func TestNew(t *testing.T) {
 			Args: pargs,
 		}
 
-		sw := scribe.NewClient(opts, scribe.NewDefaultCollection(testOpts))
+		sw := scribe.NewClient(context.Background(), opts, scribe.NewDefaultCollection(testOpts))
 
 		if reflect.TypeOf(sw.Client) != reflect.TypeOf(&drone.Client{}) {
 			t.Fatalf("scribe.Client is '%v', not a DroneClient", reflect.TypeOf(sw.Client))

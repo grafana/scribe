@@ -3,6 +3,8 @@ package scribe
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"time"
 
 	"github.com/grafana/scribe/args"
 	"github.com/grafana/scribe/pipeline"
@@ -47,11 +49,10 @@ func (s *ScribeMulti) Execute(ctx context.Context, collection *pipeline.Collecti
 	// Only worry about building an entire graph if we're not running a specific step.
 	if step := s.Opts.Args.Step; step == nil || (*step) == 0 {
 		rootArgs := pipeline.ClientProvidedArguments
-		if err := s.Collection.BuildEdges(s.Opts.Log, rootArgs...); err != nil {
+		if err := collection.BuildEdges(s.Opts.Log, rootArgs...); err != nil {
 			return err
 		}
 	}
-
 	if err := s.Client.Done(ctx, collection); err != nil {
 		return err
 	}
@@ -69,12 +70,14 @@ func (s *ScribeMulti) Done() {
 // Pipelines can behave in the same way that a step does. They can be ran in parallel using the Parallel function, or ran in a series using the Run function.
 // To add new pipelines to execution, use the `(*scribe.ScribeMulti).New(...)` function.
 func NewMulti() *ScribeMulti {
+	rand.Seed(time.Now().Unix())
+	ctx := context.Background()
 	opts, err := parseOpts()
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse arguments: %s", err.Error()))
 	}
 
-	sw := NewClient(opts, NewMultiCollection())
+	sw := NewClient(ctx, opts, NewMultiCollection())
 
 	return &ScribeMulti{
 		Client:     sw.Client,
@@ -89,6 +92,7 @@ func NewMulti() *ScribeMulti {
 }
 
 func NewMultiWithClient(opts clients.CommonOpts, client pipeline.Client) *ScribeMulti {
+	rand.Seed(time.Now().Unix())
 	if opts.Args == nil {
 		opts.Args = &args.PipelineArgs{}
 	}

@@ -22,6 +22,7 @@ func CompilePipeline(ctx context.Context, d *dagger.Client, src, gomod, pipeline
 		Pipeline: pipeline,
 		Module:   path,
 		Output:   "/opt/scribe/pipeline",
+		LDFlags:  `-extldflags "-static"`,
 	})
 
 	builder = builder.WithEnvVariable("GOOS", "linux")

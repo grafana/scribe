@@ -20,7 +20,7 @@ func InstallAction() pipeline.Action {
 			return err
 		}
 
-		return opts.State.SetDirectory(ArgumentYarnCache, filepath.Join(".yarn", "cache"))
+		return opts.State.SetDirectory(ctx, ArgumentYarnCache, filepath.Join(".yarn", "cache"))
 	}
 }
 

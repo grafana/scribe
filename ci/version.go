@@ -35,7 +35,7 @@ func getVersion(ctx context.Context, opts pipeline.ActionOpts) error {
 		return err
 	}
 
-	return opts.State.SetString(ArgumentVersion, v)
+	return opts.State.SetString(ctx, ArgumentVersion, v)
 }
 
 func StepGetVersion(version string) pipeline.Step {

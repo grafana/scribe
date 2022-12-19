@@ -1,6 +1,8 @@
 package testutil
 
 import (
+	"context"
+
 	"github.com/grafana/scribe"
 	"github.com/grafana/scribe/pipeline/clients"
 	"github.com/sirupsen/logrus"
@@ -12,7 +14,7 @@ func NewScribe(initializer scribe.InitializerFunc) *scribe.Scribe {
 	opts := clients.CommonOpts{
 		Log: log,
 	}
-	client, _ := initializer(opts)
+	client, _ := initializer(context.Background(), opts)
 
 	return &scribe.Scribe{
 		Opts:       opts,

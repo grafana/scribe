@@ -15,7 +15,7 @@ type ensurer struct {
 	steps []string
 }
 
-func (e *ensurer) WalkPipelines(w pipeline.Walker) func(context.Context, pipeline.Pipeline) error {
+func (e *ensurer) WalkPipelines(w *pipeline.Collection) func(context.Context, pipeline.Pipeline) error {
 	return func(ctx context.Context, p pipeline.Pipeline) error {
 		if err := w.WalkSteps(ctx, p.ID, e.WalkSteps); err != nil {
 			return err
@@ -51,7 +51,7 @@ func (e *ensurer) Diff() string {
 
 // Done must be ran at the end of the pipeline.
 // This is typically what takes the defined pipeline steps, runs them in the order defined, and produces some kind of output.
-func (e *ensurer) Done(ctx context.Context, w pipeline.Walker) error {
+func (e *ensurer) Done(ctx context.Context, w *pipeline.Collection) error {
 	if err := w.WalkPipelines(ctx, e.WalkPipelines(w)); err != nil {
 		return err
 	}

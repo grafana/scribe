@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"path"
 	"path/filepath"
 	"strings"
@@ -26,24 +27,22 @@ type Client struct {
 	State *state.Observer
 }
 
-func getArgMap(r state.Reader, extra map[string]string, required state.Arguments) (args.ArgMap, error) {
+func getArgMap(ctx context.Context, r state.Reader, extra map[string]string, required state.Arguments) (args.ArgMap, error) {
 	m := args.ArgMap{}
 	for _, v := range required {
 		if val, ok := extra[v.Key]; ok {
-			if err := m.Set(fmt.Sprintf("%s=%s", v.Key, val)); err != nil {
-				return nil, err
-			}
+			m[v.Key] = val
 			continue
 		}
 
-		ok, err := r.Exists(v)
+		ok, err := r.Exists(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 		if !ok {
 			return nil, fmt.Errorf("'%s' does not exist in state", v.Key)
 		}
-		value, err := state.GetValueAsString(r, v)
+		value, err := state.GetValueAsString(ctx, r, v)
 		if err != nil {
 			return nil, fmt.Errorf("arg: '%s', error: %w", v.Key, err)
 		}
@@ -55,8 +54,8 @@ func getArgMap(r state.Reader, extra map[string]string, required state.Arguments
 	return m, nil
 }
 
-func New(opts clients.CommonOpts) (pipeline.Client, error) {
-	s, err := state.NewDefaultState(opts.Log, opts.Args)
+func New(ctx context.Context, opts clients.CommonOpts) (pipeline.Client, error) {
+	s, err := state.NewDefaultState(ctx, opts.Log, opts.Args)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +67,7 @@ func New(opts clients.CommonOpts) (pipeline.Client, error) {
 	}, nil
 }
 
-func (c *Client) WaitForArgs(log logrus.FieldLogger, args state.Arguments) {
+func (c *Client) WaitForArgs(ctx context.Context, log logrus.FieldLogger, args state.Arguments) {
 	log = log.WithField("arguments", args.String())
 	log.Debugln("Waiting for arguments...")
 	defer log.Debugln("Done for arguments")
@@ -91,7 +90,7 @@ func (c *Client) WaitForArgs(log logrus.FieldLogger, args state.Arguments) {
 				}
 			}
 		}(arg, done)
-		cond := c.State.CondFor(arg)
+		cond := c.State.CondFor(ctx, arg)
 		cond.L.Lock()
 		cond.Wait()
 		cond.L.Unlock()
@@ -100,16 +99,22 @@ func (c *Client) WaitForArgs(log logrus.FieldLogger, args state.Arguments) {
 	wg.Wait()
 }
 
-func (c *Client) HandleState(d *dagger.Client, container *dagger.Container, step pipeline.Step) (*dagger.Container, map[string]string, error) {
+func (c *Client) HandleState(ctx context.Context, d *dagger.Client, container *dagger.Container, step pipeline.Step) (*dagger.Container, map[string]string, error) {
 	m := map[string]string{}
 
 	for _, v := range step.RequiredArgs {
 		switch v.Type {
 		case state.ArgumentTypeFile:
-			file, err := c.State.GetFile(v)
+			log.Println(v.Key, "Getting file from state")
+			log.Println(v.Key, "Getting file from state")
+			log.Println(v.Key, "Getting file from state")
+			file, err := c.State.GetFile(ctx, v)
 			if err != nil {
 				return nil, nil, err
 			}
+			log.Println(v.Key, "got file from state", file.Name())
+			log.Println(v.Key, "got file from state", file.Name())
+			log.Println(v.Key, "got file from state", file.Name())
 			hPath := file.Name()
 			cPath := path.Join("/var/scribe-state", hPath)
 			container = container.WithMountedFile(cPath, d.Host().Directory(filepath.Dir(hPath)).File(filepath.Base(hPath)))
@@ -117,7 +122,7 @@ func (c *Client) HandleState(d *dagger.Client, container *dagger.Container, step
 		case state.ArgumentTypeFS:
 			fallthrough
 		case state.ArgumentTypeUnpackagedFS:
-			hDir, err := c.State.GetDirectoryString(v)
+			hDir, err := c.State.GetDirectoryString(ctx, v)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -138,7 +143,7 @@ func (c *Client) StepWalkFunc(d *dagger.Client, wg *syncutil.WaitGroup, bin *dag
 				"step": step.Name,
 			})
 
-			c.WaitForArgs(log, state.Without(step.RequiredArgs, pipeline.ClientProvidedArguments))
+			c.WaitForArgs(ctx, log, state.Without(step.RequiredArgs, pipeline.ClientProvidedArguments))
 
 			binPath := "/opt/scribe/pipeline"
 			runner := d.Container().From(step.Image).
@@ -147,15 +152,19 @@ func (c *Client) StepWalkFunc(d *dagger.Client, wg *syncutil.WaitGroup, bin *dag
 				WithEntrypoint([]string{}).
 				WithWorkdir("/var/scribe")
 
-			r, m, err := c.HandleState(d, runner, step)
+			r, m, err := c.HandleState(ctx, d, runner, step)
 			if err != nil {
 				return err
 			}
 			runner = r
 
-			argmap, err := getArgMap(c.State, m, step.RequiredArgs)
+			argmap, err := getArgMap(ctx, c.State, m, step.RequiredArgs)
 			if err != nil {
 				return err
+			}
+
+			for k, v := range argmap {
+				log.Debugln("ArgMap", k, v)
 			}
 
 			cmd, err := cmdutil.StepCommand(cmdutil.CommandOpts{
@@ -198,7 +207,7 @@ func (c *Client) StepWalkFunc(d *dagger.Client, wg *syncutil.WaitGroup, bin *dag
 
 			for _, v := range updates {
 				log.Debugf("Setting arg '%s' in state", v.Argument.Key)
-				if err := state.SetValueFromJSON(c.State, v); err != nil {
+				if err := state.SetValueFromJSON(ctx, c.State, v); err != nil {
 					return err
 				}
 			}
@@ -210,19 +219,19 @@ func (c *Client) StepWalkFunc(d *dagger.Client, wg *syncutil.WaitGroup, bin *dag
 }
 
 // PipelineWalkFunc is executed once for every set of parallel functions.
-func (c *Client) PipelineWalkFunc(w pipeline.Walker, wg *syncutil.WaitGroup, d *dagger.Client) pipeline.PipelineWalkFunc {
+func (c *Client) PipelineWalkFunc(w *pipeline.Collection, wg *syncutil.WaitGroup, d *dagger.Client) pipeline.PipelineWalkFunc {
 	return func(ctx context.Context, p pipeline.Pipeline) error {
 		if p.ID == 0 {
 			return nil
 		}
 		// This is where all of the source code for the project lives, including the pipeline.
-		src, err := c.State.GetDirectoryString(pipeline.ArgumentSourceFS)
+		src, err := c.State.GetDirectoryString(ctx, pipeline.ArgumentSourceFS)
 		if err != nil {
 			return err
 		}
 		// Some projects might not have the go.mod in the root or might have a separate go.mod for the pipeline itself.
 		// If that's the case, then we need to provide that to the go build command.
-		gomod, err := c.State.GetDirectoryString(pipeline.ArgumentPipelineGoModFS)
+		gomod, err := c.State.GetDirectoryString(ctx, pipeline.ArgumentPipelineGoModFS)
 		if err != nil {
 			return err
 		}
@@ -236,6 +245,10 @@ func (c *Client) PipelineWalkFunc(w pipeline.Walker, wg *syncutil.WaitGroup, d *
 
 		wg.Add(func(ctx context.Context) error {
 			swg := syncutil.NewWaitGroup()
+			// Before running the steps in the pipeline, wait for the arguments to be in the state that this pipeline is requesting
+
+			c.WaitForArgs(ctx, c.Log, p.RequiredArgs)
+
 			wf := c.StepWalkFunc(d, swg, bin, d.Host().Directory(src), c.Opts.Args.Path)
 			// Walk through each step, add it to the waitgroup for this set of steps
 			if err := w.WalkSteps(ctx, p.ID, wf); err != nil {
@@ -251,7 +264,7 @@ func (c *Client) PipelineWalkFunc(w pipeline.Walker, wg *syncutil.WaitGroup, d *
 
 // Done must be ran at the end of the pipeline.
 // This is typically what takes the defined pipeline steps, runs them in the order defined, and produces some kind of output.
-func (c *Client) Done(ctx context.Context, w pipeline.Walker) error {
+func (c *Client) Done(ctx context.Context, w *pipeline.Collection) error {
 	d, err := dagger.Connect(
 		ctx,
 		// Until dagger has the ability to provide log streams per-container for stdout/stderr, we have to include the whole thing

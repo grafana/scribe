@@ -86,7 +86,7 @@ func main() {
 	defer sw.Done()
 
 	sw.Add(
-		sw.New("test", testPipeline).Provides(ArgumentTestResult),
 		sw.New("publish", publishPipeline).Requires(ArgumentTestResult),
+		sw.New("test", testPipeline).Provides(ArgumentTestResult),
 	)
 }

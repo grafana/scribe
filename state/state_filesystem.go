@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,14 +17,10 @@ import (
 	"github.com/grafana/scribe/tarfs"
 )
 
-type StateValueJSON struct {
-	Argument Argument `json:"argument"`
-	Value    any      `json:"value"`
-}
-
 // FilesystemState stores state in a JSON file on the filesystem.
 type FilesystemState struct {
 	path string
+	file string
 	mtx  *sync.Mutex
 }
 
@@ -34,26 +31,26 @@ func NewFilesystemState(path string) (*FilesystemState, error) {
 	}, nil
 }
 
-// fsStatePath gets the folder that can be used for placing items in the state.
-// It will create the folder if it does not exist.
-func (f *FilesystemState) fsStatePath() (string, error) {
-	path := strings.TrimSuffix(f.path, filepath.Ext(f.path))
-	if err := os.MkdirAll(path, os.FileMode(0755)); err != nil {
-		return "", err
-	}
+// statePath gets the folder that can be used for placing items in the state.
+// it should already exist.
+func (f *FilesystemState) statePath() string {
+	return filepath.Join(f.path, f.file)
+}
 
-	return path, nil
+// stateFile gets the path to the state.json file.
+func (f *FilesystemState) stateFile() string {
+	return filepath.Join(f.statePath(), "state.json")
 }
 
 func (f *FilesystemState) openr() (*os.File, error) {
-	return os.Open(f.path)
+	return os.Open(f.stateFile())
 }
 
 func (f *FilesystemState) openw() (*os.File, error) {
-	return os.Create(f.path)
+	return os.Create(f.stateFile())
 }
 
-func (f *FilesystemState) setValue(arg Argument, value any) error {
+func (f *FilesystemState) setValue(ctx context.Context, arg Argument, value any) error {
 	f.mtx.Lock()
 	defer f.mtx.Unlock()
 	r, err := f.openr()
@@ -63,7 +60,7 @@ func (f *FilesystemState) setValue(arg Argument, value any) error {
 		}
 	}
 
-	state := map[string]StateValueJSON{}
+	state := JSONState{}
 
 	// Error ignored intentionally. If there's an error, it's likely that the file is empty. We'll overwrite it.
 	json.NewDecoder(r).Decode(&state)
@@ -90,7 +87,7 @@ func (f *FilesystemState) setValue(arg Argument, value any) error {
 	return json.NewEncoder(w).Encode(state)
 }
 
-func (f *FilesystemState) getValue(arg Argument) (any, error) {
+func (f *FilesystemState) getValue(ctx context.Context, arg Argument) (any, error) {
 	f.mtx.Lock()
 	defer f.mtx.Unlock()
 	file, err := f.openr()
@@ -112,11 +109,10 @@ func (f *FilesystemState) getValue(arg Argument) (any, error) {
 	}
 
 	return v.Value, nil
-
 }
 
-func (f *FilesystemState) GetString(arg Argument) (string, error) {
-	v, err := f.getValue(arg)
+func (f *FilesystemState) GetString(ctx context.Context, arg Argument) (string, error) {
+	v, err := f.getValue(ctx, arg)
 	if err != nil {
 		return "", err
 	}
@@ -124,12 +120,12 @@ func (f *FilesystemState) GetString(arg Argument) (string, error) {
 	return v.(string), nil
 }
 
-func (f *FilesystemState) SetString(arg Argument, value string) error {
-	return f.setValue(arg, value)
+func (f *FilesystemState) SetString(ctx context.Context, arg Argument, value string) error {
+	return f.setValue(ctx, arg, value)
 }
 
-func (f *FilesystemState) GetInt64(arg Argument) (int64, error) {
-	v, err := f.getValue(arg)
+func (f *FilesystemState) GetInt64(ctx context.Context, arg Argument) (int64, error) {
+	v, err := f.getValue(ctx, arg)
 	if err != nil {
 		return 0, err
 	}
@@ -137,12 +133,12 @@ func (f *FilesystemState) GetInt64(arg Argument) (int64, error) {
 	return int64(v.(float64)), nil
 }
 
-func (f *FilesystemState) SetInt64(arg Argument, value int64) error {
-	return f.setValue(arg, value)
+func (f *FilesystemState) SetInt64(ctx context.Context, arg Argument, value int64) error {
+	return f.setValue(ctx, arg, value)
 }
 
-func (f *FilesystemState) GetFloat64(arg Argument) (float64, error) {
-	v, err := f.getValue(arg)
+func (f *FilesystemState) GetFloat64(ctx context.Context, arg Argument) (float64, error) {
+	v, err := f.getValue(ctx, arg)
 	if err != nil {
 		return 0, err
 	}
@@ -150,12 +146,12 @@ func (f *FilesystemState) GetFloat64(arg Argument) (float64, error) {
 	return v.(float64), nil
 }
 
-func (f *FilesystemState) SetFloat64(arg Argument, value float64) error {
-	return f.setValue(arg, value)
+func (f *FilesystemState) SetFloat64(ctx context.Context, arg Argument, value float64) error {
+	return f.setValue(ctx, arg, value)
 }
 
-func (f *FilesystemState) GetBool(arg Argument) (bool, error) {
-	v, err := f.getValue(arg)
+func (f *FilesystemState) GetBool(ctx context.Context, arg Argument) (bool, error) {
+	v, err := f.getValue(ctx, arg)
 	if err != nil {
 		return false, err
 	}
@@ -163,12 +159,12 @@ func (f *FilesystemState) GetBool(arg Argument) (bool, error) {
 	return v.(bool), nil
 }
 
-func (f *FilesystemState) SetBool(arg Argument, value bool) error {
-	return f.setValue(arg, value)
+func (f *FilesystemState) SetBool(ctx context.Context, arg Argument, value bool) error {
+	return f.setValue(ctx, arg, value)
 }
 
-func (f *FilesystemState) GetFile(arg Argument) (*os.File, error) {
-	v, err := f.getValue(arg)
+func (f *FilesystemState) GetFile(ctx context.Context, arg Argument) (*os.File, error) {
+	v, err := f.getValue(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
@@ -183,35 +179,30 @@ func (f *FilesystemState) GetFile(arg Argument) (*os.File, error) {
 	return file, nil
 }
 
-func (f *FilesystemState) SetFile(arg Argument, value string) error {
-	path, err := f.fsStatePath()
-	if err != nil {
-		return err
-	}
+func (f *FilesystemState) SetFile(ctx context.Context, arg Argument, value string) error {
+	path := f.statePath()
 
 	path = filepath.Join(path, filepath.Base(value))
 	if err := swfs.CopyFile(value, path); err != nil {
 		return err
 	}
 
-	return f.setValue(arg, path)
+	return f.setValue(ctx, arg, path)
 }
 
-func (f *FilesystemState) SetFileReader(arg Argument, value io.Reader) (string, error) {
-	path, err := f.fsStatePath()
-	if err != nil {
-		return "", err
-	}
+func (f *FilesystemState) SetFileReader(ctx context.Context, arg Argument, value io.Reader) (string, error) {
+	path := f.statePath()
+
 	path = filepath.Join(path, stringutil.Slugify(arg.Key))
 	if err := swfs.CopyFileReader(value, path); err != nil {
 		return "", err
 	}
 
-	return path, f.setValue(arg, path)
+	return path, f.setValue(ctx, arg, path)
 }
 
-func (f *FilesystemState) GetDirectory(arg Argument) (fs.FS, error) {
-	v, err := f.getValue(arg)
+func (f *FilesystemState) GetDirectory(ctx context.Context, arg Argument) (fs.FS, error) {
+	v, err := f.getValue(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
@@ -226,10 +217,7 @@ func (f *FilesystemState) GetDirectory(arg Argument) (fs.FS, error) {
 		return nil, err
 	}
 	name := strings.TrimSuffix(path, filepath.Ext(path))
-	fsp, err := f.fsStatePath()
-	if err != nil {
-		return nil, err
-	}
+	fsp := f.statePath()
 
 	destination := filepath.Join(fsp, name, stringutil.Random(8))
 
@@ -245,8 +233,8 @@ func (f *FilesystemState) GetDirectory(arg Argument) (fs.FS, error) {
 
 // GetDirectoryString retrieves the original directory path.
 // This can be particularly useful for things stored within the source filesystem.
-func (f *FilesystemState) GetDirectoryString(arg Argument) (string, error) {
-	v, err := f.getValue(arg)
+func (f *FilesystemState) GetDirectoryString(ctx context.Context, arg Argument) (string, error) {
+	v, err := f.getValue(ctx, arg)
 	if err != nil {
 		return "", err
 	}
@@ -257,12 +245,9 @@ func (f *FilesystemState) GetDirectoryString(arg Argument) (string, error) {
 	return p[0], nil
 }
 
-func (f *FilesystemState) setDirectory(arg Argument, value string) error {
+func (f *FilesystemState) setDirectory(ctx context.Context, arg Argument, value string) error {
 	// /tmp/asdf1234/x-asdf1234.tar.gz
-	fsp, err := f.fsStatePath()
-	if err != nil {
-		return err
-	}
+	fsp := f.statePath()
 
 	path := filepath.Join(fsp, fmt.Sprintf("%s-%s.tar.gz", stringutil.Slugify(arg.Key), stringutil.Random(8)))
 	dir := os.DirFS(value)
@@ -271,10 +256,10 @@ func (f *FilesystemState) setDirectory(arg Argument, value string) error {
 		return fmt.Errorf("error creating tar.gz for directory state: %w", err)
 	}
 
-	return f.setValue(arg, strings.Join([]string{value, path}, ":"))
+	return f.setValue(ctx, arg, strings.Join([]string{value, path}, ":"))
 }
 
-func (f *FilesystemState) setUnpackagedDirectory(arg Argument, value string) error {
+func (f *FilesystemState) setUnpackagedDirectory(ctx context.Context, arg Argument, value string) error {
 	info, err := os.Stat(value)
 	if err != nil {
 		return err
@@ -283,19 +268,19 @@ func (f *FilesystemState) setUnpackagedDirectory(arg Argument, value string) err
 		return fmt.Errorf("directory '%s' does not exist", value)
 	}
 
-	return f.setValue(arg, value)
+	return f.setValue(ctx, arg, value)
 
 }
 
-func (f *FilesystemState) SetDirectory(arg Argument, value string) error {
+func (f *FilesystemState) SetDirectory(ctx context.Context, arg Argument, value string) error {
 	if arg.Type == ArgumentTypeFS {
-		return f.setDirectory(arg, value)
+		return f.setDirectory(ctx, arg, value)
 	}
-	return f.setUnpackagedDirectory(arg, value)
+	return f.setUnpackagedDirectory(ctx, arg, value)
 }
 
-func (f *FilesystemState) Exists(arg Argument) (bool, error) {
-	_, err := f.getValue(arg)
+func (f *FilesystemState) Exists(ctx context.Context, arg Argument) (bool, error) {
+	_, err := f.getValue(ctx, arg)
 	if err == nil {
 		return true, nil
 	}
@@ -305,28 +290,4 @@ func (f *FilesystemState) Exists(arg Argument) (bool, error) {
 	}
 
 	return false, err
-}
-
-func SetValueFromJSON(w Writer, value StateValueJSON) error {
-	switch value.Argument.Type {
-	case ArgumentTypeString:
-		return w.SetString(value.Argument, value.Value.(string))
-	case ArgumentTypeInt64:
-		return w.SetInt64(value.Argument, int64(value.Value.(float64)))
-	case ArgumentTypeFloat64:
-		return w.SetFloat64(value.Argument, value.Value.(float64))
-	case ArgumentTypeBool:
-		return w.SetBool(value.Argument, value.Value.(bool))
-	//case ArgumentTypeSecret:
-	//return w.SetSecret(value.Argument, value.Value.(bool))
-	case ArgumentTypeFile:
-		return w.SetFile(value.Argument, value.Value.(string))
-	case ArgumentTypeFS:
-		return w.SetDirectory(value.Argument, value.Value.(string))
-	case ArgumentTypeUnpackagedFS:
-		return w.SetDirectory(value.Argument, value.Value.(string))
-	default:
-	}
-
-	return nil
 }

@@ -67,10 +67,6 @@ type Step struct {
 	// Action defines the action this step performs.
 	Action Action
 
-	// Dependencies define other steps that are required to run before this one.
-	// As far as we're concerned, Steps can only depend on other steps of the same type.
-	Dependencies []Step
-
 	// RequiredArgs are arguments that are must exist in order for this step to run.
 	RequiredArgs state.Arguments
 
@@ -82,16 +78,6 @@ type Step struct {
 
 func (s Step) IsBackground() bool {
 	return s.Type == StepTypeBackground
-}
-
-func (s Step) After(step Step) Step {
-	if s.Dependencies == nil {
-		s.Dependencies = []Step{}
-	}
-
-	s.Dependencies = append(s.Dependencies, step)
-
-	return s
 }
 
 func (s Step) WithImage(image string) Step {
@@ -176,13 +162,11 @@ func Combine(step ...Step) Step {
 	s := Step{
 		Name:         step[0].Name,
 		Image:        step[0].Image,
-		Dependencies: []Step{},
 		RequiredArgs: []state.Argument{},
 		ProvidedArgs: []state.Argument{},
 	}
 
 	for _, v := range step {
-		s.Dependencies = append(s.Dependencies, v.Dependencies...)
 		s.RequiredArgs = append(s.RequiredArgs, v.RequiredArgs...)
 		s.ProvidedArgs = append(s.ProvidedArgs, v.ProvidedArgs...)
 	}

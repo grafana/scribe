@@ -39,10 +39,14 @@ func NewCollectionWithSteps(pipelineName string, steps ...Step) (*Collection, er
 		return nil, err
 	}
 
-	col.Root = []int64{id}
-	if err := col.BuildEdges(logrus.StandardLogger(), ClientProvidedArguments...); err != nil {
-		return nil, err
-	}
+	//col.Root = []int64{id}
+	//log.Println("NewCollectionWithSteps: buiding graph edges")
+	//log.Println("NewCollectionWithSteps: buiding graph edges")
+	//if err := col.BuildEdges(logrus.StandardLogger(), ClientProvidedArguments...); err != nil {
+	//	return nil, err
+	//}
+	//log.Println("NewCollectionWithSteps: done buiding graph edges")
+	//log.Println("NewCollectionWithSteps: done buiding graph edges")
 
 	return col, nil
 }
@@ -140,22 +144,6 @@ func (c *Collection) BuildEdges(log logrus.FieldLogger, rootArgs ...state.Argume
 	return nil
 }
 
-func (c *Collection) WalkSteps(ctx context.Context, pipelineID int64, wf StepWalkFunc) error {
-	node, err := c.Graph.Node(pipelineID)
-	if err != nil {
-		return fmt.Errorf("could not find pipeline '%d'. %w", pipelineID, err)
-	}
-
-	pipeline := node.Value
-	return pipeline.Graph.BreadthFirstSearch(0, func(n *dag.Node[Step]) error {
-		if n.ID == 0 {
-			return nil
-		}
-
-		return wf(ctx, n.Value)
-	})
-}
-
 // AddEvents adds the list of events to the pipeline with 'pipelineID'.
 // Events are not unique themselves are really only a list of arguments.
 func (c *Collection) AddEvents(pipelineID int64, events ...Event) error {
@@ -179,13 +167,6 @@ func (c *Collection) pipelineVisitFunc(ctx context.Context, wf PipelineWalkFunc)
 		}
 		return wf(ctx, n.Value)
 	}
-}
-
-func (c *Collection) WalkPipelines(ctx context.Context, wf PipelineWalkFunc) error {
-	if err := c.Graph.BreadthFirstSearch(0, c.pipelineVisitFunc(ctx, wf)); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Add adds a new list of Steps to a pipeline. The order in which steps are added have no particular meaning.
@@ -297,18 +278,13 @@ func (c *Collection) PipelinesByName(ctx context.Context, names []string) ([]Pip
 
 func (c *Collection) PipelinesByEvent(ctx context.Context, name string) ([]Pipeline, error) {
 	ret := []Pipeline{}
-
-	// Search every pipeline for the event
-	if err := c.WalkPipelines(ctx, func(ctx context.Context, p Pipeline) error {
-		for _, event := range p.Events {
+	for _, p := range c.Graph.Nodes {
+		for _, event := range p.Value.Events {
 			if event.Name == name {
-				ret = append(ret, p)
+				ret = append(ret, p.Value)
 				break
 			}
 		}
-		return nil
-	}); err != nil {
-		return nil, err
 	}
 
 	if len(ret) == 0 {

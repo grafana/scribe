@@ -23,6 +23,7 @@ type RunOpts struct {
 	// This is not the same as the "Path" argument for the pipeline itself, which is required and used for code / config generation.
 	Path string
 
+	State string
 	// Stdout is the stdout stream of the "go run" command that runs the pipeline
 	// If it is not provided, it defaults to "os.Stdout"
 	Stdout io.Writer
@@ -45,8 +46,9 @@ type RunOpts struct {
 // TODO: there is a function in `cmdutil` that should be able to create this command to run.
 func Run(ctx context.Context, opts *RunOpts) *exec.Cmd {
 	var (
-		path = opts.Path
-		args = opts.Args
+		path  = opts.Path
+		args  = opts.Args
+		state = opts.State
 
 		stdout  = opts.Stdout
 		stderr  = opts.Stderr
@@ -77,7 +79,7 @@ func Run(ctx context.Context, opts *RunOpts) *exec.Cmd {
 	// But it's important to note that a lot happens before it actually reaches the pipeline code and produces a command like this:
 	//   /tmp/random-string -client drone -path ./demo/basic
 	// So the path to the pipeline is not preserved, which is why we have to provide the path as an argument
-	cmdArgs := []string{"run", path, "--client", args.Client, "--log-level", args.LogLevel.String(), "--path", args.Path, "--version", version, "--build-id", args.BuildID, "--event", args.Event}
+	cmdArgs := []string{"run", path, "--client", args.Client, "--log-level", args.LogLevel.String(), "--path", args.Path, "--version", version, "--build-id", args.BuildID, "--event", args.Event, "--state", state}
 
 	for k, v := range args.ArgMap {
 		cmdArgs = append(cmdArgs, "--arg", fmt.Sprintf("%s=%s", k, v))

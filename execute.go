@@ -151,8 +151,8 @@ func executeWithEvent(
 			pipelineList = map[string]event{}
 		)
 
-		// For every pipeline, set the arguments that each event requires into the pipeline.
-		if err := collection.WalkPipelines(ctx, func(ctx context.Context, p pipeline.Pipeline) error {
+		for _, p := range collection.Graph.Nodes {
+			// For every pipeline, set the arguments that each event requires into the pipeline.
 			// By default assume the user has selected the git-commit event
 			pipelineList["git-commit"] = event{
 				Args:     pipeline.GitCommitEventArgs,
@@ -160,21 +160,19 @@ func executeWithEvent(
 			}
 
 			// However, still add every event found in the pipelines. This gives us a list of possible events that the user could have selected which we can present to them.
-			for _, e := range p.Events {
+			for _, e := range p.Value.Events {
 				// Nailvely add each event to the list. It doesn't matter if we overwrite what's already there because event name collisions shouldn't happen.
 				pipelineList[e.Name] = event{
 					Args:     e.Provides,
 					Pipeline: p.ID,
 				}
 			}
-			return nil
-		}); err != nil {
-			return err
 		}
 
 		if len(pipelineList) == 0 {
 			return ef(ctx, collection)
 		}
+
 		e := opts.Args.Event
 		// If the user has not provided an event argument, then set a default and warn them.
 		if e == "" {
