@@ -2,15 +2,22 @@ package args
 
 import (
 	"errors"
+	"math/rand"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
 	flag "github.com/spf13/pflag"
 
 	"github.com/grafana/scribe/stringutil"
 	"github.com/sirupsen/logrus"
 )
+
+func init() {
+	rand.Seed(time.Now().Unix())
+}
 
 // PipelineArgs are provided to the `scribe` command.
 type PipelineArgs struct {
@@ -80,7 +87,7 @@ func (p *pipelineNames) Type() string {
 func ParseArguments(args []string) (*PipelineArgs, error) {
 	var defaultState = &url.URL{
 		Scheme: "file",
-		Path:   os.TempDir(),
+		Path:   filepath.Join(os.TempDir(), stringutil.Random(8)),
 	}
 
 	var (

@@ -8,7 +8,7 @@ import (
 	"github.com/grafana/scribe/pipelineutil"
 )
 
-func CompilePipeline(ctx context.Context, d *dagger.Client, src, gomod, pipeline string) (*dagger.Directory, error) {
+func CompilePipeline(ctx context.Context, d *dagger.Client, name, src, gomod, pipeline string) (*dagger.Directory, error) {
 	var (
 		dir     = d.Host().Directory(src)
 		builder = d.Container().From("golang:1.19").WithMountedDirectory("/src", dir)
@@ -28,6 +28,10 @@ func CompilePipeline(ctx context.Context, d *dagger.Client, src, gomod, pipeline
 	builder = builder.WithEnvVariable("GOOS", "linux")
 	builder = builder.WithEnvVariable("GOARCH", "amd64")
 	builder = builder.WithEnvVariable("CGO_ENABLED", "0")
+	// Set the pipeline name to prevent cache collisions.
+	// Some pipelines with the exact same name and path will sometimes reuse the compiled pipeline from the cache.
+	// In those scenarios, until we find a more permanent fix, it's best to just change the name.
+	builder = builder.WithEnvVariable("PIPELINE_NAME", name)
 	builder = builder.WithWorkdir("/src")
 
 	builder = builder.Exec(dagger.ContainerExecOpts{

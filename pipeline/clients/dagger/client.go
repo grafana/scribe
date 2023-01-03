@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"path"
 	"path/filepath"
 	"strings"
@@ -105,16 +104,10 @@ func (c *Client) HandleState(ctx context.Context, d *dagger.Client, container *d
 	for _, v := range step.RequiredArgs {
 		switch v.Type {
 		case state.ArgumentTypeFile:
-			log.Println(v.Key, "Getting file from state")
-			log.Println(v.Key, "Getting file from state")
-			log.Println(v.Key, "Getting file from state")
 			file, err := c.State.GetFile(ctx, v)
 			if err != nil {
 				return nil, nil, err
 			}
-			log.Println(v.Key, "got file from state", file.Name())
-			log.Println(v.Key, "got file from state", file.Name())
-			log.Println(v.Key, "got file from state", file.Name())
 			hPath := file.Name()
 			cPath := path.Join("/var/scribe-state", hPath)
 			container = container.WithMountedFile(cPath, d.Host().Directory(filepath.Dir(hPath)).File(filepath.Base(hPath)))
@@ -238,7 +231,7 @@ func (c *Client) PipelineWalkFunc(w *pipeline.Collection, wg *syncutil.WaitGroup
 
 		// Compile the pipeline so that individual steps can be ran in each container
 		// TODO: not every pipeline needs to do this.
-		bin, err := CompilePipeline(ctx, d, src, gomod, c.Opts.Args.Path)
+		bin, err := CompilePipeline(ctx, d, c.Opts.Name, src, gomod, c.Opts.Args.Path)
 		if err != nil {
 			return err
 		}
