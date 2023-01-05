@@ -73,18 +73,32 @@ func (p Pipeline) BuildEdges(rootArgs ...state.Argument) error {
 	// Start by adding all of the 'p.Root' nodes to that node so that they run in parallel.
 	for _, v := range p.Root {
 		if err := p.Graph.AddEdge(0, v); err != nil {
-			return err
+			return fmt.Errorf("error adding edge from root node to step without requirements with ID '%d': %w", v, err)
 		}
 	}
 
 	for _, node := range p.Graph.Nodes {
 		for _, v := range node.Value.RequiredArgs {
 			providerID, ok := p.Providers[v]
-			if !ok && v.Type != state.ArgumentTypeSecret {
+			if !ok {
+				// Not much we can do with secrets other than let the client inject them in CLI arguments or environment variables.
+				if v.Type == state.ArgumentTypeSecret {
+					continue
+				}
+				// For now, it's safe to assume that if the pipeline requires an argument that is also required by a step, then it's provided elsewhere.
+				for _, pv := range p.RequiredArgs {
+					if v == pv {
+						// Add an edge from root node to this node
+						if err := p.Graph.AddEdge(0, node.ID); err != nil {
+							return fmt.Errorf("error adding edge from root node to step '%s': %w", node.Value.Name, err)
+						}
+						continue
+					}
+				}
 				return fmt.Errorf("%w: %s (%s)", ErrorNoStepProvider, v.Key, v.Type.String())
 			}
 			if err := p.Graph.AddEdge(providerID, node.ID); err != nil {
-				return err
+				return fmt.Errorf("error adding edge from '%d' to step '%s': %w", providerID, node.Value.Name, err)
 			}
 		}
 	}
