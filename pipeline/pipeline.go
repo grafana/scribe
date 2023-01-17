@@ -85,16 +85,23 @@ func (p Pipeline) BuildEdges(rootArgs ...state.Argument) error {
 				if v.Type == state.ArgumentTypeSecret {
 					continue
 				}
+				requiredByPipeline := false
 				// For now, it's safe to assume that if the pipeline requires an argument that is also required by a step, then it's provided elsewhere.
 				for _, pv := range p.RequiredArgs {
 					if v == pv {
-						// Add an edge from root node to this node
-						if err := p.Graph.AddEdge(0, node.ID); err != nil {
-							return fmt.Errorf("error adding edge from root node to step '%s': %w", node.Value.Name, err)
-						}
-						continue
+						requiredByPipeline = true
 					}
 				}
+
+				if requiredByPipeline {
+					// Add an edge from root node to this node
+					if err := p.Graph.AddEdge(0, node.ID); err != nil {
+						return fmt.Errorf("error adding edge from root node to step '%s': %w", node.Value.Name, err)
+					}
+					// Move on to the next required arg
+					continue
+				}
+
 				return fmt.Errorf("%w: %s (%s)", ErrorNoStepProvider, v.Key, v.Type.String())
 			}
 			if err := p.Graph.AddEdge(providerID, node.ID); err != nil {
