@@ -8,7 +8,7 @@ import (
 
 func GetValueAsString(ctx context.Context, r Reader, arg Argument) (string, error) {
 	switch arg.Type {
-	case ArgumentTypeString:
+	case ArgumentTypeString, ArgumentTypeSecret:
 		return r.GetString(ctx, arg)
 	case ArgumentTypeInt64:
 		val, err := r.GetInt64(ctx, arg)

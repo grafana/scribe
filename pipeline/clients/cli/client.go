@@ -33,7 +33,7 @@ func New(ctx context.Context, opts clients.CommonOpts) (pipeline.Client, error) 
 		Log:  opts.Log,
 		State: NewStateWrapper(
 			state.ReaderWithLogs(opts.Log, state.NewArgMapReader(opts.Args.ArgMap)),
-			&state.NoOpHandler{},
+			&StateHandler{},
 		),
 	}, nil
 }

@@ -104,7 +104,7 @@ func (c *Collection) BuildEdges(log logrus.FieldLogger, rootArgs ...state.Argume
 	// Build the edges between each pipeline
 	// Starting with pipelines that have no requirements
 	for _, v := range c.Root {
-		log.Debugln("Adding edge from root node to", v)
+		log.Debugf("0 -> %d", v)
 		if err := c.Graph.AddEdge(0, v); err != nil {
 			return fmt.Errorf("error creating edge from '%d' to '%d': %w", 0, v, err)
 		}
@@ -123,7 +123,7 @@ func (c *Collection) BuildEdges(log logrus.FieldLogger, rootArgs ...state.Argume
 				return fmt.Errorf("%w: %s (%s)", ErrorNoPipelineProvider, arg.Key, arg.Type.String())
 			}
 
-			log.Debugln("Adding edge from provider (%d) to node (%d)", providerID, v.ID)
+			log.Debugf("%d -> %d", providerID, v.ID)
 			// Add the edge to that node.
 			if err := c.Graph.AddEdge(providerID, v.ID); err != nil {
 				return err

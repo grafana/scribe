@@ -173,7 +173,7 @@ func (f *FilesystemState) GetFile(ctx context.Context, arg Argument) (*os.File, 
 
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error opening File argument (%s) in state: %w", arg.Key, err)
 	}
 
 	return file, nil
@@ -184,7 +184,7 @@ func (f *FilesystemState) SetFile(ctx context.Context, arg Argument, value strin
 
 	path = filepath.Join(path, filepath.Base(value))
 	if err := swfs.CopyFile(value, path); err != nil {
-		return err
+		return fmt.Errorf("error setting File argument (%s) in state: %w", arg.Key, err)
 	}
 
 	return f.setValue(ctx, arg, path)
@@ -195,7 +195,7 @@ func (f *FilesystemState) SetFileReader(ctx context.Context, arg Argument, value
 
 	path = filepath.Join(path, stringutil.Slugify(arg.Key))
 	if err := swfs.CopyFileReader(value, path); err != nil {
-		return "", err
+		return "", fmt.Errorf("error setting File (Reader) argument '%s': %w", arg.Key, err)
 	}
 
 	return path, f.setValue(ctx, arg, path)

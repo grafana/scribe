@@ -2,91 +2,53 @@ package main
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 
-	"github.com/grafana/scribe"
-	"github.com/grafana/scribe/fs"
-	gitx "github.com/grafana/scribe/git/x"
-	"github.com/grafana/scribe/golang"
-	"github.com/grafana/scribe/makefile"
 	"github.com/grafana/scribe/pipeline"
 	"github.com/grafana/scribe/state"
-	"github.com/grafana/scribe/yarn"
 )
 
 var (
-	ArgumentTestResult = state.NewBoolArgument("test-result")
+	ArgumentCompiledBackend  = state.NewFileArgument("compiled-backend")
+	ArgumentCompiledFrontend = state.NewDirectoryArgument("compiled-frontend")
 )
 
-func writeVersion(sw *scribe.Scribe) pipeline.Step {
-	action := func(ctx context.Context, opts pipeline.ActionOpts) error {
-
-		// equivalent of `git describe --tags --dirty --always`
-		version, err := gitx.Describe(ctx, ".", true, true, true)
-		if err != nil {
-			return err
-		}
-
-		// write the version string in the `.version` file.
-		return fs.ReplaceString(".version", version)(ctx, opts)
+func actionBuildBackend(ctx context.Context, opts pipeline.ActionOpts) error {
+	f, err := os.CreateTemp("", "*")
+	if err != nil {
+		return err
 	}
 
-	return pipeline.NewStep(action)
+	defer f.Close()
+
+	if _, err := opts.State.SetFileReader(ctx, ArgumentCompiledBackend, f); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func installDependencies(sw *scribe.Scribe) {
-	sw.Add(
-		pipeline.NamedStep("install frontend dependencies", sw.Cache(
-			yarn.InstallAction(),
-			fs.Cache("node_modules", fs.FileHasChanged("yarn.lock")),
-		)),
-		pipeline.NamedStep("install backend dependencies", sw.Cache(
-			golang.ModDownload(),
-			fs.Cache("$GOPATH/pkg", fs.FileHasChanged("go.sum")),
-		)),
-	)
+func actionBuildFrontend(ctx context.Context, opts pipeline.ActionOpts) error {
+	path := filepath.Join(os.TempDir(), "frontend")
+	if err := os.MkdirAll(path, 0755); err != nil {
+		return err
+	}
+
+	return opts.State.SetDirectory(ctx, ArgumentCompiledFrontend, path)
 }
 
-func testPipeline(sw *scribe.Scribe) {
-	installDependencies(sw)
+var stepBuildBackend = pipeline.NamedStep("build-backend", actionBuildBackend).
+	Requires(ArgumentNodeDependencies, pipeline.ArgumentSourceFS).
+	Provides(ArgumentCompiledBackend)
 
-	sw.Add(
-		golang.Test(sw, "./...").WithName("test backend"),
-		pipeline.NamedStep("test frontend", makefile.Target("test-frontend")),
-	)
-}
+var stepBuildFrontend = pipeline.NamedStep("build-backend", actionBuildFrontend).
+	Requires(ArgumentGoDependencies, pipeline.ArgumentSourceFS).
+	Provides(ArgumentCompiledFrontend)
 
-func publishPipeline(sw *scribe.Scribe) {
-	sw.When(
-		pipeline.GitCommitEvent(pipeline.GitCommitFilters{
-			Branch: pipeline.StringFilter("main"),
-		}),
-		pipeline.GitTagEvent(pipeline.GitTagFilters{
-			Name: pipeline.GlobFilter("v*"),
-		}),
-	)
-
-	installDependencies(sw)
-
-	sw.Add(
-		pipeline.NamedStep("compile backend", makefile.Target("build")),
-		pipeline.NamedStep("compile frontend", makefile.Target("package")),
-	)
-
-	sw.Add(
-		pipeline.NamedStep("publish", makefile.Target("publish")).Requires(state.NewSecretArgument("gcp-publish-key")),
-	)
-}
-
-// "main" defines our program pipeline.
-// Every pipeline step should be instantiated using the scribe client (sw).
-// This allows the various clients to work properly in different scenarios, like in a CI environment or locally.
-// Logic and processing done outside of the `sw.*` family of functions may not be included in the resulting pipeline.
-func main() {
-	sw := scribe.NewMulti()
-	defer sw.Done()
-
-	sw.Add(
-		sw.New("publish", publishPipeline).Requires(ArgumentTestResult),
-		sw.New("test", testPipeline).Provides(ArgumentTestResult),
-	)
+var PipelineBuild = Pipeline{
+	Name:     "build",
+	Provides: []state.Argument{ArgumentCompiledBackend, ArgumentCompiledFrontend},
+	Requires: []state.Argument{ArgumentGoDependencies, ArgumentNodeDependencies},
+	Steps:    []pipeline.Step{stepBuildBackend, stepBuildFrontend},
 }
