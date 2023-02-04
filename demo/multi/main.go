@@ -2,7 +2,7 @@ package main
 
 import "github.com/grafana/scribe"
 
-var Pipelines = []Pipeline{
+var Pipelines = []scribe.Pipeline{
 	PipelineDependencies,
 	PipelineBuild,
 	PipelineTest,
@@ -17,5 +17,5 @@ func main() {
 	sw := scribe.NewMulti()
 	defer sw.Done()
 
-	AddPipelines(sw, Pipelines)
+	sw.AddPipelines(Pipelines...)
 }
