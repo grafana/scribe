@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/grafana/scribe"
 	"github.com/grafana/scribe/pipeline"
 	"github.com/grafana/scribe/state"
 )
@@ -39,7 +40,7 @@ var stepTestFrontend = pipeline.NamedStep("test frontend", actionTestFrontend).
 	Provides(ArgumentTestResultFrontend).
 	Requires(ArgumentNodeDependencies)
 
-var PipelineTest = Pipeline{
+var PipelineTest = scribe.Pipeline{
 	Name: "test",
 	Steps: []pipeline.Step{
 		stepTestBackend,

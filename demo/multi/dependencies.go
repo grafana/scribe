@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/grafana/scribe"
 	"github.com/grafana/scribe/pipeline"
 	"github.com/grafana/scribe/state"
 )
@@ -60,7 +61,7 @@ var stepInstallBackendDeps = pipeline.NamedStep("install backend dependencies", 
 	Provides(ArgumentGoDependencies).
 	Requires(pipeline.ArgumentSourceFS)
 
-var PipelineDependencies = Pipeline{
+var PipelineDependencies = scribe.Pipeline{
 	Name:     "dependencies",
 	Provides: []state.Argument{ArgumentNodeDependencies, ArgumentGoDependencies},
 	Steps: []pipeline.Step{

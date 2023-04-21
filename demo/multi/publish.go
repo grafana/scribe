@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/grafana/scribe"
 	"github.com/grafana/scribe/pipeline"
 	"github.com/grafana/scribe/state"
 )
@@ -43,7 +44,7 @@ var stepPublish = pipeline.NamedStep("publish", actionPublish).
 		ArgumentTarPackage,
 	)
 
-var PipelinePublish = Pipeline{
+var PipelinePublish = scribe.Pipeline{
 	Name: "publish",
 	Steps: []pipeline.Step{
 		stepPackage,
