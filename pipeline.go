@@ -1,35 +1,30 @@
 package scribe
 
 import (
-	"github.com/grafana/scribe/pipeline"
-	"github.com/grafana/scribe/state"
+	"context"
+	"io"
+
+	"golang.org/x/exp/slog"
 )
 
-// Pipeline is a more user-friendly, declarative representation of a Pipeline in the 'pipeline' package.
-// This is only used when defining a pipeline in a declarative manner using the 'AddPipelines' function.
-type Pipeline struct {
-	Name     string
-	Requires []state.Argument
-	Steps    []pipeline.Step
-	Provides []state.Argument
-	When     []pipeline.Event
+type ActionOpts struct {
+	Logger slog.Logger
+	State  StateHandler
+	Stdout io.Writer
+	Stderr io.Writer
 }
 
-// AddPipelines adds a list of pipelines into the DAG. The order in which they are defined or added is not important; the order in which
-// they run depends on what they require and what they provide.
-// This function can be ran multiple times; every new item added with 'AddPipelines' will be appended to the dag.
-func (s *ScribeMulti) AddPipelines(pipelines ...Pipeline) {
-	for _, v := range pipelines {
-		p := s.New(v.Name, func(s *Scribe) {
-			if v.When != nil {
-				s.When(v.When...)
-			}
-			s.Add(v.Steps...)
-		})
+// StepActionFunc is the action that is executed when the arguments from this step are needed.
+type PipelineActionFunc func(ctx context.Context, opts ActionOpts) error
 
-		p = p.Requires(v.Requires...)
-		p = p.Provides(v.Provides...)
-
-		s.Add(p)
-	}
+// A Pipeline is an entire dagger pipeline.
+// A Pipeline has:
+// * an action, which is the dagger pipeline that is executed for this step
+// * requirements, which are things that must exist in the state before this pipeline can be executed
+// * outputs, which are things that this pipeline provides into the state to satisfy the requirements of other pipelines
+type Pipeline struct {
+	Name     string
+	Action   PipelineActionFunc
+	Requires []Argument
+	Provides []Argument
 }

@@ -1,3 +1,1 @@
 # Development guide
-
-TBD
